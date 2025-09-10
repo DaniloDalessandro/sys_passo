@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - SysPasso</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .verify-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white !important;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .verify-button:hover {
+            background-color: #218838;
+        }
+        .warning {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+        }
+        .token-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .welcome {
+            background-color: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">SysPasso</div>
+            <h2>Welcome to SysPasso!</h2>
+        </div>
+        
+        <div class="content">
+            <div class="welcome">
+                <h3>🎉 Account Created Successfully!</h3>
+                <p>Welcome {{ user.first_name|default:user.username }}! Thank you for joining SysPasso.</p>
+            </div>
+            
+            <p>To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ verification_url }}" class="verify-button">Verify My Email</a>
+            </div>
+            
+            <div class="warning">
+                <strong>Important:</strong>
+                <ul>
+                    <li>This verification link will expire in <strong>24 hours</strong></li>
+                    <li>You need to verify your email to access all features</li>
+                    <li>If you didn't create this account, please ignore this email</li>
+                </ul>
+            </div>
+            
+            <p>If the button above doesn't work, copy and paste this link into your browser:</p>
+            <div class="token-info">{{ verification_url }}</div>
+            
+            <p>Or use this verification token directly:</p>
+            <div class="token-info">{{ token }}</div>
+            
+            <p>Once verified, you'll be able to:</p>
+            <ul>
+                <li>Access your full account features</li>
+                <li>Receive important notifications</li>
+                <li>Reset your password if needed</li>
+                <li>Enjoy the complete SysPasso experience</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2025 SysPasso. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p>Account created at {{ timestamp }}</p>
+        </div>
+    </div>
+</body>
+</html>

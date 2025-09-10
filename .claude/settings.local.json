@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(dir:*)",
+      "Bash(venv\\Scripts\\activate:*)",
+      "Bash(./venv/Scripts/activate.bat)",
+      "Bash(python -m pip install:*)",
+      "Bash(python manage.py startapp:*)",
+      "Bash(mkdir:*)",
+      "Bash(.venvScriptsactivate)",
+      "Bash(call venvScriptsactivate.bat)",
+      "Bash(python manage.py:*)",
+      "Bash(./venv/Scripts/activate)",
+      "Bash(python:*)",
+      "Bash(sqlite3:*)",
+      "Bash(npx next dev:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(rd:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx next:*)",
+      "Bash(set NEXT_TELEMETRY_DISABLED=1)",
+      "Bash(venvScripts:*)",
+      "Bash(npx shadcn@latest add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
