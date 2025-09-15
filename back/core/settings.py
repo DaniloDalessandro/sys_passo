@@ -156,6 +156,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React default port
     "http://127.0.0.1:3000",
+    "http://localhost:3001",  # Next.js alternate port
+    "http://127.0.0.1:3001",
     "http://localhost:8080",  # Vue default port
     "http://127.0.0.1:8080",
     "http://localhost:4200",  # Angular default port

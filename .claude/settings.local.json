@@ -24,7 +24,14 @@
       "Bash(npx next:*)",
       "Bash(set NEXT_TELEMETRY_DISABLED=1)",
       "Bash(venvScripts:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(ls:*)",
+      "Bash(npm run build:*)",
+      "Bash(NEXT_DISABLE_TELEMETRY=1 npm run dev)",
+      "Bash(npx tsc:*)",
+      "Bash(tasklist:*)",
+      "Read(//c/**)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
