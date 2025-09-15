@@ -1,13 +1,18 @@
 import { cn } from "@/lib/utils"
 
-interface AnchorEmojiProps {
+interface CarEmojiProps {
   className?: string
 }
 
-export function AnchorEmoji({ className }: AnchorEmojiProps) {
+export function CarEmoji({ className }: CarEmojiProps) {
   return (
     <span className={cn("text-blue-700", className)}>
-      ⚓
+      🚗
     </span>
   )
+}
+
+// Mantendo compatibilidade com nome antigo
+export function AnchorEmoji({ className }: CarEmojiProps) {
+  return <CarEmoji className={className} />
 }

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Minerva - EMAP",
-  description: "Sistema de Gestão de Contratos - Minerva",
+  title: "ViaLumiar",
+  description: "Sistema de Gestão - ViaLumiar",
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
     apple: '/favicon.ico',
   },
   themeColor: '#1e40af',
-  applicationName: 'Minerva',
-  keywords: ['minerva', 'emap', 'gestão', 'contratos'],
+  applicationName: 'ViaLumiar',
+  keywords: ['vialumiar', 'gestão', 'sistema'],
 };
 
 export const viewport = {
@@ -48,7 +48,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Minerva" />
+        <meta name="apple-mobile-web-app-title" content="ViaLumiar" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

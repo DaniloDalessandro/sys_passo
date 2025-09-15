@@ -3,12 +3,17 @@
 import * as React from "react"
 import {
   SquareTerminal,
-  FileText,
   BarChart3,
   HelpCircle,
-  Anchor,
+  Car,
 } from "lucide-react"
 import { useAuthContext } from "@/context/AuthContext"
+// import { useDataRefresh } from "@/contexts/DataRefreshContext" // TODO: Check if exists
+// import { toast } from "@/hooks/use-toast" // TODO: Check if exists
+
+// Import API functions (commented out until APIs are created)
+// import { createConductor } from "@/lib/api/conductors"
+// import { createVehicle } from "@/lib/api/vehicles"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -20,22 +25,43 @@ import {
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 
+// Import form components (commented out until forms are created)
+// import ConductorForm from "@/components/forms/ConductorForm"
+// import VehicleForm from "@/components/forms/VehicleForm"
+
 interface NavItem {
   title: string
   url: string
   icon: React.ComponentType<{ className?: string }>
+  isActive?: boolean
+  items?: {
+    title: string
+    url: string
+    action?: string
+  }[]
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthContext()
+  // const { triggerRefresh } = useDataRefresh() // TODO: Check if exists
   const pathname = usePathname()
 
-  // Temporary fallback user for testing - remove this once auth is working
-  const displayUser = user || {
-    name: "Usuário Teste",
-    email: "usuario@teste.com",
-    avatar: "/avatars/default.svg"
+  // Form dialog states (commented out until forms are created)
+  // const [dialogState, setDialogState] = React.useState({
+  //   conductor: false,
+  //   vehicle: false,
+  // })
+
+  // Handler to open specific form dialog
+  const openFormDialog = (formType: string) => {
+    console.log(`Opening form dialog for: ${formType}`)
+    // TODO: Implement when forms are created
   }
+
+  // Handler to close specific form dialog (not used currently)
+  // const closeFormDialog = (formType: string) => {
+  //   setDialogState(prev => ({ ...prev, [formType]: false }))
+  // }
 
   const navItems: NavItem[] = [
     {
@@ -44,14 +70,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: BarChart3,
     },
     {
-      title: "Conductors",
+      title: "Condutores",
       url: "/conductors",
       icon: SquareTerminal,
+      items: [
+        { title: "Listar Condutores", url: "/conductors" },
+        { title: "Buscar Condutores", url: "/conductors/search" },
+        { title: "Estatísticas", url: "/conductors/stats" },
+        { title: "Adicionar Condutor", url: "/conductors", action: "conductor" },
+      ],
     },
     {
-      title: "Vehicles",
+      title: "Veículos",
       url: "/vehicles",
-      icon: FileText,
+      icon: Car,
+      items: [
+        { title: "Listar Veículos", url: "/vehicles" },
+        { title: "Adicionar Veículo", url: "/vehicles", action: "vehicle" },
+      ],
     },
     {
       title: "Ajuda",
@@ -60,6 +96,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ]
 
+  if (!user) return null
+
   // Sidebar normal (com expandir/recolher)
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -67,31 +105,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="flex h-14 items-center px-4">
           <div className="flex items-center gap-2">
             <div className="bg-blue-700 text-white flex aspect-square size-8 items-center justify-center rounded-lg">
-              <Anchor className="size-4" />
+              <Car className="size-4" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">Minerva</span>
-              <span className="truncate text-xs">Gestão de Contratos</span>
+              <span className="truncate font-medium">ViaLumiar</span>
+              <span className="truncate text-xs">Sistema de Gestão</span>
             </div>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={navItems} onFormAction={openFormDialog} />
       </SidebarContent>
 
       <SidebarFooter>
         <NavUser
           user={{
-            name: (displayUser.name || displayUser.email?.split("@")[0] || "Usuário").replace(/^Employee\s+/i, ""),
-            email: displayUser.email || "usuario@exemplo.com",
-            avatar: displayUser.avatar || "/avatars/default.svg",
+            name: (user.name || user.email.split("@")[0]).replace(/^Employee\s+/i, ""),
+            email: user.email,
+            avatar: user.avatar || "/avatars/default.svg",
           }}
         />
       </SidebarFooter>
 
       <SidebarRail />
+
+      {/* Form Dialogs - TODO: Implement when forms are created */}
     </Sidebar>
   )
 }

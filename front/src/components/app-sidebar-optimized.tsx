@@ -13,7 +13,7 @@ import {
   Bot,
   BarChart3,
   HelpCircle,
-  Anchor,
+  Car,
 } from "lucide-react"
 import { useAuthContext } from "@/context/AuthContext"
 import { NavMain } from "@/components/nav-main"
@@ -133,10 +133,10 @@ const SidebarLogo = React.memo(() => (
   <div className="flex h-14 items-center px-4">
     <div className="flex items-center gap-2">
       <div className="bg-blue-700 text-white flex aspect-square size-8 items-center justify-center rounded-lg">
-        <Anchor className="size-4" />
+        <Car className="size-4" />
       </div>
       <div className="grid flex-1 text-left text-sm leading-tight">
-        <span className="truncate font-medium">Minerva</span>
+        <span className="truncate font-medium">ViaLumiar</span>
         <span className="truncate text-xs">Gestão de Contratos</span>
       </div>
     </div>
@@ -151,10 +151,10 @@ const AliceSidebar = React.memo(({ user, ...props }: { user: any } & React.Compo
     <div className="p-4 border-b">
       <div className="flex items-center gap-2">
         <div className="bg-blue-700 text-white flex aspect-square size-8 items-center justify-center rounded-lg">
-          <Anchor className="size-4" />
+          <Car className="size-4" />
         </div>
         <div className="grid flex-1 text-left text-sm leading-tight">
-          <span className="truncate font-medium">Minerva</span>
+          <span className="truncate font-medium">ViaLumiar</span>
           <span className="truncate text-xs">Gestão de Contratos</span>
         </div>
       </div>

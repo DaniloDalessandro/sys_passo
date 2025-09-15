@@ -48,7 +48,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
   return (
     <div className={cn("space-y-8", className)} {...props}>
-      {/* Header com ícone de âncora */}
+      {/* Header com ícone de carro */}
       <div className="text-center space-y-4">
         <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
           <svg
@@ -61,15 +61,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M12 22V8M5 12H2a10 10 0 0 0 20 0h-3M12 8a4 4 0 0 0-4 4v0a4 4 0 0 0 4 4v0a4 4 0 0 0 4-4v0a4 4 0 0 0-4-4Z" />
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.7 10H17M5 17H3c-.6 0-1-.4-1-1v-3c0-.9.7-1.7 1.5-1.9L5.3 10H7" />
+            <path d="M5 17a2 2 0 1 0 4 0m10 0a2 2 0 1 0 4 0" />
+            <path d="M3 12h18" />
           </svg>
         </div>
         <div>
           <h1 className="text-4xl font-bold text-gray-800">
-            Minerva
+            ViaLumiar
           </h1>
           <p className="text-gray-600 mt-2 text-lg">
-            Sistema de Gestão de Contratos
+            Sistema de Gestão
           </p>
         </div>
       </div>
@@ -138,7 +140,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
       {/* Footer */}
       <div className="text-center text-gray-500 text-sm">
-        <p>© 2024 Minerva. Todos os direitos reservados.</p>
+        <p>© 2024 ViaLumiar. Todos os direitos reservados.</p>
       </div>
     </div>
   )

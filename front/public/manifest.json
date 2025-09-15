@@ -1,7 +1,7 @@
 {
-  "name": "Minerva - Sistema de Gestão de Contratos",
-  "short_name": "Minerva",
-  "description": "Sistema de Gestão de Contratos - EMAP",
+  "name": "ViaLumiar - Sistema de Gestão",
+  "short_name": "ViaLumiar",
+  "description": "Sistema de Gestão - ViaLumiar",
   "start_url": "/dashboard",
   "display": "standalone",
   "theme_color": "#1e40af",

@@ -225,7 +225,7 @@ export default function AjudaPage() {
     },
     {
       question: "O sistema funciona offline?",
-      answer: "Não, o Minerva é um sistema web que requer conexão com internet. Dados são salvos automaticamente quando há conexão.",
+      answer: "Não, o ViaLumiar é um sistema web que requer conexão com internet. Dados são salvos automaticamente quando há conexão.",
       category: "Técnico"
     },
     {
@@ -235,7 +235,7 @@ export default function AjudaPage() {
     },
     {
       question: "Posso usar o sistema no celular?",
-      answer: "Sim, o Minerva é responsivo e funciona bem em dispositivos móveis. Recomendamos usar navegadores atualizados para melhor experiência.",
+      answer: "Sim, o ViaLumiar é responsivo e funciona bem em dispositivos móveis. Recomendamos usar navegadores atualizados para melhor experiência.",
       category: "Técnico"
     },
     {
@@ -280,7 +280,7 @@ export default function AjudaPage() {
         <HelpCircle className="h-8 w-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Central de Ajuda</h1>
-          <p className="text-sm text-gray-600">Tutoriais, FAQ e suporte para o Sistema Minerva</p>
+          <p className="text-sm text-gray-600">Tutoriais, FAQ e suporte para o Sistema ViaLumiar</p>
         </div>
       </div>
 
