@@ -80,7 +80,14 @@ export default function Layout({
                 </BreadcrumbList>
               </Breadcrumb>
             </header>
-            <main className="flex-1 p-4">{children}</main>
+            <main className="flex-1 p-4 relative">{children}</main>
+
+            {/* Version info in bottom right corner */}
+            <div className="fixed bottom-4 right-4 z-10">
+              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium shadow-md border">
+                ViaLumiar v1.0.0
+              </div>
+            </div>
           </SidebarInset>
         </SidebarProvider>
       </DataRefreshProvider>
