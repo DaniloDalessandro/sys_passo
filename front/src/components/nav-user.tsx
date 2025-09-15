@@ -45,8 +45,17 @@ export function NavUser({
   const router = useRouter()
 
   const handleLogout = () => {
+    // Remove tokens from localStorage
     localStorage.removeItem("access_token")
     localStorage.removeItem("refresh_token")
+    localStorage.removeItem("access")
+    localStorage.removeItem("refresh")
+    localStorage.removeItem("user")
+
+    // Clear any other auth-related data
+    localStorage.clear()
+
+    // Redirect to login
     router.push("/login")
   }
 

@@ -8,7 +8,9 @@ import {
   HelpCircle,
   Anchor,
 } from "lucide-react"
+import { useAuthContext } from "@/context/AuthContext"
 import { NavMain } from "@/components/nav-main"
+import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -25,7 +27,15 @@ interface NavItem {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuthContext()
   const pathname = usePathname()
+
+  // Temporary fallback user for testing - remove this once auth is working
+  const displayUser = user || {
+    name: "Usuário Teste",
+    email: "usuario@teste.com",
+    avatar: "/avatars/default.svg"
+  }
 
   const navItems: NavItem[] = [
     {
@@ -72,9 +82,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="p-2 text-center text-xs text-gray-500">
-          Sistema Minerva v1.0
-        </div>
+        <NavUser
+          user={{
+            name: (displayUser.name || displayUser.email?.split("@")[0] || "Usuário").replace(/^Employee\s+/i, ""),
+            email: displayUser.email || "usuario@exemplo.com",
+            avatar: displayUser.avatar || "/avatars/default.svg",
+          }}
+        />
       </SidebarFooter>
 
       <SidebarRail />
