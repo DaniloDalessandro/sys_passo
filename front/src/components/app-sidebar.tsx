@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import {
-  SquareTerminal,
+  User,
   BarChart3,
   HelpCircle,
   Car,
@@ -72,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Condutores",
       url: "/conductors",
-      icon: SquareTerminal,
+      icon: User,
       items: [
         { title: "Listar Condutores", url: "/conductors" },
         { title: "Buscar Condutores", url: "/conductors/search" },
