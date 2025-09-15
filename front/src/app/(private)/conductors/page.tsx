@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { 
   Card, 
   CardContent, 
@@ -72,7 +71,6 @@ const conductorsData = [
 ]
 
 export default function ConductorsPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [conductors, setConductors] = useState(conductorsData)
   const [searchTerm, setSearchTerm] = useState("")
@@ -112,14 +110,9 @@ export default function ConductorsPage() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    if (!token) {
-      router.push("/login")
-    }
-    
     const timer = setTimeout(() => setIsLoading(false), 1000)
     return () => clearTimeout(timer)
-  }, [router])
+  }, [])
 
   if (isLoading) {
     return (

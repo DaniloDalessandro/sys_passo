@@ -1,6 +1,7 @@
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
+import Link from "next/link"
 
 import {
   Collapsible,
@@ -71,9 +72,9 @@ export function NavMain({
                               <span>{subItem.title}</span>
                             </button>
                           ) : (
-                            <a href={subItem.url}>
+                            <Link href={subItem.url}>
                               <span>{subItem.title}</span>
-                            </a>
+                            </Link>
                           )}
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
@@ -85,10 +86,10 @@ export function NavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title} className="border-0 outline-0 ring-0">
-                <a href={item.url} className="flex items-center">
+                <Link href={item.url} className="flex items-center">
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )
