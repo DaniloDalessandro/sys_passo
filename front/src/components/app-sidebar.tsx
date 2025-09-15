@@ -8,10 +8,7 @@ import {
   HelpCircle,
   Anchor,
 } from "lucide-react"
-import { useAuthContext } from "@/context/AuthContext"
-
 import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -25,16 +22,9 @@ interface NavItem {
   title: string
   url: string
   icon: React.ComponentType<{ className?: string }>
-  isActive?: boolean
-  items?: {
-    title: string
-    url: string
-    action?: string
-  }[]
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuthContext()
   const pathname = usePathname()
 
   const navItems: NavItem[] = [
@@ -60,8 +50,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ]
 
-  if (!user) return null
-
   // Sidebar normal (com expandir/recolher)
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -84,13 +72,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
-        <NavUser
-          user={{
-            name: (user.name || user.email.split("@")[0]).replace(/^Employee\s+/i, ""),
-            email: user.email,
-            avatar: user.avatar || "/avatars/default.svg",
-          }}
-        />
+        <div className="p-2 text-center text-xs text-gray-500">
+          Sistema Minerva v1.0
+        </div>
       </SidebarFooter>
 
       <SidebarRail />
