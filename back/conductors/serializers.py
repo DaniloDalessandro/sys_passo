@@ -7,14 +7,16 @@ class ConductorSerializer(serializers.ModelSerializer):
     is_license_expired = serializers.ReadOnlyField()
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
-    
+    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+
     class Meta:
         model = Conductor
         fields = [
-            'id', 'name', 'cpf', 'email', 'phone', 'photo', 'birth_date',
+            'id', 'name', 'cpf', 'birth_date', 'gender', 'gender_display', 'nationality',
+            'address', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'address', 'is_active', 'created_at', 'updated_at',
-            'created_by', 'created_by_username', 'updated_by', 'updated_by_username', 
+            'photo', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
+            'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
             'is_license_expired'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'updated_by']
@@ -67,9 +69,10 @@ class ConductorCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conductor
         fields = [
-            'name', 'cpf', 'email', 'phone', 'photo', 'birth_date',
+            'name', 'cpf', 'birth_date', 'gender', 'nationality',
+            'address', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'address', 'is_active'
+            'photo', 'cnh_digital', 'is_active'
         ]
 
     def validate_cpf(self, value):
@@ -115,9 +118,10 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conductor
         fields = [
-            'name', 'email', 'phone', 'photo', 'birth_date',
+            'name', 'birth_date', 'gender', 'nationality',
+            'address', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'address', 'is_active'
+            'photo', 'cnh_digital', 'is_active'
         ]
         
     def validate_license_expiry_date(self, value):
@@ -135,10 +139,11 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
 
 class ConductorListSerializer(serializers.ModelSerializer):
     is_license_expired = serializers.ReadOnlyField()
-    
+    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+
     class Meta:
         model = Conductor
         fields = [
-            'id', 'name', 'cpf', 'email', 'phone', 'license_category', 
-            'license_expiry_date', 'is_active', 'is_license_expired'
+            'id', 'name', 'cpf', 'email', 'phone', 'whatsapp', 'gender', 'gender_display',
+            'license_category', 'license_expiry_date', 'is_active', 'is_license_expired'
         ]

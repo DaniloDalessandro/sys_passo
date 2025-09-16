@@ -21,13 +21,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setError("")
 
     try {
+      console.log("Tentando fazer login com:", { username: email, password: "***" })
+
       const response = await fetch("http://localhost:8000/api/auth/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: email, password }),
       })
 
+      console.log("Response status:", response.status)
       const data = await response.json()
+      console.log("Response data:", data)
 
       if (response.ok) {
         login({
@@ -35,6 +39,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           refresh: data.refresh,
           user: data.user,
         })
+        console.log("Login successful, redirecting...")
         router.push("/dashboard")
       } else {
         const errorMessage =
@@ -42,6 +47,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         setError(errorMessage)
       }
     } catch (err) {
+      console.error("Erro no login:", err)
       setError("Erro de conexão com o servidor. Tente novamente mais tarde.")
     }
   }

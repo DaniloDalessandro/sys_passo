@@ -189,7 +189,7 @@ export function DataTable({
   );
 
   return (
-    <Card className="shadow-lg pb-0.5">
+    <Card className="shadow-lg pb-0.5 h-full flex flex-col">
       <CardHeader className="pb-1">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-100">
           <div>
@@ -258,7 +258,7 @@ export function DataTable({
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col overflow-hidden">
         {/* TAGS DE FILTROS */}
         {activeFilters.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -290,9 +290,10 @@ export function DataTable({
           </div>
         )}
 
-        <div className="border shadow-sm">
-          <Table>
-            <TableHeader className="bg-gray-50">
+        <div className="border shadow-sm rounded-lg overflow-hidden flex-1 flex flex-col">
+          <div className="flex-1 overflow-auto">
+            <Table>
+            <TableHeader className="bg-gray-50 sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -404,7 +405,7 @@ export function DataTable({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody className="max-h-64 overflow-y-auto">
+            <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
@@ -449,6 +450,7 @@ export function DataTable({
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {/* PAGINAÇÃO */}

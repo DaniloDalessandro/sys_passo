@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext"; // ✅ importe aqui
 import { InterceptorProvider } from "@/contexts/InterceptorContext";
 import { NavigationProgressBar } from "@/components/ui/navigation-progress-bar";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +58,7 @@ export default function RootLayout({
           <InterceptorProvider>
             <NavigationProgressBar />
             {children}
+            <Toaster />
           </InterceptorProvider>
         </AuthProvider>
       </body>

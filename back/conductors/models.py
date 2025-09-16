@@ -2,14 +2,13 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Conductor(models.Model):
-    name = models.CharField(max_length=100, verbose_name='Nome')
-    cpf = models.CharField(max_length=14, unique=True, verbose_name='CPF')
-    email = models.EmailField(unique=True, verbose_name='Email')
-    phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Telefone')
-    photo = models.ImageField(upload_to='conductors/', blank=True, null=True, verbose_name='Foto')
-    birth_date = models.DateField(verbose_name='Data de Nascimento')
-    license_number = models.CharField(max_length=20, unique=True, verbose_name='CNH')
-    license_category = models.CharField(max_length=5, choices=[
+    GENDER_CHOICES = [
+        ('M', 'Masculino'),
+        ('F', 'Feminino'),
+        ('O', 'Outro'),
+    ]
+
+    LICENSE_CATEGORY_CHOICES = [
         ('A', 'Categoria A'),
         ('B', 'Categoria B'),
         ('C', 'Categoria C'),
@@ -19,9 +18,36 @@ class Conductor(models.Model):
         ('AC', 'Categoria A+C'),
         ('AD', 'Categoria A+D'),
         ('AE', 'Categoria A+E'),
-    ], default='B', verbose_name='Categoria da CNH')
+    ]
+
+    # Dados Pessoais
+    name = models.CharField(max_length=150, verbose_name='Nome Completo')
+    cpf = models.CharField(max_length=14, unique=True, verbose_name='CPF')
+    birth_date = models.DateField(verbose_name='Data de Nascimento')
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M', verbose_name='Sexo')
+    nationality = models.CharField(max_length=50, default='Brasileira', verbose_name='Nacionalidade')
+
+    # Contato
+    address = models.TextField(default='', verbose_name='Endereço Completo')
+    phone = models.CharField(max_length=20, default='', verbose_name='Telefone/Celular')
+    email = models.EmailField(unique=True, verbose_name='E-mail')
+    whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name='WhatsApp')
+
+    # CNH
+    license_number = models.CharField(max_length=20, unique=True, verbose_name='Número da CNH')
+    license_category = models.CharField(
+        max_length=5,
+        choices=LICENSE_CATEGORY_CHOICES,
+        default='B',
+        verbose_name='Categoria da CNH'
+    )
     license_expiry_date = models.DateField(verbose_name='Validade da CNH')
-    address = models.TextField(blank=True, null=True, verbose_name='Endereço')
+
+    # Arquivos
+    photo = models.ImageField(upload_to='conductors/photos/', blank=True, null=True, verbose_name='Foto da Pessoa')
+    cnh_digital = models.FileField(upload_to='conductors/cnh/', blank=True, null=True, verbose_name='CNH Digital (PDF)')
+
+    # Controle
     is_active = models.BooleanField(default=True, verbose_name='Ativo')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')

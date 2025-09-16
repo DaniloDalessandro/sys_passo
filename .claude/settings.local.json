@@ -40,7 +40,9 @@
       "Bash(git push:*)",
       "Bash(npm install)",
       "Bash(npm audit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []
