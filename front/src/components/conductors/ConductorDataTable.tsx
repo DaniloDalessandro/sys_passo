@@ -3,17 +3,6 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MoreHorizontal, Edit, Trash2, Eye, AlertTriangle, Mail, Phone, Users, Globe, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { DataTable } from "@/components/ui/data-table";
 import { Conductor } from "@/hooks/useConductors";
 
@@ -42,22 +31,6 @@ export function ConductorDataTable({
     return diffDays <= 30 && diffDays > 0;
   };
 
-  const getCategoryBadgeVariant = (category: string) => {
-    const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
-      'A': 'default',
-      'B': 'secondary',
-      'C': 'destructive',
-      'D': 'outline',
-      'E': 'default'
-    };
-    return variants[category] || 'outline';
-  };
-
-  const handleDelete = (conductor: Conductor) => {
-    if (confirm("Tem certeza que deseja excluir este condutor?")) {
-      onDelete(conductor.id);
-    }
-  };
 
   const columns = useMemo(
     () => [
@@ -69,26 +42,7 @@ export function ConductorDataTable({
         },
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
-          const genderMap = { M: "Masculino", F: "Feminino", O: "Outro" };
-          return (
-            <div>
-              <div className="font-medium">{conductor.name}</div>
-              <div className="text-sm text-gray-500 space-y-1">
-                {conductor.email && (
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {conductor.email}
-                  </div>
-                )}
-                {conductor.gender && (
-                  <div className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {genderMap[conductor.gender]}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
+          return conductor.name;
         },
       },
       {
@@ -107,19 +61,9 @@ export function ConductorDataTable({
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
           return (
-            <div className="text-sm space-y-1">
-              {conductor.phone && (
-                <div className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
-                  {conductor.phone}
-                </div>
-              )}
-              {conductor.whatsapp && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <Phone className="h-3 w-3" />
-                  {conductor.whatsapp} (WhatsApp)
-                </div>
-              )}
+            <div className="space-y-1">
+              {conductor.phone && <div>{conductor.phone}</div>}
+              {conductor.whatsapp && <div>{conductor.whatsapp} (WhatsApp)</div>}
               {!conductor.phone && !conductor.whatsapp && "-"}
             </div>
           );
@@ -133,12 +77,7 @@ export function ConductorDataTable({
         },
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
-          return (
-            <div className="flex items-center gap-1 text-sm">
-              <Globe className="h-3 w-3" />
-              {conductor.nationality || "N/A"}
-            </div>
-          );
+          return conductor.nationality || "N/A";
         },
       },
       {
@@ -151,9 +90,7 @@ export function ConductorDataTable({
           const conductor = row.original as Conductor;
           return (
             <div className="space-y-1">
-              <Badge variant={getCategoryBadgeVariant(conductor.license_category)}>
-                {conductor.license_category}
-              </Badge>
+              <div>{conductor.license_category}</div>
               <div className="text-xs text-gray-500">
                 {conductor.license_number}
               </div>
@@ -167,38 +104,17 @@ export function ConductorDataTable({
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
           return (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">
-                  {format(new Date(conductor.license_expiry_date), "dd/MM/yyyy", {
-                    locale: ptBR,
-                  })}
-                </span>
-                {conductor.is_license_expired && (
-                  <Badge variant="destructive" className="text-xs">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Vencida
-                  </Badge>
-                )}
-                {!conductor.is_license_expired && isLicenseExpiringSoon(conductor.license_expiry_date) && (
-                  <Badge variant="secondary" className="text-xs">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Vence em breve
-                  </Badge>
-                )}
+            <div className="space-y-1">
+              <div>
+                {format(new Date(conductor.license_expiry_date), "dd/MM/yyyy", {
+                  locale: ptBR,
+                })}
+                {conductor.is_license_expired && " (Vencida)"}
+                {!conductor.is_license_expired && isLicenseExpiringSoon(conductor.license_expiry_date) && " (Vence em breve)"}
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                {conductor.photo && (
-                  <Badge variant="outline" className="text-xs">
-                    Foto
-                  </Badge>
-                )}
-                {conductor.cnh_digital && (
-                  <Badge variant="outline" className="text-xs">
-                    <FileText className="h-3 w-3 mr-1" />
-                    CNH Digital
-                  </Badge>
-                )}
+              <div className="text-xs text-gray-500">
+                {conductor.photo && "Foto "}
+                {conductor.cnh_digital && "CNH Digital"}
               </div>
             </div>
           );
@@ -212,11 +128,7 @@ export function ConductorDataTable({
         },
         cell: ({ row }: any) => {
           const isActive = row.getValue("is_active") as boolean;
-          return (
-            <Badge variant={isActive ? "default" : "secondary"}>
-              {isActive ? "Ativo" : "Inativo"}
-            </Badge>
-          );
+          return isActive ? "Ativo" : "Inativo";
         },
       },
       {
@@ -235,53 +147,8 @@ export function ConductorDataTable({
           return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
         },
       },
-      {
-        id: "actions",
-        header: "Ações",
-        cell: ({ row }: any) => {
-          const conductor = row.original as Conductor;
-
-          return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Abrir menu</span>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                {onViewDetails && (
-                  <DropdownMenuItem
-                    onClick={() => onViewDetails(conductor)}
-                    className="cursor-pointer"
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver detalhes
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() => onEdit(conductor)}
-                  className="cursor-pointer"
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => handleDelete(conductor)}
-                  className="cursor-pointer text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          );
-        },
-      },
     ],
-    [onEdit, onDelete, onViewDetails]
+    []
   );
 
   if (isLoading) {
@@ -303,8 +170,6 @@ export function ConductorDataTable({
         pageIndex={0}
         totalCount={conductors.length}
         onAdd={onAdd}
-        onEdit={(conductor: Conductor) => onEdit(conductor)}
-        onDelete={(conductor: Conductor) => onDelete(conductor.id)}
         onViewDetails={onViewDetails}
         onPageChange={() => {}}
         onPageSizeChange={() => {}}
