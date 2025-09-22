@@ -42,7 +42,15 @@
       "Bash(npm audit:*)",
       "Bash(find:*)",
       "Bash(npm install:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npx kill-port:*)",
+      "Bash(\"..\\venv\\Scripts\\python.exe\" manage.py runserver)",
+      "Bash(.venvScriptspython.exe manage.py runserver)",
+      "Bash(\"venv\\Scripts\\activate.bat\")",
+      "Bash(\"venv\\Scripts\\pip.exe\":*)",
+      "Bash(\"venv\\Scripts\\python.exe\" manage.py showmigrations)",
+      "Bash(\"venv\\Scripts\\python.exe\" manage.py runserver 8000)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

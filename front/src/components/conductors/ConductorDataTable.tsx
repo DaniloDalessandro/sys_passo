@@ -148,7 +148,7 @@ export function ConductorDataTable({
         },
       },
     ],
-    []
+    [onViewDetails]
   );
 
   if (isLoading) {

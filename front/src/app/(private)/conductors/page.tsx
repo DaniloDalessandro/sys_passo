@@ -62,9 +62,11 @@ export default function ConductorsPage() {
   }
 
   const handleViewDetails = (conductor: Conductor) => {
-    setSelectedConductor(conductor)
-    setIsDetailDialogOpen(true)
+    // Open in new tab
+    const url = `/conductors/${conductor.id}/details`;
+    window.open(url, '_blank');
   }
+
 
   return (
     <div className="flex flex-col h-full p-4 pt-0">
@@ -104,8 +106,14 @@ export default function ConductorsPage() {
         {/* Dialog for View Details */}
         <ConductorDetailDialog
           conductor={selectedConductor}
-          open={isDetailDialogOpen}
-          onOpenChange={setIsDetailDialogOpen}
+          open={isDetailDialogOpen && selectedConductor !== null}
+          onOpenChange={(open) => {
+            setIsDetailDialogOpen(open);
+            if (!open) {
+              // Clear selected conductor when dialog closes
+              setSelectedConductor(null);
+            }
+          }}
           onEdit={handleEdit}
         />
       </div>

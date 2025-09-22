@@ -82,10 +82,13 @@ export default function Layout({
             </header>
             <main className="flex-1 p-4 relative">{children}</main>
 
-            {/* Version info in bottom right corner */}
-            <div className="fixed bottom-4 right-4 z-10">
-              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium shadow-md border">
-                ViaLumiar v1.0.0
+            {/* Version info in bottom of main content area */}
+            <div className="absolute bottom-0 left-0 right-0 z-10">
+              <div className="w-full h-px bg-gray-300"></div>
+              <div className="flex justify-end p-4">
+                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium shadow-md border">
+                  ViaLumiar v1.0.0
+                </div>
               </div>
             </div>
           </SidebarInset>
