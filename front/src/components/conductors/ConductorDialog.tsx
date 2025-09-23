@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { ConductorForm } from "./ConductorForm"
 import { Conductor } from "./ConductorList"
 
@@ -39,7 +40,10 @@ export function ConductorDialog({
       cpf: conductor.cpf,
       email: conductor.email,
       phone: conductor.phone || "",
+      whatsapp: conductor.whatsapp || "",
       birth_date: conductor.birth_date ? new Date(conductor.birth_date) : undefined,
+      gender: conductor.gender || "M",
+      nationality: conductor.nationality || "Brasileira",
       license_number: conductor.license_number,
       license_category: conductor.license_category,
       license_expiry_date: new Date(conductor.license_expiry_date),
@@ -50,24 +54,30 @@ export function ConductorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar Condutor" : "Novo Condutor"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Atualize os dados do condutor abaixo"
-              : "Preencha os dados para cadastrar um novo condutor"}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] p-0 flex flex-col overflow-hidden">
+        <div className="p-4 sm:p-6 flex-shrink-0 border-b border-gray-100">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+              {isEditing ? "Editar Condutor" : "Novo Condutor"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-600">
+              {isEditing
+                ? "Atualize os dados do condutor abaixo"
+                : "Preencha os dados para cadastrar um novo condutor"}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <ConductorForm
-          onSubmit={handleSubmit}
-          initialData={conductor ? formatInitialData(conductor) : undefined}
-          isLoading={isLoading}
-          submitButtonText={isEditing ? "Atualizar Condutor" : "Cadastrar Condutor"}
-        />
+        <ScrollArea className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6">
+            <ConductorForm
+              onSubmit={handleSubmit}
+              initialData={conductor ? formatInitialData(conductor) : undefined}
+              isLoading={isLoading}
+              submitButtonText={isEditing ? "Atualizar Condutor" : "Cadastrar Condutor"}
+            />
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )
