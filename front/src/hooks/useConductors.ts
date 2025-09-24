@@ -42,7 +42,7 @@ export interface ConductorFormData {
   address: string
   gender: 'M' | 'F' | 'O'
   nationality: string
-  whatsapp?: string
+  whatsapp: string
   cnh_digital?: File | null
   is_active: boolean
 }

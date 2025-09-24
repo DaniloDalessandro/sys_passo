@@ -187,11 +187,11 @@ export function ConductorForm({
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 lg:space-y-6">
-          <div className="space-y-4 lg:space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 lg:space-y-4">
+          <div className="space-y-3 lg:space-y-4">
             {/* Seção: Dados Pessoais */}
             <Card className="overflow-hidden">
-              <CardHeader className="pb-3 lg:pb-4">
+              <CardHeader className="pb-2 lg:pb-3">
                 <CardTitle className="text-base lg:text-lg font-semibold text-gray-800 flex items-center gap-2">
                   <User className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600 flex-shrink-0" />
                   Dados Pessoais
@@ -200,8 +200,8 @@ export function ConductorForm({
                   Informações básicas do condutor
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 lg:space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <CardContent className="space-y-3 lg:space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
                   <FormField
                     control={form.control}
                     name="name"
@@ -290,7 +290,7 @@ export function ConductorForm({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
                   <FormField
                     control={form.control}
                     name="birth_date"
@@ -423,7 +423,7 @@ export function ConductorForm({
 
             {/* Seção: Dados da CNH */}
             <Card className="overflow-hidden">
-              <CardHeader className="pb-3 lg:pb-4">
+              <CardHeader className="pb-2 lg:pb-3">
                 <CardTitle className="text-base lg:text-lg font-semibold text-gray-800 flex items-center gap-2">
                   <CreditCard className="h-4 w-4 lg:h-5 lg:w-5 text-green-600 flex-shrink-0" />
                   <span className="truncate">Carteira Nacional de Habilitação</span>
@@ -432,8 +432,8 @@ export function ConductorForm({
                   Informações da CNH do condutor
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 lg:space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+              <CardContent className="space-y-3 lg:space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
                   <FormField
                     control={form.control}
                     name="license_number"
@@ -575,7 +575,7 @@ export function ConductorForm({
 
             {/* Seção: Documentos */}
             <Card className="overflow-hidden">
-              <CardHeader className="pb-3 lg:pb-4">
+              <CardHeader className="pb-2 lg:pb-3">
                 <CardTitle className="text-base lg:text-lg font-semibold text-gray-800 flex items-center gap-2">
                   <FileText className="h-4 w-4 lg:h-5 lg:w-5 text-purple-600 flex-shrink-0" />
                   Documentos
@@ -585,7 +585,7 @@ export function ConductorForm({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
                   {/* Photo Upload */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-700 block">Foto da Pessoa</Label>

@@ -75,8 +75,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: User,
       items: [
         { title: "Listar Condutores", url: "/conductors" },
-        { title: "Buscar Condutores", url: "/conductors/search" },
-        { title: "Estatísticas", url: "/conductors/stats" },
         { title: "Adicionar Condutor", url: "/conductors", action: "conductor" },
       ],
     },

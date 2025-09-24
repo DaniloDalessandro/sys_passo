@@ -54,8 +54,8 @@ export function ConductorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] p-0 flex flex-col overflow-hidden">
-        <div className="p-4 sm:p-6 flex-shrink-0 border-b border-gray-100">
+      <DialogContent className="max-w-7xl w-[98vw] max-h-[95vh] p-0 flex flex-col overflow-hidden">
+        <div className="p-3 sm:p-4 flex-shrink-0 border-b border-gray-100">
           <DialogHeader className="space-y-2">
             <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
               {isEditing ? "Editar Condutor" : "Novo Condutor"}
@@ -69,7 +69,7 @@ export function ConductorDialog({
         </div>
 
         <ScrollArea className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6">
+          <div className="p-3 sm:p-4">
             <ConductorForm
               onSubmit={handleSubmit}
               initialData={conductor ? formatInitialData(conductor) : undefined}
