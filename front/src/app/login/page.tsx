@@ -18,21 +18,46 @@ export default function LoginPage() {
           <div className={styles.cloudDetail}></div>
         </div>
 
-        {/* Pessoas acenando */}
-        <div className={`${styles.person} ${styles.person1}`}>
-          <div className={styles.personHead}></div>
-          <div className={styles.personBody}>
-            <div className={styles.personArm}></div>
+        {/* Pontos de Ônibus */}
+        <div className={`${styles.busStop} ${styles.busStop1}`}>
+          {/* Estrutura do ponto */}
+          <div className={styles.busStopStructure}>
+            <div className={styles.busStopPole}></div>
+            <div className={styles.busStopRoof}></div>
+            <div className={styles.busStopBench}></div>
+            <div className={styles.busStopSign}>
+              <div className={styles.busStopSignIcon}></div>
+            </div>
           </div>
-          <div className={styles.personLegs}></div>
+          {/* Pessoas esperando */}
+          <div className={`${styles.person} ${styles.waitingPerson1}`}>
+            <div className={styles.personHead}></div>
+            <div className={styles.personBody}></div>
+            <div className={styles.personLegs}></div>
+          </div>
+          <div className={`${styles.person} ${styles.waitingPerson2}`}>
+            <div className={styles.personHead}></div>
+            <div className={styles.personBody}></div>
+            <div className={styles.personLegs}></div>
+          </div>
         </div>
 
-        <div className={`${styles.person} ${styles.person2}`}>
-          <div className={styles.personHead}></div>
-          <div className={styles.personBody}>
-            <div className={styles.personArm}></div>
+        <div className={`${styles.busStop} ${styles.busStop2}`}>
+          {/* Estrutura do ponto */}
+          <div className={styles.busStopStructure}>
+            <div className={styles.busStopPole}></div>
+            <div className={styles.busStopRoof}></div>
+            <div className={styles.busStopBench}></div>
+            <div className={styles.busStopSign}>
+              <div className={styles.busStopSignIcon}></div>
+            </div>
           </div>
-          <div className={styles.personLegs}></div>
+          {/* Pessoa esperando */}
+          <div className={`${styles.person} ${styles.waitingPerson3}`}>
+            <div className={styles.personHead}></div>
+            <div className={styles.personBody}></div>
+            <div className={styles.personLegs}></div>
+          </div>
         </div>
 
         {/* Estrada */}

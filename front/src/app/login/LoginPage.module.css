@@ -44,7 +44,7 @@
   bottom: 85px;
   width: 80px;
   height: 45px;
-  animation: carMove 12s linear infinite;
+  animation: carMove 22s linear infinite;
   z-index: 5;
 }
 
@@ -293,26 +293,154 @@
   z-index: 1;
 }
 
-/* Pessoas acenando */
-.person {
+/* Pontos de Ônibus */
+.busStop {
   position: absolute;
   bottom: 150px;
-  width: 25px;
-  height: 50px;
+  width: 120px;
+  height: 80px;
+  z-index: 3;
+}
+
+.busStop1 {
+  left: 8%;
+}
+
+.busStop2 {
+  right: 12%;
+}
+
+/* Estrutura do ponto de ônibus */
+.busStopStructure {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.busStopPole {
+  position: absolute;
+  left: 15px;
+  bottom: 0;
+  width: 4px;
+  height: 70px;
+  background: linear-gradient(to bottom, #718096 0%, #4a5568 100%);
+  border-radius: 2px;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.3);
+}
+
+.busStopRoof {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 80px;
+  height: 25px;
+  background: linear-gradient(to bottom, #e53e3e 0%, #c53030 50%, #9c2424 100%);
+  border-radius: 8px 8px 4px 4px;
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(255,255,255,0.2);
+}
+
+.busStopRoof::before {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 2px;
+  right: 2px;
+  height: 3px;
+  background: linear-gradient(to right,
+    transparent 0%,
+    rgba(0,0,0,0.2) 20%,
+    rgba(0,0,0,0.2) 80%,
+    transparent 100%);
+  border-radius: 2px;
+}
+
+.busStopBench {
+  position: absolute;
+  bottom: 15px;
+  left: 25px;
+  width: 45px;
+  height: 8px;
+  background: linear-gradient(to bottom, #8b4513 0%, #654321 100%);
+  border-radius: 4px;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.3),
+    inset 0 1px 2px rgba(255,255,255,0.2);
+}
+
+.busStopBench::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  bottom: -6px;
+  height: 6px;
+  background: linear-gradient(to bottom, #654321 0%, #4a2c17 100%);
+  border-radius: 2px;
+}
+
+.busStopSign {
+  position: absolute;
+  top: 15px;
+  right: 8px;
+  width: 20px;
+  height: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+  border: 2px solid #2d3748;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.busStopSignIcon {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 8px;
+  background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+  border-radius: 6px 6px 2px 2px;
+  position: relative;
+}
+
+.busStopSignIcon::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  background: #2c5282;
+  border-radius: 1px;
+}
+
+/* Pessoas esperando no ponto */
+.person {
+  position: absolute;
+  width: 20px;
+  height: 45px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: personWave 3s ease-in-out infinite;
+  animation: subtleWait 4s ease-in-out infinite;
 }
 
-.person1 {
-  left: 15%;
+.waitingPerson1 {
+  bottom: 25px;
+  left: 30px;
   animation-delay: 0s;
 }
 
-.person2 {
-  right: 20%;
-  animation-delay: 1.5s;
+.waitingPerson2 {
+  bottom: 25px;
+  left: 55px;
+  animation-delay: 2s;
+}
+
+.waitingPerson3 {
+  bottom: 25px;
+  left: 35px;
+  animation-delay: 1s;
 }
 
 .personHead {
@@ -324,30 +452,18 @@
 }
 
 .personBody {
-  width: 16px;
-  height: 25px;
+  width: 14px;
+  height: 20px;
   background: linear-gradient(45deg, #3b82f6, #1d4ed8);
-  border-radius: 8px 8px 4px 4px;
+  border-radius: 6px 6px 3px 3px;
   position: relative;
 }
 
-.personArm {
-  position: absolute;
-  top: 5px;
-  right: -8px;
-  width: 12px;
-  height: 3px;
-  background: #fbbf24;
-  border-radius: 2px;
-  transform-origin: left center;
-  animation: armWave 1.5s ease-in-out infinite;
-}
-
 .personLegs {
-  width: 8px;
-  height: 15px;
+  width: 6px;
+  height: 12px;
   background: linear-gradient(45deg, #1f2937, #374151);
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 3px 3px;
 }
 
 /* Nuvens */
@@ -355,23 +471,20 @@
   position: absolute;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 50px;
-  animation: cloudFloat 20s ease-in-out infinite;
 }
 
 .cloud1 {
   top: 20px;
-  left: -100px;
+  left: 20%;
   width: 80px;
   height: 30px;
-  animation-delay: 0s;
 }
 
 .cloud2 {
   top: 50px;
-  left: -120px;
+  left: 70%;
   width: 60px;
   height: 25px;
-  animation-delay: -10s;
 }
 
 .cloud::before {
@@ -401,20 +514,12 @@
   100% { transform: rotate(360deg); }
 }
 
-@keyframes personWave {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+@keyframes subtleWait {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(1deg); }
+  75% { transform: translateY(-1px) rotate(-1deg); }
 }
 
-@keyframes armWave {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-30deg); }
-}
-
-@keyframes cloudFloat {
-  0% { left: -120px; }
-  100% { left: calc(100% + 120px); }
-}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -422,8 +527,12 @@
     height: 200px; /* Altura menor para telas pequenas */
   }
 
+  .busStop {
+    bottom: 120px; /* Ajusta posição dos pontos */
+    transform: scale(0.8); /* Reduz tamanho dos pontos */
+  }
+
   .person {
-    bottom: 120px; /* Ajusta posição das pessoas */
     transform: scale(0.8); /* Reduz tamanho das pessoas */
   }
 
@@ -447,8 +556,12 @@
     height: 150px; /* Altura ainda menor para telas muito pequenas */
   }
 
-  .person {
+  .busStop {
     bottom: 90px;
+    transform: scale(0.6);
+  }
+
+  .person {
     transform: scale(0.6);
   }
 
