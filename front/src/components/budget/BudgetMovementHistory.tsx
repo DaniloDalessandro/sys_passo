@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowRightIcon, HistoryIcon, PlusIcon, Pencil, Trash2 } from "lucide-react"
 import { BudgetMovement, getBudgetMovementsByBudget, deleteBudgetMovement, updateBudgetMovement } from "@/lib/api/budgets"

@@ -15,11 +15,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { NavigationProgressBar } from "@/components/ui/navigation-progress-bar"
-import { DataRefreshProvider } from "@/contexts/DataRefreshContext"
 import { usePathname } from "next/navigation"
-import AuthGuard from "@/components/AuthGuard"
-import React from "react"
+import React, { memo, useMemo } from "react"
 
 const capitalize = (s: string) => {
   if (typeof s !== "string" || s.length === 0) {
@@ -32,68 +29,67 @@ const capitalize = (s: string) => {
   )
 }
 
+// Memoize o componente de breadcrumb para evitar re-renderizações
+const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => {
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink href="/">Home</BreadcrumbLink>
+        </BreadcrumbItem>
+        {pathSegments.map((segment, index) => {
+          const href = `/${pathSegments.slice(0, index + 1).join("/")}`
+          const isLast = index === pathSegments.length - 1
+
+          return (
+            <React.Fragment key={href}>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{capitalize(segment)}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink href={href}>
+                    {capitalize(segment)}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </React.Fragment>
+          )
+        })}
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+})
+
+MemoizedBreadcrumb.displayName = "MemoizedBreadcrumb"
+
 export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   const pathname = usePathname()
-  const pathSegments = pathname.split("/").filter((segment) => segment)
+  
+  // Memoize o cálculo dos segmentos do path
+  const pathSegments = useMemo(() => 
+    pathname.split("/").filter((segment) => segment),
+    [pathname]
+  )
 
   return (
-    <AuthGuard>
-      <DataRefreshProvider>
-        <SidebarProvider>
-          <NavigationProgressBar />
-          <AppSidebar />
-          <SidebarInset className="flex flex-col">
-            <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-              <SidebarTrigger className="-ml-1" />
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/dashboard">Home</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  {pathSegments.map((segment, index) => {
-                    const href = `/${pathSegments.slice(0, index + 1).join("/")}`
-                    const isLast = index === pathSegments.length - 1
-
-                    return (
-                      <React.Fragment key={href}>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                          {isLast ? (
-                            <BreadcrumbPage>{capitalize(segment)}</BreadcrumbPage>
-                          ) : (
-                            <BreadcrumbLink href={href}>
-                              {capitalize(segment)}
-                            </BreadcrumbLink>
-                          )}
-                        </BreadcrumbItem>
-                      </React.Fragment>
-                    )
-                  })}
-                </BreadcrumbList>
-              </Breadcrumb>
-            </header>
-            <main className="flex-1 p-4 relative">{children}</main>
-
-            {/* Version info in bottom of main content area */}
-            <div className="absolute bottom-0 left-0 right-0 z-10">
-              <div className="w-full h-px bg-gray-300"></div>
-              <div className="flex justify-end p-4">
-                <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium shadow-md border">
-                  ViaLumiar v1.0.0
-                </div>
-              </div>
-            </div>
-          </SidebarInset>
-        </SidebarProvider>
-      </DataRefreshProvider>
-    </AuthGuard>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mr-2 data-[orientation=vertical]:h-4"
+          />
+          <MemoizedBreadcrumb pathSegments={pathSegments} />
+        </header>
+        <main className="flex-1 p-4">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

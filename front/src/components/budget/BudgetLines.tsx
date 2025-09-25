@@ -2,21 +2,14 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { 
-  ListIcon, 
-  DollarSignIcon, 
-  TrendingUpIcon, 
-  ClipboardListIcon, 
-  HistoryIcon,
-  UserIcon,
-  TagIcon,
-  CheckCircle2Icon,
-  AlertCircleIcon,
-  ChevronRightIcon,
+import {
+  ListIcon,
+  DollarSignIcon,
+  TrendingUpIcon,
+  ClipboardListIcon,
   PlusIcon,
   Pencil,
   Trash2

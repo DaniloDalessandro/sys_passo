@@ -8,14 +8,13 @@ import { AlertTriangle, User, CreditCard, Car } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Conductor, useConductors } from "@/hooks/useConductors";
+import { Conductor } from "@/hooks/useConductors";
 
 export default function ConductorDetailsPage() {
   const params = useParams();
   const [conductor, setConductor] = useState<Conductor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getConductor } = useConductors();
 
   useEffect(() => {
     const fetchConductor = async () => {

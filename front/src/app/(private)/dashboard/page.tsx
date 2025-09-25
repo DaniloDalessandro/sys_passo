@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -169,7 +168,7 @@ function ChartCard({
           </div>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={160}>
             {children}
           </ResponsiveContainer>
         </CardContent>
@@ -227,14 +226,14 @@ export default function Page() {
     switch (currentPage) {
       case 1:
         return (
-          <div className="h-full flex flex-col gap-4">
+          <div className="h-full flex flex-col gap-2">
             {/* Metrics Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 flex-shrink-0">
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-2">
                   <div className="flex items-center">
-                    <FileText className="h-8 w-8 text-blue-600" />
-                    <div className="ml-4">
+                    <FileText className="h-6 w-6 text-blue-600" />
+                    <div className="ml-3">
                       <p className="text-sm font-medium text-muted-foreground">Total de Contratos</p>
                       <div className="flex items-center">
                         <h3 className="text-2xl font-bold">68</h3>
@@ -250,10 +249,10 @@ export default function Page() {
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-2">
                   <div className="flex items-center">
-                    <Users className="h-8 w-8 text-purple-600" />
-                    <div className="ml-4">
+                    <Users className="h-6 w-6 text-purple-600" />
+                    <div className="ml-3">
                       <p className="text-sm font-medium text-muted-foreground">Colaboradores</p>
                       <div className="flex items-center">
                         <h3 className="text-2xl font-bold">156</h3>
@@ -269,10 +268,10 @@ export default function Page() {
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-2">
                   <div className="flex items-center">
-                    <DollarSign className="h-8 w-8 text-green-600" />
-                    <div className="ml-4">
+                    <DollarSign className="h-6 w-6 text-green-600" />
+                    <div className="ml-3">
                       <p className="text-sm font-medium text-muted-foreground">Orçamentos</p>
                       <div className="flex items-center">
                         <h3 className="text-2xl font-bold">{formatCurrency(18750000)}</h3>
@@ -288,10 +287,10 @@ export default function Page() {
               </Card>
 
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-2">
                   <div className="flex items-center">
-                    <Heart className="h-8 w-8 text-red-500" />
-                    <div className="ml-4">
+                    <Heart className="h-6 w-6 text-red-500" />
+                    <div className="ml-3">
                       <p className="text-sm font-medium text-muted-foreground">Auxílios Ativos</p>
                       <div className="flex items-center">
                         <h3 className="text-2xl font-bold">42</h3>
@@ -308,7 +307,7 @@ export default function Page() {
             </div>
 
             {/* Main Charts */}
-            <div className="flex-1 grid gap-4 md:grid-cols-2">
+            <div className="flex-1 min-h-0 grid gap-2 md:grid-cols-2">
               {/* Contract Status Distribution */}
               <ChartCard
                 title="Distribuição de Status dos Contratos"
@@ -555,9 +554,9 @@ export default function Page() {
   useEffect(() => {
     const token = localStorage.getItem("access_token")
     if (!token) {
-      router.push("dashboard/")
+      router.push("/")
     }
-    
+
     // Simulate loading time
     const timer = setTimeout(() => setIsLoading(false), 1500)
     return () => clearTimeout(timer)
@@ -599,14 +598,14 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] p-4 pt-0">
+    <div className="flex flex-col h-screen overflow-hidden p-2 pt-0">
       {/* Page Content */}
-      <div className="flex-1 overflow-hidden transition-all duration-300 ease-in-out">
+      <div className="flex-1 min-h-0 overflow-hidden transition-all duration-300 ease-in-out">
         {renderPageContent()}
       </div>
 
       {/* Navigation */}
-      <div className="flex-shrink-0 mt-4 border-t border-gray-200 pt-4">
+      <div className="flex-shrink-0 mt-2 border-t border-gray-200 pt-2">
         <div className="flex items-center justify-between max-w-md mx-auto">
           {/* Previous Button */}
           <Button
