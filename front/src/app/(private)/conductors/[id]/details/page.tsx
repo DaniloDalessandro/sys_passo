@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertTriangle, User, CreditCard, Car } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Conductor, Vehicle } from "@/hooks/useConductors";
@@ -192,71 +191,56 @@ export default function ConductorDetailsPage() {
               </CardHeader>
               <CardContent>
                 {/* Informações Principais */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  <div className="space-y-3">
-                    <div className="flex flex-col">
-                      <strong className="text-gray-600 mb-1 text-sm">Nome Completo:</strong>
-                      <span className="text-gray-900">{conductor.name || 'Não informado'}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <strong className="text-gray-600 mb-1 text-sm">CPF:</strong>
-                      <span className="text-gray-900">{conductor.cpf || 'Não informado'}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <strong className="text-gray-600 mb-1 text-sm">Email:</strong>
-                      <span className="text-gray-900">{conductor.email || 'Não informado'}</span>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Nome Completo:</strong>
+                    <span className="text-gray-900">{conductor.name || 'Não informado'}</span>
                   </div>
-
-                  <div className="space-y-3">
-                    {conductor.birth_date && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Data de Nascimento:</strong>
-                        <span className="text-gray-900">
-                          {(() => {
-                            try {
-                              const date = new Date(conductor.birth_date);
-                              return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy", { locale: ptBR });
-                            } catch {
-                              return 'Data inválida';
-                            }
-                          })()}
-                        </span>
-                      </div>
-                    )}
-                    {conductor.gender && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Gênero:</strong>
-                        <span className="text-gray-900">{getGenderLabel(conductor.gender)}</span>
-                      </div>
-                    )}
-                    {conductor.nationality && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Nacionalidade:</strong>
-                        <span className="text-gray-900">{conductor.nationality}</span>
-                      </div>
-                    )}
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">CPF:</strong>
+                    <span className="text-gray-900">{conductor.cpf || 'Não informado'}</span>
                   </div>
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Email:</strong>
+                    <span className="text-gray-900">{conductor.email || 'Não informado'}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Telefone:</strong>
+                    <span className="text-gray-900">{conductor.phone || 'Não informado'}</span>
+                  </div>
+                </div>
 
-                  <div className="space-y-3">
-                    {conductor.phone && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Telefone:</strong>
-                        <span className="text-gray-900">{conductor.phone}</span>
-                      </div>
-                    )}
-                    {conductor.whatsapp && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">WhatsApp:</strong>
-                        <span className="text-gray-900">{conductor.whatsapp}</span>
-                      </div>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Data de Nascimento:</strong>
+                    <span className="text-gray-900">
+                      {conductor.birth_date ? (() => {
+                        try {
+                          const date = new Date(conductor.birth_date);
+                          return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy", { locale: ptBR });
+                        } catch {
+                          return 'Data inválida';
+                        }
+                      })() : 'Não informado'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Gênero:</strong>
+                    <span className="text-gray-900">{conductor.gender ? getGenderLabel(conductor.gender) : 'Não informado'}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">Nacionalidade:</strong>
+                    <span className="text-gray-900">{conductor.nationality || 'Não informado'}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <strong className="text-gray-600 mb-1 text-sm">WhatsApp:</strong>
+                    <span className="text-gray-900">{conductor.whatsapp || 'Não informado'}</span>
                   </div>
                 </div>
 
                 {/* Endereço */}
                 {conductor.address && (
-                  <div className="mb-8">
+                  <div className="mb-6">
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Endereço:</strong>
                       <span className="text-gray-900">{conductor.address}</span>
@@ -264,11 +248,11 @@ export default function ConductorDetailsPage() {
                   </div>
                 )}
 
-                {/* Linha divisória para campos de auditoria */}
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Campos de Auditoria */}
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div className="flex flex-col">
-                      <strong className="text-gray-600 mb-1 text-sm">Data de criação:</strong>
+                      <strong className="text-gray-600 mb-1 text-sm">Data de Criação:</strong>
                       <span className="text-gray-900">
                         {(() => {
                           try {
@@ -280,14 +264,12 @@ export default function ConductorDetailsPage() {
                         })()}
                       </span>
                     </div>
-                    {conductor.created_by_username && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Criado por:</strong>
-                        <span className="text-gray-900">{conductor.created_by_username}</span>
-                      </div>
-                    )}
                     <div className="flex flex-col">
-                      <strong className="text-gray-600 mb-1 text-sm">Última atualização:</strong>
+                      <strong className="text-gray-600 mb-1 text-sm">Criado por:</strong>
+                      <span className="text-gray-900">{conductor.created_by_username || 'Não informado'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <strong className="text-gray-600 mb-1 text-sm">Última Atualização:</strong>
                       <span className="text-gray-900">
                         {(() => {
                           try {
@@ -299,14 +281,13 @@ export default function ConductorDetailsPage() {
                         })()}
                       </span>
                     </div>
-                    {conductor.updated_by_username && (
-                      <div className="flex flex-col">
-                        <strong className="text-gray-600 mb-1 text-sm">Atualizado por:</strong>
-                        <span className="text-gray-900">{conductor.updated_by_username}</span>
-                      </div>
-                    )}
+                    <div className="flex flex-col">
+                      <strong className="text-gray-600 mb-1 text-sm">Atualizado por:</strong>
+                      <span className="text-gray-900">{conductor.updated_by_username || 'Não informado'}</span>
+                    </div>
                   </div>
                 </div>
+
               </CardContent>
             </Card>
 
@@ -356,19 +337,11 @@ export default function ConductorDetailsPage() {
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Status do Condutor:</strong>
-                    <span className="text-gray-900">
-                      <Badge variant={conductor.is_active ? "default" : "secondary"}>
-                        {conductor.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </span>
+                    <span className="text-gray-900">{conductor.is_active ? "Ativo" : "Inativo"}</span>
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Status da CNH:</strong>
-                    <span className="text-gray-900">
-                      <Badge variant={conductor.is_license_expired ? "destructive" : "default"}>
-                        {conductor.is_license_expired ? "Vencida" : "Válida"}
-                      </Badge>
-                    </span>
+                    <span className="text-gray-900">{conductor.is_license_expired ? "Vencida" : "Válida"}</span>
                   </div>
                 </div>
               </CardContent>
