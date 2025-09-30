@@ -1,6 +1,39 @@
+import re
+import unicodedata
 from rest_framework import serializers
 from .models import Conductor
 from django.utils import timezone
+
+
+class VehicleDetailSerializer(serializers.Serializer):
+    """Serializer for vehicle details in conductor view"""
+    id = serializers.IntegerField()
+    modelo = serializers.CharField(source='model')
+    marca = serializers.CharField(source='brand')
+    placa = serializers.CharField(source='plate')
+    cor = serializers.CharField(source='color')
+
+
+def validate_text_field(value, field_name):
+    """
+    Validates that text field contains only valid UTF-8 characters.
+    """
+    if not value:
+        return value
+
+    try:
+        # Normalize text to ensure proper encoding
+        normalized = unicodedata.normalize('NFC', str(value))
+
+        # Check if the text can be properly encoded/decoded
+        normalized.encode('utf-8').decode('utf-8')
+
+        return normalized.strip()
+    except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError):
+        raise serializers.ValidationError(
+            f"O campo {field_name} contém caracteres inválidos. "
+            f"Use apenas caracteres UTF-8 válidos."
+        )
 
 
 class ConductorSerializer(serializers.ModelSerializer):
@@ -8,18 +41,34 @@ class ConductorSerializer(serializers.ModelSerializer):
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
     gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    vehicles = VehicleDetailSerializer(many=True, read_only=True)
+    address = serializers.SerializerMethodField()
+    photo = serializers.FileField(source='document', read_only=True)
 
     class Meta:
         model = Conductor
         fields = [
             'id', 'name', 'cpf', 'birth_date', 'gender', 'gender_display', 'nationality',
-            'address', 'phone', 'email', 'whatsapp',
+            'street', 'number', 'neighborhood', 'city', 'reference_point', 'address', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'photo', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
+            'photo', 'document', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
             'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
-            'is_license_expired'
+            'is_license_expired', 'vehicles'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'updated_by']
+
+    def get_address(self, obj):
+        """Combine address fields into a single address string for frontend compatibility"""
+        address_parts = []
+        if obj.street:
+            address_parts.append(obj.street)
+        if obj.number:
+            address_parts.append(obj.number)
+        if obj.neighborhood:
+            address_parts.append(obj.neighborhood)
+        if obj.city:
+            address_parts.append(obj.city)
+        return ', '.join(address_parts) if address_parts else ''
 
     def validate_cpf(self, value):
         # Remove caracteres não numéricos
@@ -70,10 +119,33 @@ class ConductorCreateSerializer(serializers.ModelSerializer):
         model = Conductor
         fields = [
             'name', 'cpf', 'birth_date', 'gender', 'nationality',
-            'address', 'phone', 'email', 'whatsapp',
+            'street', 'number', 'neighborhood', 'city', 'reference_point', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'photo', 'cnh_digital', 'is_active'
+            'document', 'cnh_digital', 'is_active'
         ]
+
+    def validate_name(self, value):
+        return validate_text_field(value, 'nome')
+
+    def validate_nationality(self, value):
+        return validate_text_field(value, 'nacionalidade')
+
+    def validate_street(self, value):
+        return validate_text_field(value, 'rua/avenida')
+
+    def validate_number(self, value):
+        return validate_text_field(value, 'número')
+
+    def validate_neighborhood(self, value):
+        return validate_text_field(value, 'bairro')
+
+    def validate_city(self, value):
+        return validate_text_field(value, 'cidade')
+
+    def validate_reference_point(self, value):
+        if value:
+            return validate_text_field(value, 'ponto de referência')
+        return value
 
     def validate_cpf(self, value):
         # Same validation as ConductorSerializer
@@ -119,9 +191,9 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
         model = Conductor
         fields = [
             'name', 'birth_date', 'gender', 'nationality',
-            'address', 'phone', 'email', 'whatsapp',
+            'street', 'number', 'neighborhood', 'city', 'reference_point', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'photo', 'cnh_digital', 'is_active'
+            'document', 'cnh_digital', 'is_active'
         ]
         
     def validate_license_expiry_date(self, value):
@@ -139,11 +211,32 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
 
 class ConductorListSerializer(serializers.ModelSerializer):
     is_license_expired = serializers.ReadOnlyField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
     gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    address = serializers.SerializerMethodField()
+    photo = serializers.FileField(source='document', read_only=True)
 
     class Meta:
         model = Conductor
         fields = [
-            'id', 'name', 'cpf', 'email', 'phone', 'whatsapp', 'gender', 'gender_display',
-            'license_category', 'license_expiry_date', 'is_active', 'is_license_expired'
+            'id', 'name', 'cpf', 'birth_date', 'gender', 'gender_display', 'nationality',
+            'address', 'phone', 'email', 'whatsapp',
+            'license_number', 'license_category', 'license_expiry_date',
+            'photo', 'document', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
+            'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
+            'is_license_expired'
         ]
+
+    def get_address(self, obj):
+        """Combine address fields into a single address string for frontend compatibility"""
+        address_parts = []
+        if obj.street:
+            address_parts.append(obj.street)
+        if obj.number:
+            address_parts.append(obj.number)
+        if obj.neighborhood:
+            address_parts.append(obj.neighborhood)
+        if obj.city:
+            address_parts.append(obj.city)
+        return ', '.join(address_parts) if address_parts else ''

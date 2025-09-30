@@ -8,10 +8,12 @@ import { AlertTriangle, User, CreditCard, Car } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Conductor } from "@/hooks/useConductors";
+import { Conductor, Vehicle } from "@/hooks/useConductors";
+import { useAuthContext } from "@/context/AuthContext";
 
 export default function ConductorDetailsPage() {
   const params = useParams();
+  const { accessToken } = useAuthContext();
   const [conductor, setConductor] = useState<Conductor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,59 +25,52 @@ export default function ConductorDetailsPage() {
           throw new Error('ID do condutor inválido');
         }
 
-        const conductorId = parseInt(params.id);
-        if (isNaN(conductorId)) {
-          throw new Error('ID do condutor deve ser um número');
+        // Clean the ID string - remove any whitespace or special characters
+        const cleanId = String(params.id).trim();
+
+        // More robust ID validation
+        const conductorId = parseInt(cleanId, 10);
+
+        if (isNaN(conductorId) || conductorId <= 0 || !Number.isInteger(conductorId)) {
+          throw new Error(`ID do condutor deve ser um número válido. Recebido: "${params.id}" (limpo: "${cleanId}")`);
         }
 
-        // Use mock data directly to avoid API rate limiting
-        const mockConductor: Conductor = {
-          id: conductorId,
-          name: "João Silva Santos",
-          cpf: "123.456.789-00",
-          email: "joao.silva@email.com",
-          phone: "(11) 99999-9999",
-          birth_date: "1985-05-15",
-          license_number: "12345678901",
-          license_category: "AB",
-          license_expiry_date: "2025-12-31",
-          address: "Rua das Flores, 123 - São Paulo, SP",
-          gender: "M",
-          nationality: "Brasileira",
-          whatsapp: "(11) 88888-8888",
-          is_active: true,
-          created_at: "2024-01-15T10:30:00Z",
-          updated_at: "2024-09-18T15:45:00Z",
-          created_by_username: "admin",
-          updated_by_username: "admin",
-          is_license_expired: false,
-          photo: "/mock-photo.jpg",
-          cnh_digital: "/mock-cnh.pdf",
-          vehicles: [
-            {
-              id: 1,
-              modelo: "Civic",
-              marca: "Honda",
-              placa: "ABC-1234",
-              cor: "Prata"
-            },
-            {
-              id: 2,
-              modelo: "Corolla",
-              marca: "Toyota",
-              placa: "XYZ-5678",
-              cor: "Branco"
-            },
-            {
-              id: 3,
-              modelo: "Onix",
-              marca: "Chevrolet",
-              placa: "DEF-9012",
-              cor: "Preto"
-            }
-          ]
+        // Check if user is authenticated
+        if (!accessToken) {
+          throw new Error('Token de acesso não encontrado');
+        }
+
+        const response = await fetch(`http://localhost:8000/api/conductors/${conductorId}/`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Condutor não encontrado');
+          } else if (response.status === 401) {
+            throw new Error('Acesso não autorizado');
+          } else {
+            throw new Error(`Erro ao carregar condutor: ${response.status}`);
+          }
+        }
+
+        const conductorData = await response.json();
+
+        // Map backend fields to frontend expected format
+        const mappedConductor: Conductor = {
+          ...conductorData,
+          // Backend already provides combined address field through serializer
+          address: conductorData.address || 'Endereço não informado',
+          // Ensure required fields have default values
+          phone: conductorData.phone || '',
+          photo: conductorData.document || undefined,
+          vehicles: conductorData.vehicles || []
         };
-        setConductor(mockConductor);
+
+        setConductor(mappedConductor);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro ao carregar condutor');
       } finally {
@@ -83,17 +78,23 @@ export default function ConductorDetailsPage() {
       }
     };
 
-    if (params.id) {
+    if (params.id && accessToken) {
       fetchConductor();
     }
-  }, [params.id]);
+  }, [params.id, accessToken]);
 
   const isLicenseExpiringSoon = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 30 && diffDays > 0;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return false;
+
+      const now = new Date();
+      const diffTime = date.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 30 && diffDays > 0;
+    } catch {
+      return false;
+    }
   };
 
   const getCategoryBadgeVariant = (category: string) => {
@@ -168,7 +169,7 @@ export default function ConductorDetailsPage() {
               </div>
             </div>
 
-            {(conductor.is_license_expired || isLicenseExpiringSoon(conductor.license_expiry_date)) && (
+            {(conductor.is_license_expired || (conductor.license_expiry_date && isLicenseExpiringSoon(conductor.license_expiry_date))) && (
               <Alert variant={conductor.is_license_expired ? "destructive" : "default"} className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -195,15 +196,15 @@ export default function ConductorDetailsPage() {
                   <div className="space-y-3">
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Nome Completo:</strong>
-                      <span className="text-gray-900">{conductor.name}</span>
+                      <span className="text-gray-900">{conductor.name || 'Não informado'}</span>
                     </div>
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">CPF:</strong>
-                      <span className="text-gray-900">{conductor.cpf}</span>
+                      <span className="text-gray-900">{conductor.cpf || 'Não informado'}</span>
                     </div>
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Email:</strong>
-                      <span className="text-gray-900">{conductor.email}</span>
+                      <span className="text-gray-900">{conductor.email || 'Não informado'}</span>
                     </div>
                   </div>
 
@@ -212,9 +213,14 @@ export default function ConductorDetailsPage() {
                       <div className="flex flex-col">
                         <strong className="text-gray-600 mb-1 text-sm">Data de Nascimento:</strong>
                         <span className="text-gray-900">
-                          {format(new Date(conductor.birth_date), "dd/MM/yyyy", {
-                            locale: ptBR,
-                          })}
+                          {(() => {
+                            try {
+                              const date = new Date(conductor.birth_date);
+                              return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy", { locale: ptBR });
+                            } catch {
+                              return 'Data inválida';
+                            }
+                          })()}
                         </span>
                       </div>
                     )}
@@ -264,9 +270,14 @@ export default function ConductorDetailsPage() {
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Data de criação:</strong>
                       <span className="text-gray-900">
-                        {format(new Date(conductor.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {(() => {
+                          try {
+                            const date = new Date(conductor.created_at);
+                            return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+                          } catch {
+                            return 'Data inválida';
+                          }
+                        })()}
                       </span>
                     </div>
                     {conductor.created_by_username && (
@@ -278,9 +289,14 @@ export default function ConductorDetailsPage() {
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Última atualização:</strong>
                       <span className="text-gray-900">
-                        {format(new Date(conductor.updated_at), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
+                        {(() => {
+                          try {
+                            const date = new Date(conductor.updated_at);
+                            return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+                          } catch {
+                            return 'Data inválida';
+                          }
+                        })()}
                       </span>
                     </div>
                     {conductor.updated_by_username && (
@@ -306,29 +322,53 @@ export default function ConductorDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Número da CNH:</strong>
-                    <span className="text-gray-900">{conductor.license_number}</span>
+                    <span className="text-gray-900">{conductor.license_number || 'Não informado'}</span>
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Categoria:</strong>
-                    <span className="text-gray-900">{conductor.license_category} - {getCategoryLabel(conductor.license_category)}</span>
+                    <span className="text-gray-900">
+                      {conductor.license_category ?
+                        `${conductor.license_category} - ${getCategoryLabel(conductor.license_category)}` :
+                        'Não informado'
+                      }
+                    </span>
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Data de Validade:</strong>
                     <span className="text-gray-900">
-                      {format(new Date(conductor.license_expiry_date), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })}
-                      {conductor.is_license_expired && " (Vencida)"}
-                      {!conductor.is_license_expired && isLicenseExpiringSoon(conductor.license_expiry_date) && " (Vence em breve)"}
+                      {conductor.license_expiry_date ? (
+                        <>
+                          {(() => {
+                            try {
+                              const date = new Date(conductor.license_expiry_date);
+                              return isNaN(date.getTime()) ? 'Data inválida' : format(date, "dd/MM/yyyy", { locale: ptBR });
+                            } catch {
+                              return 'Data inválida';
+                            }
+                          })()}
+                          {conductor.is_license_expired && " (Vencida)"}
+                          {!conductor.is_license_expired && isLicenseExpiringSoon(conductor.license_expiry_date) && " (Vence em breve)"}
+                        </>
+                      ) : (
+                        'Não informado'
+                      )}
                     </span>
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Status do Condutor:</strong>
-                    <span className="text-gray-900">{conductor.is_active ? "Ativo" : "Inativo"}</span>
+                    <span className="text-gray-900">
+                      <Badge variant={conductor.is_active ? "default" : "secondary"}>
+                        {conductor.is_active ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </span>
                   </div>
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Status da CNH:</strong>
-                    <span className="text-gray-900">{conductor.is_license_expired ? "Vencida" : "Válida"}</span>
+                    <span className="text-gray-900">
+                      <Badge variant={conductor.is_license_expired ? "destructive" : "default"}>
+                        {conductor.is_license_expired ? "Vencida" : "Válida"}
+                      </Badge>
+                    </span>
                   </div>
                 </div>
               </CardContent>

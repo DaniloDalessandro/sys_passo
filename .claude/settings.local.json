@@ -1,18 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)",
-      "Bash(tree:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(ls:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm run lint)",
-      "Bash(npm run dev:*)",
-      "Bash(curl:*)",
-      "Bash(python manage.py shell:*)",
-      "Bash(venvScripts:*)",
-      "Bash(source:*)"
+      "Bash(pip install:*)"
     ],
     "deny": [],
     "ask": []

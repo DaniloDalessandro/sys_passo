@@ -27,8 +27,14 @@ class Conductor(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M', verbose_name='Sexo')
     nationality = models.CharField(max_length=50, default='Brasileira', verbose_name='Nacionalidade')
 
+    # Endereço
+    street = models.CharField(max_length=200, default='', verbose_name='Rua/Avenida')
+    number = models.CharField(max_length=20, default='', verbose_name='Número')
+    neighborhood = models.CharField(max_length=100, default='', verbose_name='Bairro')
+    city = models.CharField(max_length=100, default='', verbose_name='Cidade')
+    reference_point = models.CharField(max_length=200, blank=True, null=True, verbose_name='Ponto de Referência')
+
     # Contato
-    address = models.TextField(default='', verbose_name='Endereço Completo')
     phone = models.CharField(max_length=20, default='', verbose_name='Telefone/Celular')
     email = models.EmailField(unique=True, verbose_name='E-mail')
     whatsapp = models.CharField(max_length=20, blank=True, null=True, verbose_name='WhatsApp')
@@ -44,7 +50,7 @@ class Conductor(models.Model):
     license_expiry_date = models.DateField(verbose_name='Validade da CNH')
 
     # Arquivos
-    photo = models.ImageField(upload_to='conductors/photos/', blank=True, null=True, verbose_name='Foto da Pessoa')
+    document = models.FileField(upload_to='conductors/documents/', blank=True, null=True, verbose_name='Documento do Condutor (PDF)')
     cnh_digital = models.FileField(upload_to='conductors/cnh/', blank=True, null=True, verbose_name='CNH Digital (PDF)')
 
     # Controle

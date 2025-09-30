@@ -62,6 +62,11 @@ export default function ConductorsPage() {
   }
 
   const handleViewDetails = (conductor: Conductor) => {
+    if (!conductor || !conductor.id) {
+      toast.error('Erro: ID do condutor não encontrado');
+      return;
+    }
+
     // Open in new tab
     const url = `/conductors/${conductor.id}/details`;
     window.open(url, '_blank');

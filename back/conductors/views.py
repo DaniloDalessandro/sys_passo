@@ -1,3 +1,4 @@
+import logging
 from rest_framework import status, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -6,6 +7,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.db import IntegrityError
+from django.core.exceptions import ValidationError
 
 from .models import Conductor
 from .serializers import (
@@ -16,9 +19,16 @@ from .serializers import (
 )
 from authentication.utils import get_client_ip, get_user_agent, log_user_activity
 
+logger = logging.getLogger(__name__)
+
 
 class ConductorListCreateView(ListCreateAPIView):
-    queryset = Conductor.objects.all()
+    queryset = Conductor.objects.select_related(
+        'created_by',
+        'updated_by'
+    ).prefetch_related(
+        'vehicles'
+    )
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['is_active', 'license_category']
@@ -47,16 +57,65 @@ class ConductorListCreateView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
+            logger.info(f"Creating conductor with data: {request.data}")
             return super().create(request, *args, **kwargs)
+        except IntegrityError as e:
+            logger.error(f"Integrity error creating conductor: {e}")
+            error_message = str(e)
+            if 'cpf' in error_message.lower():
+                return Response({
+                    'error': 'CPF já cadastrado',
+                    'message': 'Já existe um condutor cadastrado com este CPF.',
+                    'field': 'cpf'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif 'email' in error_message.lower():
+                return Response({
+                    'error': 'Email já cadastrado',
+                    'message': 'Já existe um condutor cadastrado com este email.',
+                    'field': 'email'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif 'license_number' in error_message.lower():
+                return Response({
+                    'error': 'CNH já cadastrada',
+                    'message': 'Já existe um condutor cadastrado com este número de CNH.',
+                    'field': 'license_number'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'error': 'Dados duplicados',
+                    'message': 'Já existe um condutor com alguns destes dados.',
+                    'details': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            logger.error(f"Validation error creating conductor: {e}")
+            return Response({
+                'error': 'Erro de validação',
+                'message': 'Os dados fornecidos são inválidos.',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except UnicodeDecodeError as e:
+            logger.error(f"Unicode decode error creating conductor: {e}")
+            return Response({
+                'error': 'Erro de codificação',
+                'message': 'Problema com caracteres especiais no texto enviado.',
+                'details': 'Verifique se todos os caracteres estão em UTF-8.'
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Unexpected error creating conductor: {e}", exc_info=True)
             return Response({
                 'error': 'Falha ao criar condutor',
-                'details': str(e)
+                'message': 'Ocorreu um erro interno. Tente novamente.',
+                'details': str(e) if request.user.is_staff else 'Erro interno do servidor'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ConductorDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Conductor.objects.all()
+    queryset = Conductor.objects.select_related(
+        'created_by',
+        'updated_by'
+    ).prefetch_related(
+        'vehicles'
+    )
     permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
@@ -94,11 +153,49 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         try:
+            logger.info(f"Updating conductor {kwargs.get('pk')} with data: {request.data}")
             return super().update(request, *args, **kwargs)
+        except IntegrityError as e:
+            logger.error(f"Integrity error updating conductor: {e}")
+            error_message = str(e)
+            if 'email' in error_message.lower():
+                return Response({
+                    'error': 'Email já cadastrado',
+                    'message': 'Já existe um condutor cadastrado com este email.',
+                    'field': 'email'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            elif 'license_number' in error_message.lower():
+                return Response({
+                    'error': 'CNH já cadastrada',
+                    'message': 'Já existe um condutor cadastrado com este número de CNH.',
+                    'field': 'license_number'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'error': 'Dados duplicados',
+                    'message': 'Já existe um condutor com alguns destes dados.',
+                    'details': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as e:
+            logger.error(f"Validation error updating conductor: {e}")
+            return Response({
+                'error': 'Erro de validação',
+                'message': 'Os dados fornecidos são inválidos.',
+                'details': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except UnicodeDecodeError as e:
+            logger.error(f"Unicode decode error updating conductor: {e}")
+            return Response({
+                'error': 'Erro de codificação',
+                'message': 'Problema com caracteres especiais no texto enviado.',
+                'details': 'Verifique se todos os caracteres estão em UTF-8.'
+            }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error(f"Unexpected error updating conductor: {e}", exc_info=True)
             return Response({
                 'error': 'Falha ao atualizar condutor',
-                'details': str(e)
+                'message': 'Ocorreu um erro interno. Tente novamente.',
+                'details': str(e) if request.user.is_staff else 'Erro interno do servidor'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def destroy(self, request, *args, **kwargs):

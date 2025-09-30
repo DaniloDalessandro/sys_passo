@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react"
 import { useAuthContext } from "@/context/AuthContext"
 
+export interface Vehicle {
+  id: number
+  modelo: string
+  marca: string
+  placa: string
+  cor: string
+}
+
 export interface Conductor {
   id: number
   name: string
@@ -27,6 +35,7 @@ export interface Conductor {
   created_by_username?: string
   updated_by_username?: string
   is_license_expired: boolean
+  vehicles?: Vehicle[]
 }
 
 export interface ConductorFormData {
