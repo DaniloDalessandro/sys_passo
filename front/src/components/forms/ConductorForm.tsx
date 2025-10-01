@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useDuplicateWarnings } from "@/hooks/useDuplicateWarnings";
+import { DuplicateWarningInline } from "@/components/ui/duplicate-warning";
 
 interface ConductorFormProps {
   open: boolean;
@@ -163,6 +165,11 @@ export default function ConductorForm({
   const [currentAge, setCurrentAge] = useState<number | null>(null);
   const [isAgeValid, setIsAgeValid] = useState<boolean>(true);
 
+  // Duplicate warnings hook
+  const { warnings, checkDuplicate, clearWarning, clearAllWarnings } = useDuplicateWarnings(
+    initialData?.id
+  );
+
   useEffect(() => {
     if (open) {
       if (initialData) {
@@ -209,6 +216,7 @@ export default function ConductorForm({
       setErrors({});
       setDocumentFile(null);
       setCnhFile(null);
+      clearAllWarnings();
 
       // Initialize age validation for existing data
       if (initialData && initialData.birth_date) {
@@ -240,6 +248,15 @@ export default function ConductorForm({
 
     if (errors[id]) {
       setErrors({ ...errors, [id]: "" });
+    }
+
+    // Trigger duplicate checks for relevant fields
+    if (id === "cpf" || id === "email" || id === "license_number") {
+      if (formattedValue.trim()) {
+        checkDuplicate(id as 'cpf' | 'email' | 'license_number', formattedValue);
+      } else {
+        clearWarning(id as 'cpf' | 'email' | 'license_number');
+      }
     }
   };
 
@@ -453,8 +470,12 @@ export default function ConductorForm({
                     onChange={handleChange}
                     placeholder="000.000.000-00"
                     maxLength={14}
+                    className={cn(
+                      warnings.cpf.exists && "border-amber-300 bg-amber-50"
+                    )}
                   />
                   {errors.cpf && <span className="text-sm text-red-500">{errors.cpf}</span>}
+                  <DuplicateWarningInline warning={warnings.cpf} />
                 </div>
 
                 <div className="grid gap-2">
@@ -465,8 +486,12 @@ export default function ConductorForm({
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="email@exemplo.com"
+                    className={cn(
+                      warnings.email.exists && "border-amber-300 bg-amber-50"
+                    )}
                   />
                   {errors.email && <span className="text-sm text-red-500">{errors.email}</span>}
+                  <DuplicateWarningInline warning={warnings.email} />
                 </div>
 
                 <div className="grid gap-2">
@@ -481,7 +506,7 @@ export default function ConductorForm({
                             : "bg-red-100 text-red-800 border border-red-200"
                         )}>
                           <User className="w-3 h-3 mr-1" />
-                          {formatAgeDisplay(formData.birth_date)}
+                          {formData.birth_date && formatAgeDisplay(formData.birth_date)}
                         </div>
                         {!isAgeValid && (
                           <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
@@ -497,7 +522,7 @@ export default function ConductorForm({
                     id="birth_date"
                     value={formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : ""}
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : null;
+                      const dateValue = e.target.value ? new Date(e.target.value) : undefined;
                       handleDateChange("birth_date", dateValue);
                     }}
                     max={format(new Date(), "yyyy-MM-dd")}
@@ -673,8 +698,12 @@ export default function ConductorForm({
                     onChange={handleChange}
                     placeholder="12345678901"
                     maxLength={20}
+                    className={cn(
+                      warnings.license_number.exists && "border-amber-300 bg-amber-50"
+                    )}
                   />
                   {errors.license_number && <span className="text-sm text-red-500">{errors.license_number}</span>}
+                  <DuplicateWarningInline warning={warnings.license_number} />
                 </div>
 
                 <div className="grid gap-2">
@@ -725,7 +754,7 @@ export default function ConductorForm({
                     id="license_expiry_date"
                     value={formData.license_expiry_date ? format(formData.license_expiry_date, "yyyy-MM-dd") : ""}
                     onChange={(e) => {
-                      const dateValue = e.target.value ? new Date(e.target.value) : null;
+                      const dateValue = e.target.value ? new Date(e.target.value) : undefined;
                       handleDateChange("license_expiry_date", dateValue);
                     }}
                     min={format(new Date(), "yyyy-MM-dd")}
@@ -886,6 +915,30 @@ export default function ConductorForm({
               </div>
             </div>
           </div>
+
+          {/* Duplicate Warnings Summary */}
+          {(warnings.cpf.exists || warnings.email.exists || warnings.license_number.exists) && (
+            <Alert variant="warning" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-amber-700">
+                <div className="font-medium mb-2">Dados duplicados encontrados:</div>
+                <div className="space-y-1 text-sm">
+                  {warnings.cpf.exists && (
+                    <div>• {warnings.cpf.message}</div>
+                  )}
+                  {warnings.email.exists && (
+                    <div>• {warnings.email.message}</div>
+                  )}
+                  {warnings.license_number.exists && (
+                    <div>• {warnings.license_number.message}</div>
+                  )}
+                </div>
+                <div className="mt-2 text-xs opacity-80">
+                  Você pode continuar com o cadastro, mas recomendamos verificar se não há duplicatas.
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <DialogFooter className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>

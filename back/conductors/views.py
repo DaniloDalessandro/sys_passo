@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.serializers import ValidationError as DRFValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -59,6 +60,54 @@ class ConductorListCreateView(ListCreateAPIView):
         try:
             logger.info(f"Creating conductor with data: {request.data}")
             return super().create(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"DRF Validation error creating conductor: {e}")
+
+            # Handle field-specific validation errors
+            if hasattr(e, 'detail') and isinstance(e.detail, dict):
+                error_details = e.detail
+
+                # Check for specific duplicate field errors
+                if 'cpf' in error_details:
+                    error_msg = str(error_details['cpf'][0]) if isinstance(error_details['cpf'], list) else str(error_details['cpf'])
+                    if 'já existe' in error_msg.lower() or 'unique' in error_msg.lower():
+                        return Response({
+                            'error': 'CPF já cadastrado',
+                            'message': 'Já existe um condutor cadastrado com este CPF.',
+                            'field': 'cpf'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                if 'email' in error_details:
+                    error_msg = str(error_details['email'][0]) if isinstance(error_details['email'], list) else str(error_details['email'])
+                    if 'já existe' in error_msg.lower() or 'unique' in error_msg.lower():
+                        return Response({
+                            'error': 'Email já cadastrado',
+                            'message': 'Já existe um condutor cadastrado com este email.',
+                            'field': 'email'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                if 'license_number' in error_details:
+                    error_msg = str(error_details['license_number'][0]) if isinstance(error_details['license_number'], list) else str(error_details['license_number'])
+                    if 'já existe' in error_msg.lower() or 'unique' in error_msg.lower():
+                        return Response({
+                            'error': 'CNH já cadastrada',
+                            'message': 'Já existe um condutor cadastrado com este número de CNH.',
+                            'field': 'license_number'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Handle multiple field errors or other validation errors
+                return Response({
+                    'error': 'Erro de validação',
+                    'message': 'Os dados fornecidos são inválidos.',
+                    'details': error_details
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Handle non-field errors
+                return Response({
+                    'error': 'Erro de validação',
+                    'message': 'Os dados fornecidos são inválidos.',
+                    'details': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
         except IntegrityError as e:
             logger.error(f"Integrity error creating conductor: {e}")
             error_message = str(e)
@@ -87,7 +136,7 @@ class ConductorListCreateView(ListCreateAPIView):
                     'details': str(e)
                 }, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
-            logger.error(f"Validation error creating conductor: {e}")
+            logger.error(f"Django validation error creating conductor: {e}")
             return Response({
                 'error': 'Erro de validação',
                 'message': 'Os dados fornecidos são inválidos.',
@@ -155,6 +204,45 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
         try:
             logger.info(f"Updating conductor {kwargs.get('pk')} with data: {request.data}")
             return super().update(request, *args, **kwargs)
+        except DRFValidationError as e:
+            logger.error(f"DRF Validation error updating conductor: {e}")
+
+            # Handle field-specific validation errors
+            if hasattr(e, 'detail') and isinstance(e.detail, dict):
+                error_details = e.detail
+
+                # Check for specific duplicate field errors
+                if 'email' in error_details:
+                    error_msg = str(error_details['email'][0]) if isinstance(error_details['email'], list) else str(error_details['email'])
+                    if 'já existe' in error_msg.lower() or 'unique' in error_msg.lower():
+                        return Response({
+                            'error': 'Email já cadastrado',
+                            'message': 'Já existe um condutor cadastrado com este email.',
+                            'field': 'email'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                if 'license_number' in error_details:
+                    error_msg = str(error_details['license_number'][0]) if isinstance(error_details['license_number'], list) else str(error_details['license_number'])
+                    if 'já existe' in error_msg.lower() or 'unique' in error_msg.lower():
+                        return Response({
+                            'error': 'CNH já cadastrada',
+                            'message': 'Já existe um condutor cadastrado com este número de CNH.',
+                            'field': 'license_number'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Handle multiple field errors or other validation errors
+                return Response({
+                    'error': 'Erro de validação',
+                    'message': 'Os dados fornecidos são inválidos.',
+                    'details': error_details
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Handle non-field errors
+                return Response({
+                    'error': 'Erro de validação',
+                    'message': 'Os dados fornecidos são inválidos.',
+                    'details': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
         except IntegrityError as e:
             logger.error(f"Integrity error updating conductor: {e}")
             error_message = str(e)
@@ -177,7 +265,7 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
                     'details': str(e)
                 }, status=status.HTTP_400_BAD_REQUEST)
         except ValidationError as e:
-            logger.error(f"Validation error updating conductor: {e}")
+            logger.error(f"Django validation error updating conductor: {e}")
             return Response({
                 'error': 'Erro de validação',
                 'message': 'Os dados fornecidos são inválidos.',
@@ -284,6 +372,95 @@ def conductor_stats(request):
     except Exception as e:
         return Response({
             'error': 'Falha ao obter estatísticas',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_duplicate_field(request):
+    """
+    Check if a conductor field value already exists in the database.
+    Used for real-time duplicate validation in forms.
+
+    Query parameters:
+    - field: The field to check (cpf, email, license_number)
+    - value: The value to check for duplicates
+    - exclude_id: ID of conductor to exclude from check (for edit mode)
+    """
+    try:
+        field = request.GET.get('field', '').strip()
+        value = request.GET.get('value', '').strip()
+        exclude_id = request.GET.get('exclude_id')
+
+        # Validate required parameters
+        if not field or not value:
+            return Response({
+                'error': 'Parâmetros "field" e "value" são obrigatórios'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate field name
+        allowed_fields = ['cpf', 'email', 'license_number']
+        if field not in allowed_fields:
+            return Response({
+                'error': f'Campo "{field}" não é válido. Campos permitidos: {", ".join(allowed_fields)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Build query
+        query_kwargs = {field: value}
+        query = Conductor.objects.filter(**query_kwargs)
+
+        # Exclude specific conductor if in edit mode
+        if exclude_id:
+            try:
+                exclude_id = int(exclude_id)
+                query = query.exclude(id=exclude_id)
+            except (ValueError, TypeError):
+                return Response({
+                    'error': 'ID do condutor para exclusão deve ser um número válido'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if duplicate exists
+        duplicate_exists = query.exists()
+        duplicate_conductor = None
+
+        if duplicate_exists:
+            # Get the first matching conductor for details
+            conductor = query.first()
+            duplicate_conductor = {
+                'id': conductor.id,
+                'name': conductor.name,
+                'cpf': conductor.cpf,
+                'email': conductor.email,
+                'license_number': conductor.license_number,
+                'is_active': conductor.is_active
+            }
+
+        # Prepare response with Portuguese messages
+        field_names = {
+            'cpf': 'CPF',
+            'email': 'Email',
+            'license_number': 'CNH'
+        }
+
+        field_messages = {
+            'cpf': 'Este CPF já está cadastrado',
+            'email': 'Este email já está em uso',
+            'license_number': 'Esta CNH já está cadastrada'
+        }
+
+        return Response({
+            'exists': duplicate_exists,
+            'field': field,
+            'value': value,
+            'message': field_messages.get(field, f'Este {field_names.get(field, field)} já está em uso') if duplicate_exists else None,
+            'duplicate_conductor': duplicate_conductor
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error checking duplicate field: {e}", exc_info=True)
+        return Response({
+            'error': 'Falha ao verificar duplicatas',
             'details': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

@@ -185,6 +185,27 @@ class ConductorCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("O condutor deve ter pelo menos 18 anos.")
         return value
 
+    def validate_email(self, value):
+        """Validate that email is unique"""
+        if Conductor.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Condutor com este E-mail já existe.")
+        return value
+
+    def validate_license_number(self, value):
+        """Validate that license number is unique"""
+        if Conductor.objects.filter(license_number=value).exists():
+            raise serializers.ValidationError("Condutor com este Número da CNH já existe.")
+        return value
+
+    def validate(self, data):
+        """Validate unique constraints at object level"""
+        # Check CPF uniqueness
+        cpf = data.get('cpf')
+        if cpf and Conductor.objects.filter(cpf=cpf).exists():
+            raise serializers.ValidationError({'cpf': 'Condutor com este CPF já existe.'})
+
+        return data
+
 
 class ConductorUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -206,6 +227,26 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
             raise serializers.ValidationError("O condutor deve ter pelo menos 18 anos.")
+        return value
+
+    def validate_email(self, value):
+        """Validate that email is unique (excluding current instance)"""
+        instance = getattr(self, 'instance', None)
+        queryset = Conductor.objects.filter(email=value)
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("Condutor com este E-mail já existe.")
+        return value
+
+    def validate_license_number(self, value):
+        """Validate that license number is unique (excluding current instance)"""
+        instance = getattr(self, 'instance', None)
+        queryset = Conductor.objects.filter(license_number=value)
+        if instance:
+            queryset = queryset.exclude(pk=instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError("Condutor com este Número da CNH já existe.")
         return value
 
 

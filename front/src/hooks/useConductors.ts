@@ -251,6 +251,57 @@ export function useConductors() {
     }
   }
 
+  const checkDuplicateField = async (
+    field: 'cpf' | 'email' | 'license_number',
+    value: string,
+    excludeId?: number
+  ): Promise<{
+    exists: boolean;
+    message?: string;
+    duplicateConductor?: {
+      id: number;
+      name: string;
+      cpf: string;
+      email: string;
+      license_number: string;
+      is_active: boolean;
+    };
+  }> => {
+    if (!accessToken) throw new Error("Token de acesso não encontrado")
+
+    try {
+      const params = new URLSearchParams({
+        field,
+        value: value.trim(),
+      })
+
+      if (excludeId) {
+        params.append('exclude_id', excludeId.toString())
+      }
+
+      const response = await fetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Erro ao verificar duplicatas")
+      }
+
+      const data = await response.json()
+      return {
+        exists: data.exists,
+        message: data.message,
+        duplicateConductor: data.duplicate_conductor
+      }
+    } catch (err) {
+      console.error("Error checking duplicate field:", err)
+      // Return false for duplicates on error to avoid blocking form submission
+      return { exists: false }
+    }
+  }
+
   // Carregar condutores ao montar o componente
   useEffect(() => {
     fetchConductors()
@@ -265,5 +316,6 @@ export function useConductors() {
     updateConductor,
     deleteConductor,
     getConductor,
+    checkDuplicateField,
   }
 }
