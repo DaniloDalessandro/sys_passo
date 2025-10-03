@@ -43,6 +43,13 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function DataTable({
   columns,
@@ -172,7 +179,13 @@ export function DataTable({
   };
 
   const clearAllFilters = () => {
-    table.getAllColumns().forEach((col) => col.setFilterValue(""));
+    table.getAllColumns().forEach((col) => {
+      col.setFilterValue("");
+      // Reset select filters to "Todos"
+      if (col.columnDef.meta?.filterType === "select" && col.columnDef.meta?.onFilterChange) {
+        col.columnDef.meta.onFilterChange("Todos");
+      }
+    });
     setOpenFilterId(null);
     // Call parent callback to clear all filters
     if (onFilterChange) {
@@ -260,7 +273,7 @@ export function DataTable({
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         {/* TAGS DE FILTROS */}
-        {activeFilters.length > 0 && (
+        {(activeFilters.length > 0 || table.getAllColumns().some((col) => col.columnDef.meta?.filterValue && col.columnDef.meta?.filterValue !== "Todos")) && (
           <div className="flex flex-wrap gap-2 mb-3">
             {activeFilters.map((filter) => {
               const column = table.getColumn(filter.id);
@@ -278,6 +291,30 @@ export function DataTable({
                   />
                 </Badge>
               );
+            })}
+            {table.getAllColumns().map((column) => {
+              const filterValue = column.columnDef.meta?.filterValue;
+              if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "Todos") {
+                return (
+                  <Badge
+                    key={column.id}
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <span className="font-medium">{column.columnDef.header}:</span>{" "}
+                    <span>{filterValue}</span>
+                    <X
+                      className="h-3 w-3 cursor-pointer ml-1"
+                      onClick={() => {
+                        if (column.columnDef.meta?.onFilterChange) {
+                          column.columnDef.meta.onFilterChange("Todos");
+                        }
+                      }}
+                    />
+                  </Badge>
+                );
+              }
+              return null;
             })}
             <Button
               variant="ghost"
@@ -359,17 +396,39 @@ export function DataTable({
                                           </Button>
                                         )}
                                       </div>
-                                      <Input
-                                        placeholder={`Filtrar...`}
-                                        value={filterValue ?? ""}
-                                        onChange={(e) =>
-                                          handleFilterChange(
-                                            columnId,
-                                            e.target.value
-                                          )
-                                        }
-                                        autoFocus
-                                      />
+                                      {header.column.columnDef.meta?.filterType === "select" ? (
+                                        <Select
+                                          value={header.column.columnDef.meta?.filterValue ?? ""}
+                                          onValueChange={(value) => {
+                                            if (header.column.columnDef.meta?.onFilterChange) {
+                                              header.column.columnDef.meta.onFilterChange(value);
+                                            }
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Selecione..." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {header.column.columnDef.meta?.filterOptions?.map((option: any) => (
+                                              <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        <Input
+                                          placeholder={`Filtrar...`}
+                                          value={filterValue ?? ""}
+                                          onChange={(e) =>
+                                            handleFilterChange(
+                                              columnId,
+                                              e.target.value
+                                            )
+                                          }
+                                          autoFocus
+                                        />
+                                      )}
                                     </div>
                                   </PopoverContent>
                                 </Popover>

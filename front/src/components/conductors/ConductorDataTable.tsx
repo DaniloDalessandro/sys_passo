@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTable } from "@/components/ui/data-table";
@@ -23,6 +23,9 @@ export function ConductorDataTable({
   onViewDetails,
   isLoading = false,
 }: ConductorDataTableProps) {
+  // Status filter state - empty means show only active by default
+  const [statusFilter, setStatusFilter] = useState<string>("");
+
   const isLicenseExpiringSoon = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -30,6 +33,18 @@ export function ConductorDataTable({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 30 && diffDays > 0;
   };
+
+  // Filter conductors based on status
+  const filteredConductors = useMemo(() => {
+    if (statusFilter === "Todos") {
+      return conductors;
+    }
+    if (statusFilter === "Inativo") {
+      return conductors.filter((conductor) => !conductor.is_active);
+    }
+    // Default: show only active conductors (when statusFilter is empty)
+    return conductors.filter((conductor) => conductor.is_active);
+  }, [conductors, statusFilter]);
 
 
   const columns = useMemo(
@@ -54,19 +69,24 @@ export function ConductorDataTable({
       },
       {
         accessorKey: "phone",
-        header: "Contato",
+        header: "Telefone",
         meta: {
           showFilterIcon: true,
         },
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
-          return (
-            <div className="space-y-1">
-              {conductor.phone && <div>{conductor.phone}</div>}
-              {conductor.whatsapp && <div>{conductor.whatsapp} (WhatsApp)</div>}
-              {!conductor.phone && !conductor.whatsapp && "-"}
-            </div>
-          );
+          return conductor.phone || "-";
+        },
+      },
+      {
+        accessorKey: "whatsapp",
+        header: "WhatsApp",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.whatsapp || "-";
         },
       },
       {
@@ -88,34 +108,51 @@ export function ConductorDataTable({
         },
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
-          return (
-            <div className="space-y-1">
-              <div>{conductor.license_category}</div>
-              <div className="text-xs text-gray-500">
-                {conductor.license_number}
-              </div>
-            </div>
-          );
+          return conductor.license_category;
+        },
+      },
+      {
+        accessorKey: "license_number",
+        header: "Nº CNH",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.license_number;
         },
       },
       {
         accessorKey: "license_expiry_date",
+        header: "Validade CNH",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          const formatted = format(new Date(conductor.license_expiry_date), "dd/MM/yyyy", {
+            locale: ptBR,
+          });
+          if (conductor.is_license_expired) {
+            return `${formatted} (Vencida)`;
+          }
+          if (isLicenseExpiringSoon(conductor.license_expiry_date)) {
+            return `${formatted} (Vence em breve)`;
+          }
+          return formatted;
+        },
+      },
+      {
+        accessorKey: "documents",
         header: "Documentos",
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
+          const docs = [];
+          if (conductor.photo) docs.push("Foto");
+          if (conductor.cnh_digital) docs.push("CNH Digital");
           return (
-            <div className="space-y-1">
-              <div>
-                {format(new Date(conductor.license_expiry_date), "dd/MM/yyyy", {
-                  locale: ptBR,
-                })}
-                {conductor.is_license_expired && " (Vencida)"}
-                {!conductor.is_license_expired && isLicenseExpiringSoon(conductor.license_expiry_date) && " (Vence em breve)"}
-              </div>
-              <div className="text-xs text-gray-500">
-                {conductor.photo && "Foto "}
-                {conductor.cnh_digital && "CNH Digital"}
-              </div>
+            <div className="text-sm">
+              {docs.length > 0 ? docs.join(", ") : "-"}
             </div>
           );
         },
@@ -125,6 +162,13 @@ export function ConductorDataTable({
         header: "Status",
         meta: {
           showFilterIcon: true,
+          filterType: "select",
+          filterOptions: [
+            { value: "Todos", label: "Todos" },
+            { value: "Inativo", label: "Inativo" },
+          ],
+          filterValue: statusFilter,
+          onFilterChange: setStatusFilter,
         },
         cell: ({ row }: any) => {
           const isActive = row.getValue("is_active") as boolean;
@@ -148,7 +192,7 @@ export function ConductorDataTable({
         },
       },
     ],
-    [onViewDetails]
+    [onViewDetails, statusFilter]
   );
 
   if (isLoading) {
@@ -164,12 +208,15 @@ export function ConductorDataTable({
     <div className="h-full flex flex-col">
       <DataTable
         columns={columns}
-        data={conductors}
+        data={filteredConductors}
         title="Lista de Condutores"
+        subtitle={`${filteredConductors.length} condutor(es)${statusFilter === "Inativo" ? " inativo(s)" : statusFilter === "Todos" ? "" : " ativo(s)"}`}
         pageSize={10}
         pageIndex={0}
-        totalCount={conductors.length}
+        totalCount={filteredConductors.length}
         onAdd={onAdd}
+        onEdit={onEdit}
+        onDelete={(conductor: Conductor) => onDelete(conductor.id)}
         onViewDetails={onViewDetails}
         onPageChange={() => {}}
         onPageSizeChange={() => {}}

@@ -3,7 +3,9 @@
     "allow": [
       "Bash(pip install:*)",
       "Bash(venvScripts:*)",
-      "Bash(venv/Scripts/activate:*)"
+      "Bash(venv/Scripts/activate:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []
