@@ -24,6 +24,7 @@ export default function ConductorsPage() {
     createConductor,
     updateConductor,
     deleteConductor,
+    fetchConductors,
   } = useConductors()
 
   const handleSubmit = async (data: ConductorFormData) => {
@@ -38,6 +39,8 @@ export default function ConductorsPage() {
       }
       setIsDialogOpen(false)
       setEditingConductor(null)
+      // Refresh the conductors list to ensure data is up to date
+      await fetchConductors()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar condutor")
     } finally {
@@ -64,6 +67,8 @@ export default function ConductorsPage() {
       toast.success("Condutor inativado com sucesso!")
       setIsDeactivateDialogOpen(false)
       setConductorToDeactivate(null)
+      // Refresh the conductors list to ensure data is up to date
+      await fetchConductors()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao inativar condutor")
     } finally {

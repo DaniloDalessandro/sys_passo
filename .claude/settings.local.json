@@ -5,7 +5,12 @@
       "Bash(venvScripts:*)",
       "Bash(venv/Scripts/activate:*)",
       "Bash(npm run dev:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(python manage.py:*)",
+      "Bash(..venvScriptsactivate)",
+      "Bash(../venv/Scripts/python.exe manage.py runserver)",
+      "Bash(C:Usersdanilo.ecopelDocumentsPROJETOSPYTHONsys_passobackvenvScriptspython.exe C:Usersdanilo.ecopelDocumentsPROJETOSPYTHONsys_passobackmanage.py runserver)",
+      "Bash(./venv/Scripts/python.exe manage.py runserver)"
     ],
     "deny": [],
     "ask": []

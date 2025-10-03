@@ -192,7 +192,7 @@ export function ConductorDataTable({
         },
       },
     ],
-    [onViewDetails, statusFilter]
+    [onViewDetails, statusFilter, setStatusFilter]
   );
 
   if (isLoading) {
@@ -210,7 +210,6 @@ export function ConductorDataTable({
         columns={columns}
         data={filteredConductors}
         title="Lista de Condutores"
-        subtitle={`${filteredConductors.length} condutor(es)${statusFilter === "Inativo" ? " inativo(s)" : statusFilter === "Todos" ? "" : " ativo(s)"}`}
         pageSize={10}
         pageIndex={0}
         totalCount={filteredConductors.length}

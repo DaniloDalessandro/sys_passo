@@ -294,6 +294,10 @@ export function DataTable({
             })}
             {table.getAllColumns().map((column) => {
               const filterValue = column.columnDef.meta?.filterValue;
+              // Debug log
+              if (column.columnDef.meta?.filterType === "select") {
+                console.log(`Column: ${column.id}, FilterValue: "${filterValue}", Type: ${typeof filterValue}`);
+              }
               if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "") {
                 return (
                   <Badge
@@ -403,6 +407,8 @@ export function DataTable({
                                             if (header.column.columnDef.meta?.onFilterChange) {
                                               header.column.columnDef.meta.onFilterChange(value);
                                             }
+                                            // Close the popover after selection
+                                            setOpenFilterId(null);
                                           }}
                                         >
                                           <SelectTrigger className="w-full">
