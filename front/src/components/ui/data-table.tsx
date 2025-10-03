@@ -181,9 +181,9 @@ export function DataTable({
   const clearAllFilters = () => {
     table.getAllColumns().forEach((col) => {
       col.setFilterValue("");
-      // Reset select filters to "Todos"
+      // Reset select filters to empty string (default state)
       if (col.columnDef.meta?.filterType === "select" && col.columnDef.meta?.onFilterChange) {
-        col.columnDef.meta.onFilterChange("Todos");
+        col.columnDef.meta.onFilterChange("");
       }
     });
     setOpenFilterId(null);
@@ -294,7 +294,7 @@ export function DataTable({
             })}
             {table.getAllColumns().map((column) => {
               const filterValue = column.columnDef.meta?.filterValue;
-              if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "Todos") {
+              if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "") {
                 return (
                   <Badge
                     key={column.id}
@@ -307,7 +307,7 @@ export function DataTable({
                       className="h-3 w-3 cursor-pointer ml-1"
                       onClick={() => {
                         if (column.columnDef.meta?.onFilterChange) {
-                          column.columnDef.meta.onFilterChange("Todos");
+                          column.columnDef.meta.onFilterChange("");
                         }
                       }}
                     />

@@ -5,6 +5,7 @@ import { ConductorDataTable } from "@/components/conductors/ConductorDataTable"
 import { ConductorStats } from "@/components/conductors/ConductorStats"
 import { ConductorDialog } from "@/components/conductors/ConductorDialog"
 import { ConductorDetailDialog } from "@/components/conductors/ConductorDetailDialog"
+import { DeactivateConductorDialog } from "@/components/conductors/DeactivateConductorDialog"
 import { useConductors, ConductorFormData, Conductor } from "@/hooks/useConductors"
 import { toast } from "sonner"
 
@@ -14,6 +15,8 @@ export default function ConductorsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [selectedConductor, setSelectedConductor] = useState<Conductor | null>(null)
+  const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
+  const [conductorToDeactivate, setConductorToDeactivate] = useState<Conductor | null>(null)
 
   const {
     conductors,
@@ -47,12 +50,24 @@ export default function ConductorsPage() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (conductor: Conductor) => {
+    setConductorToDeactivate(conductor)
+    setIsDeactivateDialogOpen(true)
+  }
+
+  const handleConfirmDeactivate = async () => {
+    if (!conductorToDeactivate) return
+
+    setIsSubmitting(true)
     try {
-      await deleteConductor(id)
-      toast.success("Condutor excluído com sucesso!")
+      await updateConductor(conductorToDeactivate.id, { is_active: false })
+      toast.success("Condutor inativado com sucesso!")
+      setIsDeactivateDialogOpen(false)
+      setConductorToDeactivate(null)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao excluir condutor")
+      toast.error(error instanceof Error ? error.message : "Erro ao inativar condutor")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -120,6 +135,15 @@ export default function ConductorsPage() {
             }
           }}
           onEdit={handleEdit}
+        />
+
+        {/* Dialog for Deactivate Confirmation */}
+        <DeactivateConductorDialog
+          open={isDeactivateDialogOpen}
+          onOpenChange={setIsDeactivateDialogOpen}
+          conductor={conductorToDeactivate}
+          onConfirm={handleConfirmDeactivate}
+          isLoading={isSubmitting}
         />
       </div>
     </div>

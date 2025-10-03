@@ -10,7 +10,7 @@ interface ConductorDataTableProps {
   conductors: Conductor[];
   onAdd: () => void;
   onEdit: (conductor: Conductor) => void;
-  onDelete: (id: number) => void;
+  onDelete: (conductor: Conductor) => void;
   onViewDetails?: (conductor: Conductor) => void;
   isLoading?: boolean;
 }
@@ -216,7 +216,7 @@ export function ConductorDataTable({
         totalCount={filteredConductors.length}
         onAdd={onAdd}
         onEdit={onEdit}
-        onDelete={(conductor: Conductor) => onDelete(conductor.id)}
+        onDelete={onDelete}
         onViewDetails={onViewDetails}
         onPageChange={() => {}}
         onPageSizeChange={() => {}}
