@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     
     'conductors',
     'vehicles',
+    'site_home',
     
     # Third party apps
     'rest_framework',
