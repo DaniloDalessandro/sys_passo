@@ -1,8 +1,12 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'vehicles'
 
+router = DefaultRouter()
+router.register(r'', views.VehicleViewSet, basename='vehicle')
+
 urlpatterns = [
-    path('', views.vehicle_list, name='vehicle-list'),
+    path('', include(router.urls)),
 ]

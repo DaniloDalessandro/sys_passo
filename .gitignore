@@ -1,3 +1,7 @@
+# Project-specific
+/node_modules/
+/back/logs/
+
 # Python
 __pycache__/
 *.py[cod]

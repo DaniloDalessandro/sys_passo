@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { VehicleDataTable } from "@/components/vehicles/VehicleDataTable"
-import { VehicleStats } from "@/components/vehicles/VehicleStats"
-import { VehicleDialog } from "@/components/vehicles/VehicleDialog"
-import { VehicleDetailDialog } from "@/components/vehicles/VehicleDetailDialog"
+import {
+  VehicleDataTable,
+  VehicleStats,
+  VehicleDialog,
+  VehicleDetailDialog,
+} from "@/components/vehicles"
 import { useVehicles, VehicleFormData, Vehicle } from "@/hooks/useVehicles"
 import { toast } from "sonner"
 
@@ -21,6 +23,7 @@ export default function VehiclesPage() {
     createVehicle,
     updateVehicle,
     deleteVehicle,
+    fetchVehicles,
   } = useVehicles()
 
   const handleSubmit = async (data: VehicleFormData) => {
@@ -35,6 +38,8 @@ export default function VehiclesPage() {
       }
       setIsDialogOpen(false)
       setEditingVehicle(null)
+      // Refresh the vehicles list to ensure data is up to date
+      await fetchVehicles()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar veículo")
     } finally {
@@ -47,9 +52,9 @@ export default function VehiclesPage() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (vehicle: Vehicle) => {
     try {
-      await deleteVehicle(id)
+      await deleteVehicle(vehicle.id)
       toast.success("Veículo excluído com sucesso!")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir veículo")

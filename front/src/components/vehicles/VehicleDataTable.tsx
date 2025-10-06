@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTable } from "@/components/ui/data-table";
@@ -10,7 +10,7 @@ interface VehicleDataTableProps {
   vehicles: Vehicle[];
   onAdd: () => void;
   onEdit: (vehicle: Vehicle) => void;
-  onDelete: (id: number) => void;
+  onDelete: (vehicle: Vehicle) => void;
   onViewDetails?: (vehicle: Vehicle) => void;
   isLoading?: boolean;
 }
@@ -23,6 +23,8 @@ export function VehicleDataTable({
   onViewDetails,
   isLoading = false,
 }: VehicleDataTableProps) {
+  const [statusFilter, setStatusFilter] = useState<string>("");
+
   const isMaintenanceDue = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -31,107 +33,84 @@ export function VehicleDataTable({
     return diffDays <= 7 && diffDays > 0;
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "ativo":
+        return "Ativo";
+      case "manutencao":
+        return "Manutenção";
+      case "inativo":
+        return "Inativo";
+      default:
+        return status;
+    }
+  };
+
+  const filteredVehicles = useMemo(() => {
+    if (statusFilter === "Todos" || !statusFilter) {
+      return vehicles;
+    }
+    return vehicles.filter((vehicle) => {
+      const statusLabel = getStatusLabel(vehicle.status);
+      return statusLabel === statusFilter;
+    });
+  }, [vehicles, statusFilter]);
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "placa",
+        accessorKey: "plate",
         header: "Placa",
-        meta: {
-          showFilterIcon: true,
-        },
-        cell: ({ row }: any) => {
-          const vehicle = row.original as Vehicle;
-          return vehicle.placa;
-        },
       },
       {
-        accessorKey: "marca",
-        header: "Marca/Modelo",
-        meta: {
-          showFilterIcon: true,
-        },
-        cell: ({ row }: any) => {
-          const vehicle = row.original as Vehicle;
-          return (
-            <div className="space-y-1">
-              <div>{vehicle.marca} {vehicle.modelo}</div>
-              <div className="text-xs text-gray-500">
-                {vehicle.ano} • {vehicle.cor}
-              </div>
-            </div>
-          );
-        },
+        accessorKey: "brand",
+        header: "Marca",
       },
       {
-        accessorKey: "categoria",
-        header: "Categoria",
-        meta: {
-          showFilterIcon: true,
-        },
-        cell: ({ row }: any) => {
-          const vehicle = row.original as Vehicle;
-          return (
-            <div className="space-y-1">
-              <div>{vehicle.categoria}</div>
-              <div className="text-xs text-gray-500">
-                {vehicle.combustivel}
-              </div>
-            </div>
-          );
-        },
+        accessorKey: "model",
+        header: "Modelo",
       },
       {
-        accessorKey: "capacidade",
-        header: "Capacidade",
-        meta: {
-          showFilterIcon: true,
-        },
+        accessorKey: "year",
+        header: "Ano",
+      },
+      {
+        accessorKey: "kmRodados",
+        header: "KM Rodados",
         cell: ({ row }: any) => {
-          const vehicle = row.original as Vehicle;
-          return vehicle.capacidade || "N/A";
-        },
+            const vehicle = row.original as Vehicle;
+            return `${vehicle.kmRodados.toLocaleString("pt-BR")} km`;
+        }
       },
       {
         accessorKey: "proximaManutencao",
-        header: "Manutenção",
+        header: "Próxima Manutenção",
         cell: ({ row }: any) => {
           const vehicle = row.original as Vehicle;
-          return (
-            <div className="space-y-1">
-              <div>
-                {format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
-                  locale: ptBR,
-                })}
-                {vehicle.status === 'manutencao' && " (Em andamento)"}
-                {vehicle.status !== 'manutencao' && isMaintenanceDue(vehicle.proximaManutencao) && " (Próxima)"}
-              </div>
-              <div className="text-xs text-gray-500">
-                {vehicle.kmRodados.toLocaleString("pt-BR")} km
-              </div>
-            </div>
-          );
+          const formattedDate = format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
+            locale: ptBR,
+          });
+          if (vehicle.status === 'manutencao') return `${formattedDate} (Em andamento)`;
+          if (isMaintenanceDue(vehicle.proximaManutencao)) return `${formattedDate} (Próxima)`;
+          return formattedDate;
         },
       },
       {
         accessorKey: "status",
         header: "Status",
         meta: {
-          showFilterIcon: true,
+          filterType: "select",
+          filterOptions: [
+            { value: "Todos", label: "Todos" },
+            { value: "Ativo", label: "Ativo" },
+            { value: "Inativo", label: "Inativo" },
+            { value: "Manutenção", label: "Manutenção" },
+          ],
+          filterValue: statusFilter,
+          onFilterChange: setStatusFilter,
         },
         cell: ({ row }: any) => {
           const status = row.getValue("status") as string;
-          const getStatusLabel = (status: string) => {
-            switch (status) {
-              case "ativo":
-                return "Ativo";
-              case "manutencao":
-                return "Manutenção";
-              case "inativo":
-                return "Inativo";
-              default:
-                return status;
-            }
-          };
           return getStatusLabel(status);
         },
       },
@@ -152,7 +131,7 @@ export function VehicleDataTable({
         },
       },
     ],
-    [onViewDetails]
+    [statusFilter]
   );
 
   if (isLoading) {
@@ -168,12 +147,14 @@ export function VehicleDataTable({
     <div className="h-full flex flex-col">
       <DataTable
         columns={columns}
-        data={vehicles}
+        data={filteredVehicles}
         title="Lista de Veículos"
         pageSize={10}
         pageIndex={0}
-        totalCount={vehicles.length}
+        totalCount={filteredVehicles.length}
         onAdd={onAdd}
+        onEdit={onEdit}
+        onDelete={onDelete}
         onViewDetails={onViewDetails}
         onPageChange={() => {}}
         onPageSizeChange={() => {}}

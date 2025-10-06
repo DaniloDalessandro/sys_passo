@@ -1,11 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { ConductorDataTable } from "@/components/conductors/ConductorDataTable"
-import { ConductorStats } from "@/components/conductors/ConductorStats"
-import { ConductorDialog } from "@/components/conductors/ConductorDialog"
-import { ConductorDetailDialog } from "@/components/conductors/ConductorDetailDialog"
-import { DeactivateConductorDialog } from "@/components/conductors/DeactivateConductorDialog"
+import {
+  ConductorDataTable,
+  ConductorStats,
+  ConductorDialog,
+  ConductorDetailDialog,
+  DeactivateConductorDialog,
+} from "@/components/conductors"
 import { useConductors, ConductorFormData, Conductor } from "@/hooks/useConductors"
 import { toast } from "sonner"
 

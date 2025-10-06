@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, AlertTriangle, CheckCircle, Clock } from "lucide-react"
-import { Conductor } from "./ConductorList"
+import type { Conductor } from "@/hooks/useConductors"
 
 interface ConductorStatsProps {
   conductors: Conductor[]

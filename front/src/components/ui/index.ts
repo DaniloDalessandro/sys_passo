@@ -29,7 +29,7 @@ export * from "./data-table"
 
 // Navigation
 export * from "./breadcrumb"
-export * from "./hierarchical-breadcrumbs"
+
 export * from "./sidebar"
 
 // Progress & Loading

@@ -1,10 +1,17 @@
-from rest_framework import status, permissions
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
+from rest_framework import viewsets, permissions
+from .models import Vehicle
+from .serializers import VehicleSerializer
 
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def vehicle_list(request):
-    return Response({
-        'message': 'Vehicles API endpoint - Coming soon!'
-    }, status=status.HTTP_200_OK)
+class VehicleViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows vehicles to be viewed or edited.
+    """
+    queryset = Vehicle.objects.all().order_by('-created_at')
+    serializer_class = VehicleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(updated_by=self.request.user)

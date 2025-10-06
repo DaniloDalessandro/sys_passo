@@ -1,5 +1,5 @@
-export { ConductorForm } from './ConductorForm'
-export { ConductorList } from './ConductorList'
+export { ConductorDataTable } from './ConductorDataTable'
+export { ConductorDetailDialog } from './ConductorDetailDialog'
 export { ConductorDialog } from './ConductorDialog'
 export { ConductorStats } from './ConductorStats'
-export type { Conductor } from './ConductorList'
+export { DeactivateConductorDialog } from './DeactivateConductorDialog'

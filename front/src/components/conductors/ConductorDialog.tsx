@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import ConductorForm from "../forms/ConductorForm"
-import { Conductor } from "./ConductorList"
+
 
 interface ConductorDialogProps {
   open: boolean
