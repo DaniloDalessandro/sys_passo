@@ -28,6 +28,7 @@ export function ConductorDialog({
 
   const formatInitialData = (conductor: any) => {
     return {
+      id: conductor.id,
       name: conductor.name,
       cpf: conductor.cpf,
       email: conductor.email,
@@ -39,7 +40,11 @@ export function ConductorDialog({
       license_number: conductor.license_number,
       license_category: conductor.license_category,
       license_expiry_date: new Date(conductor.license_expiry_date),
-      address: conductor.address || "",
+      street: conductor.street || "",
+      number: conductor.number || "",
+      neighborhood: conductor.neighborhood || "",
+      city: conductor.city || "",
+      reference_point: conductor.reference_point || "",
       is_active: conductor.is_active,
     }
   }

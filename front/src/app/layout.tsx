@@ -26,7 +26,6 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/favicon.ico',
   },
-  themeColor: '#1e40af',
   applicationName: 'ViaLumiar',
   keywords: ['vialumiar', 'gestão', 'sistema'],
 };
@@ -34,6 +33,7 @@ export const metadata: Metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#1e40af',
 };
 
 export default function RootLayout({

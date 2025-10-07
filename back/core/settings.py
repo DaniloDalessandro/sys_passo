@@ -39,11 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     'conductors',
     'vehicles',
-    'site_home',
-    
+    'sitehome',
+
     # Third party apps
     'rest_framework',
     'rest_framework.authtoken',
@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
-    
+
     # Local apps
     'authentication.apps.AuthenticationConfig',
 ]

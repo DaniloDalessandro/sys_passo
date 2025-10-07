@@ -90,6 +90,17 @@ export function ConductorDataTable({
         },
       },
       {
+        accessorKey: "address",
+        header: "Endereço",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.address || "-";
+        },
+      },
+      {
         accessorKey: "nationality",
         header: "Nacionalidade",
         meta: {
@@ -98,6 +109,30 @@ export function ConductorDataTable({
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
           return conductor.nationality || "N/A";
+        },
+      },
+      {
+        accessorKey: "gender_display",
+        header: "Sexo",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.gender_display || "N/A";
+        },
+      },
+      {
+        accessorKey: "birth_date",
+        header: "Data de Nascimento",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.birth_date
+            ? format(new Date(conductor.birth_date), "dd/MM/yyyy", { locale: ptBR })
+            : "N/A";
         },
       },
       {

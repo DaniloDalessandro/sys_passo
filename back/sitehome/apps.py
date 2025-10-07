@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class SiteHomeConfig(AppConfig):
+class SitehomeConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'site_home'
+    name = 'sitehome'

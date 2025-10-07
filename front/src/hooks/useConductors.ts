@@ -18,12 +18,19 @@ export interface Conductor {
   email: string
   phone: string
   photo?: string
-  birth_date?: string
+  document?: string
+  birth_date: string
   license_number: string
   license_category: string
   license_expiry_date: string
   address: string
+  street?: string
+  number?: string
+  neighborhood?: string
+  city?: string
+  reference_point?: string
   gender: 'M' | 'F' | 'O'
+  gender_display: string
   nationality: string
   whatsapp?: string
   cnh_digital?: string
@@ -43,12 +50,16 @@ export interface ConductorFormData {
   cpf: string
   email: string
   phone: string
-  photo?: File | null
+  document?: File | null
   birth_date: Date
   license_number: string
   license_category: string
   license_expiry_date: Date
-  address: string
+  street: string
+  number: string
+  neighborhood: string
+  city: string
+  reference_point?: string
   gender: 'M' | 'F' | 'O'
   nationality: string
   whatsapp: string
@@ -109,16 +120,23 @@ export function useConductors() {
       formData.append("is_active", conductorData.is_active.toString())
 
       formData.append("phone", conductorData.phone)
-      formData.append("address", conductorData.address)
+      formData.append("street", conductorData.street)
+      formData.append("number", conductorData.number)
+      formData.append("neighborhood", conductorData.neighborhood)
+      formData.append("city", conductorData.city)
       formData.append("gender", conductorData.gender)
       formData.append("nationality", conductorData.nationality)
+
+      if (conductorData.reference_point) {
+        formData.append("reference_point", conductorData.reference_point)
+      }
 
       if (conductorData.whatsapp) {
         formData.append("whatsapp", conductorData.whatsapp)
       }
 
-      if (conductorData.photo) {
-        formData.append("photo", conductorData.photo)
+      if (conductorData.document) {
+        formData.append("document", conductorData.document)
       }
 
       if (conductorData.cnh_digital) {
@@ -165,7 +183,7 @@ export function useConductors() {
             }
           } else if (key === 'is_active') {
             formData.append(key, value.toString())
-          } else if ((key === 'photo' || key === 'cnh_digital') && value instanceof File) {
+          } else if ((key === 'document' || key === 'cnh_digital') && value instanceof File) {
             formData.append(key, value)
           } else if (typeof value === 'string') {
             formData.append(key, value)
