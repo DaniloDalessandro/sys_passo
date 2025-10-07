@@ -125,18 +125,18 @@ function ChartCard({
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="p-1.5 pb-1">
           <div className="flex items-center justify-between">
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="text-xs font-semibold">{title}</CardTitle>
             <Dialog open={isFullscreen} onOpenChange={() => onToggleFullscreen(chartKey)}>
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors"
                   title="Tela cheia"
                 >
-                  <Maximize2 className="h-4 w-4" />
+                  <Maximize2 className="h-3 w-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" hideClose>
@@ -167,8 +167,8 @@ function ChartCard({
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={160}>
+        <CardContent className="p-1.5 pt-0">
+          <ResponsiveContainer width="100%" height={95}>
             {children}
           </ResponsiveContainer>
         </CardContent>
@@ -226,80 +226,64 @@ export default function Page() {
     switch (currentPage) {
       case 1:
         return (
-          <div className="h-full flex flex-col gap-2">
+          <div className="h-full flex flex-col gap-1 overflow-hidden">
             {/* Metrics Cards */}
-            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 flex-shrink-0">
+            <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-4 flex-shrink-0">
               <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center">
-                    <FileText className="h-6 w-6 text-blue-600" />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-muted-foreground">Total de Contratos</p>
-                      <div className="flex items-center">
-                        <h3 className="text-2xl font-bold">68</h3>
-                        <div className="flex items-center ml-2 text-green-600">
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          <span className="text-xs font-medium">+12%</span>
-                        </div>
+                <CardContent className="p-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-medium text-muted-foreground">Contratos</p>
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-base font-bold">68</h3>
+                        <span className="text-[9px] text-green-600 font-medium">+12%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">vs. mês anterior</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center">
-                    <Users className="h-6 w-6 text-purple-600" />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-muted-foreground">Colaboradores</p>
-                      <div className="flex items-center">
-                        <h3 className="text-2xl font-bold">156</h3>
-                        <div className="flex items-center ml-2 text-green-600">
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          <span className="text-xs font-medium">+5%</span>
-                        </div>
+                <CardContent className="p-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-medium text-muted-foreground">Colaboradores</p>
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-base font-bold">156</h3>
+                        <span className="text-[9px] text-green-600 font-medium">+5%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">ativos no sistema</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center">
-                    <DollarSign className="h-6 w-6 text-green-600" />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-muted-foreground">Orçamentos</p>
-                      <div className="flex items-center">
-                        <h3 className="text-2xl font-bold">{formatCurrency(18750000)}</h3>
-                        <div className="flex items-center ml-2 text-green-600">
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          <span className="text-xs font-medium">+8%</span>
-                        </div>
+                <CardContent className="p-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-medium text-muted-foreground">Orçamentos</p>
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-sm font-bold">R$ 18,8M</h3>
+                        <span className="text-[9px] text-green-600 font-medium">+8%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">valor total disponível</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-2">
-                  <div className="flex items-center">
-                    <Heart className="h-6 w-6 text-red-500" />
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-muted-foreground">Auxílios Ativos</p>
-                      <div className="flex items-center">
-                        <h3 className="text-2xl font-bold">42</h3>
-                        <div className="flex items-center ml-2 text-red-500">
-                          <TrendingDown className="h-4 w-4 mr-1" />
-                          <span className="text-xs font-medium">-3%</span>
-                        </div>
+                <CardContent className="p-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Heart className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-medium text-muted-foreground">Auxílios</p>
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-base font-bold">42</h3>
+                        <span className="text-[9px] text-red-500 font-medium">-3%</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">em andamento</p>
                     </div>
                   </div>
                 </CardContent>
@@ -307,7 +291,7 @@ export default function Page() {
             </div>
 
             {/* Main Charts */}
-            <div className="flex-1 min-h-0 grid gap-2 md:grid-cols-2">
+            <div className="flex-1 min-h-0 grid gap-1 md:grid-cols-2">
               {/* Contract Status Distribution */}
               <ChartCard
                 title="Distribuição de Status dos Contratos"
@@ -320,16 +304,16 @@ export default function Page() {
                     data={contractStatusData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={100}
+                    outerRadius={35}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, value }) => `${name}: ${value}`}
                   >
                     {contractStatusData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ fontSize: '10px' }} />
                 </PieChart>
               </ChartCard>
 
@@ -341,10 +325,11 @@ export default function Page() {
                 onToggleFullscreen={toggleFullscreen}
               >
                 <AreaChart data={monthlyContractValues}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(value) => formatCurrency(value)} />
-                  <Tooltip 
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9 }} />
+                  <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} tick={{ fontSize: 9 }} width={35} />
+                  <Tooltip
+                    contentStyle={{ fontSize: '10px' }}
                     formatter={(value, name) => [
                       name === 'value' ? formatCurrency(value as number) : value,
                       name === 'value' ? 'Valor Total' : 'Contratos'
@@ -365,9 +350,9 @@ export default function Page() {
       
       case 2:
         return (
-          <div className="h-full flex flex-col gap-4">
+          <div className="h-full flex flex-col gap-1 overflow-hidden">
             {/* Secondary Charts */}
-            <div className="flex-1 grid gap-4 md:grid-cols-2">
+            <div className="flex-1 min-h-0 grid gap-1 md:grid-cols-2">
               {/* Budget Utilization */}
               <ChartCard
                 title="Utilização de Orçamento por Categoria"
@@ -376,10 +361,11 @@ export default function Page() {
                 onToggleFullscreen={toggleFullscreen}
               >
                 <BarChart data={budgetUtilizationData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-                  <YAxis dataKey="category" type="category" width={80} />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis type="number" tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} tick={{ fontSize: 9 }} />
+                  <YAxis dataKey="category" type="category" width={55} tick={{ fontSize: 9 }} />
                   <Tooltip
+                    contentStyle={{ fontSize: '10px' }}
                     formatter={(value, name) => [
                       formatCurrency(value as number),
                       name === 'utilizado' ? 'Utilizado' : 'Total Disponível'
@@ -398,31 +384,34 @@ export default function Page() {
                 onToggleFullscreen={toggleFullscreen}
               >
                 <LineChart data={contractTimelineData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="novos" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    name="Novos Contratos"
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 9 }} width={20} />
+                  <Tooltip contentStyle={{ fontSize: '10px' }} />
+                  <Legend wrapperStyle={{ fontSize: '9px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="novos"
+                    stroke="#10b981"
+                    strokeWidth={1.5}
+                    name="Novos"
+                    dot={false}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="renovados" 
-                    stroke="#f59e0b" 
-                    strokeWidth={2}
+                  <Line
+                    type="monotone"
+                    dataKey="renovados"
+                    stroke="#f59e0b"
+                    strokeWidth={1.5}
                     name="Renovados"
+                    dot={false}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="finalizados" 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
+                  <Line
+                    type="monotone"
+                    dataKey="finalizados"
+                    stroke="#ef4444"
+                    strokeWidth={1.5}
                     name="Finalizados"
+                    dot={false}
                   />
                 </LineChart>
               </ChartCard>
@@ -431,34 +420,34 @@ export default function Page() {
             {/* Expiring Contracts Summary */}
             <div className="flex-shrink-0">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-amber-500" />
+                <CardHeader className="p-1.5 pb-1">
+                  <CardTitle className="flex items-center gap-1.5 text-xs font-semibold">
+                    <Clock className="h-3 w-3 text-amber-500" />
                     Contratos Próximos ao Vencimento
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                <CardContent className="p-1.5 pt-0">
+                  <div className="grid gap-1 md:grid-cols-3">
+                    <div className="flex justify-between items-center p-1.5 bg-amber-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-001</p>
-                        <p className="text-xs text-muted-foreground">Vence em 15 dias</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-001</p>
+                        <p className="text-[9px] text-muted-foreground">15 dias</p>
                       </div>
-                      <span className="text-amber-600 font-semibold">R$ 85.000</span>
+                      <span className="text-amber-600 font-semibold text-[10px]">R$ 85k</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                    <div className="flex justify-between items-center p-1.5 bg-amber-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-003</p>
-                        <p className="text-xs text-muted-foreground">Vence em 22 dias</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-003</p>
+                        <p className="text-[9px] text-muted-foreground">22 dias</p>
                       </div>
-                      <span className="text-amber-600 font-semibold">R$ 120.000</span>
+                      <span className="text-amber-600 font-semibold text-[10px]">R$ 120k</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                    <div className="flex justify-between items-center p-1.5 bg-amber-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-007</p>
-                        <p className="text-xs text-muted-foreground">Vence em 28 dias</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-007</p>
+                        <p className="text-[9px] text-muted-foreground">28 dias</p>
                       </div>
-                      <span className="text-amber-600 font-semibold">R$ 95.500</span>
+                      <span className="text-amber-600 font-semibold text-[10px]">R$ 95k</span>
                     </div>
                   </div>
                 </CardContent>
@@ -469,74 +458,74 @@ export default function Page() {
 
       case 3:
         return (
-          <div className="h-full flex flex-col gap-6 justify-center">
+          <div className="h-full flex flex-col gap-1 justify-center overflow-hidden">
             {/* Recently Approved Contracts + Performance Summary */}
-            <div className="grid gap-6 md:grid-cols-2 max-w-6xl mx-auto w-full">
+            <div className="grid gap-1 md:grid-cols-2 max-w-6xl mx-auto w-full">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                <CardHeader className="p-1.5 pb-1">
+                  <CardTitle className="flex items-center gap-1.5 text-xs font-semibold">
+                    <CheckCircle className="h-3 w-3 text-green-500" />
                     Contratos Recém Aprovados
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                <CardContent className="p-1.5 pt-0">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center p-1.5 bg-green-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-015</p>
-                        <p className="text-xs text-muted-foreground">Aprovado hoje</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-015</p>
+                        <p className="text-[9px] text-muted-foreground">Aprovado hoje</p>
                       </div>
-                      <span className="text-green-600 font-semibold">R$ 275.000</span>
+                      <span className="text-green-600 font-semibold text-[10px]">R$ 275k</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <div className="flex justify-between items-center p-1.5 bg-green-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-016</p>
-                        <p className="text-xs text-muted-foreground">Aprovado ontem</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-016</p>
+                        <p className="text-[9px] text-muted-foreground">Aprovado ontem</p>
                       </div>
-                      <span className="text-green-600 font-semibold">R$ 150.000</span>
+                      <span className="text-green-600 font-semibold text-[10px]">R$ 150k</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <div className="flex justify-between items-center p-1.5 bg-green-50 rounded">
                       <div>
-                        <p className="font-medium text-sm">Contrato #2024-017</p>
-                        <p className="text-xs text-muted-foreground">Aprovado há 2 dias</p>
+                        <p className="font-medium text-[10px]">Contrato #2024-017</p>
+                        <p className="text-[9px] text-muted-foreground">Há 2 dias</p>
                       </div>
-                      <span className="text-green-600 font-semibold">R$ 89.000</span>
+                      <span className="text-green-600 font-semibold text-[10px]">R$ 89k</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Resumo de Performance</CardTitle>
+                <CardHeader className="p-1.5 pb-1">
+                  <CardTitle className="text-xs font-semibold">Resumo de Performance</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="p-1.5 pt-0">
+                  <div className="space-y-2">
                     <div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-[10px]">
                         <span>Contratos no Prazo</span>
                         <span className="font-medium">92%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-0.5">
+                        <div className="bg-green-500 h-1.5 rounded-full" style={{ width: '92%' }}></div>
                       </div>
                     </div>
                     <div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-[10px]">
                         <span>Utilização do Orçamento</span>
                         <span className="font-medium">78%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '78%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-0.5">
+                        <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '78%' }}></div>
                       </div>
                     </div>
                     <div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-[10px]">
                         <span>Satisfação Interna</span>
                         <span className="font-medium">87%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-0.5">
+                        <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '87%' }}></div>
                       </div>
                     </div>
                   </div>
@@ -598,14 +587,14 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden p-2 pt-0">
+    <div className="flex flex-col h-screen overflow-hidden p-1 pt-0">
       {/* Page Content */}
       <div className="flex-1 min-h-0 overflow-hidden transition-all duration-300 ease-in-out">
         {renderPageContent()}
       </div>
 
       {/* Navigation */}
-      <div className="flex-shrink-0 mt-2 border-t border-gray-200 pt-2">
+      <div className="flex-shrink-0 mt-1 border-t border-gray-200 pt-1">
         <div className="flex items-center justify-between max-w-md mx-auto">
           {/* Previous Button */}
           <Button
@@ -613,21 +602,21 @@ export default function Page() {
             size="sm"
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="flex items-center gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 h-6 px-2 text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3 w-3" />
             Anterior
           </Button>
 
           {/* Page Indicators */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, index) => {
               const pageNumber = index + 1
               return (
                 <button
                   key={pageNumber}
                   onClick={() => goToPage(pageNumber)}
-                  className={`w-8 h-8 rounded-full text-sm font-medium transition-all duration-200 ${
+                  className={`w-5 h-5 rounded-full text-[10px] font-medium transition-all duration-200 ${
                     currentPage === pageNumber
                       ? 'bg-blue-600 text-white shadow-md'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -639,7 +628,7 @@ export default function Page() {
             })}
           </div>
 
-          <div className="text-sm text-muted-foreground font-medium">
+          <div className="text-[10px] text-muted-foreground font-medium">
             {currentPage}/{totalPages}
           </div>
 
@@ -649,10 +638,10 @@ export default function Page() {
             size="sm"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-2 h-10 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 h-6 px-2 text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Próximo
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3" />
           </Button>
         </div>
       </div>
