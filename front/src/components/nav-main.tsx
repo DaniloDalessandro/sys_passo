@@ -28,6 +28,7 @@ export function NavMain({
     url: string
     icon?: LucideIcon
     isActive?: boolean
+    external?: boolean
     items?: {
       title: string
       url: string
@@ -86,10 +87,22 @@ export function NavMain({
           ) : (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title} className="border-0 outline-0 ring-0">
-                <Link href={item.url} className="flex items-center">
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </Link>
+                {item.external ? (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center"
+                  >
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </a>
+                ) : (
+                  <Link href={item.url} className="flex items-center">
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                )}
               </SidebarMenuButton>
             </SidebarMenuItem>
           )

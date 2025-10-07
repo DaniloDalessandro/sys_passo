@@ -7,6 +7,7 @@ import {
   Truck,
   HelpCircle,
   Car,
+  Globe,
 } from "lucide-react"
 import { useAuthContext } from "@/context/AuthContext"
 import { NavMain } from "@/components/nav-main"
@@ -25,6 +26,7 @@ interface NavItem {
   url: string
   icon: React.ComponentType<{ className?: string }>
   isActive?: boolean
+  external?: boolean // Indica se o link abre em nova aba
   items?: {
     title: string
     url: string
@@ -54,6 +56,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/vehicles",
       icon: Truck,
       isActive: pathname.startsWith("/vehicles"),
+    },
+    {
+      title: "Site",
+      url: "/sitehome",
+      icon: Globe,
+      isActive: pathname.startsWith("/sitehome"),
+      external: true, // Abre em nova aba
     },
     {
       title: "Ajuda",
