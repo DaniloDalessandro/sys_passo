@@ -1,3 +1,4 @@
+
 """
 Django settings for core project.
 
@@ -13,16 +14,18 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^&88=uspgeo$^k#+at8)-y*vx-rfsi1u)1o_+%xvv)*0)ctv^$'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -43,6 +46,8 @@ INSTALLED_APPS = [
     'conductors',
     'vehicles',
     'sitehome',
+    'requests',
+    'complaints',
 
     # Third party apps
     'rest_framework',
@@ -59,7 +64,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'core.middleware.EncodingMiddleware',
-    'core.middleware.JSONParsingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -330,6 +334,11 @@ LOGGING = {
             'propagate': True,
         },
         'conductors': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'requests': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': True,

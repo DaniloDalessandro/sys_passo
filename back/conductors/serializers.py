@@ -1,6 +1,7 @@
 import re
 import unicodedata
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from .models import Conductor
 from django.utils import timezone
 
@@ -36,40 +37,7 @@ def validate_text_field(value, field_name):
         )
 
 
-class ConductorSerializer(serializers.ModelSerializer):
-    is_license_expired = serializers.ReadOnlyField()
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
-    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
-    vehicles = VehicleDetailSerializer(many=True, read_only=True)
-    address = serializers.SerializerMethodField()
-    photo = serializers.FileField(source='document', read_only=True)
-
-    class Meta:
-        model = Conductor
-        fields = [
-            'id', 'name', 'cpf', 'birth_date', 'gender', 'gender_display', 'nationality',
-            'street', 'number', 'neighborhood', 'city', 'reference_point', 'address', 'phone', 'email', 'whatsapp',
-            'license_number', 'license_category', 'license_expiry_date',
-            'photo', 'document', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
-            'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
-            'is_license_expired', 'vehicles'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'updated_by']
-
-    def get_address(self, obj):
-        """Combine address fields into a single address string for frontend compatibility"""
-        address_parts = []
-        if obj.street:
-            address_parts.append(obj.street)
-        if obj.number:
-            address_parts.append(obj.number)
-        if obj.neighborhood:
-            address_parts.append(obj.neighborhood)
-        if obj.city:
-            address_parts.append(obj.city)
-        return ', '.join(address_parts) if address_parts else ''
-
+class ConductorBaseSerializer(serializers.ModelSerializer):
     def validate_cpf(self, value):
         # Remove caracteres não numéricos
         cpf = ''.join(filter(str.isdigit, value))
@@ -113,8 +81,43 @@ class ConductorSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("O condutor deve ter pelo menos 18 anos.")
         return value
 
+    def get_address(self, obj):
+        """Combine address fields into a single address string for frontend compatibility"""
+        address_parts = []
+        if obj.street:
+            address_parts.append(obj.street)
+        if obj.number:
+            address_parts.append(obj.number)
+        if obj.neighborhood:
+            address_parts.append(obj.neighborhood)
+        if obj.city:
+            address_parts.append(obj.city)
+        return ', '.join(address_parts) if address_parts else ''
 
-class ConductorCreateSerializer(serializers.ModelSerializer):
+
+class ConductorSerializer(ConductorBaseSerializer):
+    is_license_expired = serializers.ReadOnlyField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
+    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    vehicles = VehicleDetailSerializer(many=True, read_only=True)
+    address = serializers.SerializerMethodField()
+    photo = serializers.FileField(source='document', read_only=True)
+
+    class Meta:
+        model = Conductor
+        fields = [
+            'id', 'name', 'cpf', 'birth_date', 'gender', 'gender_display', 'nationality',
+            'street', 'number', 'neighborhood', 'city', 'reference_point', 'address', 'phone', 'email', 'whatsapp',
+            'license_number', 'license_category', 'license_expiry_date',
+            'photo', 'document', 'cnh_digital', 'is_active', 'created_at', 'updated_at',
+            'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
+            'is_license_expired', 'vehicles'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'updated_by']
+
+
+class ConductorCreateSerializer(ConductorBaseSerializer):
     class Meta:
         model = Conductor
         fields = [
@@ -123,6 +126,11 @@ class ConductorCreateSerializer(serializers.ModelSerializer):
             'license_number', 'license_category', 'license_expiry_date',
             'document', 'cnh_digital', 'is_active'
         ]
+        extra_kwargs = {
+            'email': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este E-mail já existe.")]},
+            'license_number': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este Número da CNH já existe.")]},
+            'cpf': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este CPF já existe.")]},
+        }
 
     def validate_name(self, value):
         return validate_text_field(value, 'nome')
@@ -147,67 +155,8 @@ class ConductorCreateSerializer(serializers.ModelSerializer):
             return validate_text_field(value, 'ponto de referência')
         return value
 
-    def validate_cpf(self, value):
-        # Same validation as ConductorSerializer
-        cpf = ''.join(filter(str.isdigit, value))
-        
-        if len(cpf) != 11:
-            raise serializers.ValidationError("CPF deve ter 11 dígitos.")
-        
-        if cpf == cpf[0] * 11:
-            raise serializers.ValidationError("CPF inválido.")
-        
-        soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-        digito1 = (soma * 10) % 11
-        if digito1 == 10:
-            digito1 = 0
-        if int(cpf[9]) != digito1:
-            raise serializers.ValidationError("CPF inválido.")
-        
-        soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-        digito2 = (soma * 10) % 11
-        if digito2 == 10:
-            digito2 = 0
-        if int(cpf[10]) != digito2:
-            raise serializers.ValidationError("CPF inválido.")
-        
-        return value
 
-    def validate_license_expiry_date(self, value):
-        if value < timezone.now().date():
-            raise serializers.ValidationError("A data de validade da CNH não pode estar no passado.")
-        return value
-
-    def validate_birth_date(self, value):
-        today = timezone.now().date()
-        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-        if age < 18:
-            raise serializers.ValidationError("O condutor deve ter pelo menos 18 anos.")
-        return value
-
-    def validate_email(self, value):
-        """Validate that email is unique"""
-        if Conductor.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Condutor com este E-mail já existe.")
-        return value
-
-    def validate_license_number(self, value):
-        """Validate that license number is unique"""
-        if Conductor.objects.filter(license_number=value).exists():
-            raise serializers.ValidationError("Condutor com este Número da CNH já existe.")
-        return value
-
-    def validate(self, data):
-        """Validate unique constraints at object level"""
-        # Check CPF uniqueness
-        cpf = data.get('cpf')
-        if cpf and Conductor.objects.filter(cpf=cpf).exists():
-            raise serializers.ValidationError({'cpf': 'Condutor com este CPF já existe.'})
-
-        return data
-
-
-class ConductorUpdateSerializer(serializers.ModelSerializer):
+class ConductorUpdateSerializer(ConductorBaseSerializer):
     class Meta:
         model = Conductor
         fields = [
@@ -216,41 +165,13 @@ class ConductorUpdateSerializer(serializers.ModelSerializer):
             'license_number', 'license_category', 'license_expiry_date',
             'document', 'cnh_digital', 'is_active'
         ]
-        
-    def validate_license_expiry_date(self, value):
-        if value < timezone.now().date():
-            raise serializers.ValidationError("A data de validade da CNH não pode estar no passado.")
-        return value
-
-    def validate_birth_date(self, value):
-        today = timezone.now().date()
-        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
-        if age < 18:
-            raise serializers.ValidationError("O condutor deve ter pelo menos 18 anos.")
-        return value
-
-    def validate_email(self, value):
-        """Validate that email is unique (excluding current instance)"""
-        instance = getattr(self, 'instance', None)
-        queryset = Conductor.objects.filter(email=value)
-        if instance:
-            queryset = queryset.exclude(pk=instance.pk)
-        if queryset.exists():
-            raise serializers.ValidationError("Condutor com este E-mail já existe.")
-        return value
-
-    def validate_license_number(self, value):
-        """Validate that license number is unique (excluding current instance)"""
-        instance = getattr(self, 'instance', None)
-        queryset = Conductor.objects.filter(license_number=value)
-        if instance:
-            queryset = queryset.exclude(pk=instance.pk)
-        if queryset.exists():
-            raise serializers.ValidationError("Condutor com este Número da CNH já existe.")
-        return value
+        extra_kwargs = {
+            'email': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este E-mail já existe.")]},
+            'license_number': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este Número da CNH já existe.")]},
+        }
 
 
-class ConductorListSerializer(serializers.ModelSerializer):
+class ConductorListSerializer(ConductorBaseSerializer):
     is_license_expired = serializers.ReadOnlyField()
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
     updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
@@ -268,16 +189,3 @@ class ConductorListSerializer(serializers.ModelSerializer):
             'created_by', 'created_by_username', 'updated_by', 'updated_by_username',
             'is_license_expired'
         ]
-
-    def get_address(self, obj):
-        """Combine address fields into a single address string for frontend compatibility"""
-        address_parts = []
-        if obj.street:
-            address_parts.append(obj.street)
-        if obj.number:
-            address_parts.append(obj.number)
-        if obj.neighborhood:
-            address_parts.append(obj.neighborhood)
-        if obj.city:
-            address_parts.append(obj.city)
-        return ', '.join(address_parts) if address_parts else ''

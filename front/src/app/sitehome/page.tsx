@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,7 +27,8 @@ import {
   Calendar,
   Palette,
   Fuel,
-  CreditCard
+  CreditCard,
+  AlertTriangle
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -112,8 +113,25 @@ const vehicleSchema = z.object({
   message: z.string().optional(),
 });
 
+const complaintSchema = z.object({
+  vehiclePlate: z.string()
+    .min(7, 'Placa deve ter pelo menos 7 caracteres')
+    .max(10, 'Placa deve ter no máximo 10 caracteres')
+    .toUpperCase(),
+  complaintType: z.string().min(1, 'Selecione o tipo de denúncia'),
+  description: z.string()
+    .min(20, 'A descrição deve ter pelo menos 20 caracteres')
+    .max(1000, 'A descrição deve ter no máximo 1000 caracteres'),
+  occurrenceDate: z.string().optional(),
+  occurrenceLocation: z.string().optional(),
+  complainantName: z.string().optional(),
+  complainantEmail: z.string().email('Email inválido').optional().or(z.literal('')),
+  complainantPhone: z.string().optional(),
+});
+
 type DriverFormData = z.infer<typeof driverSchema>;
 type VehicleFormData = z.infer<typeof vehicleSchema>;
+type ComplaintFormData = z.infer<typeof complaintSchema>;
 
 export default function SiteHomePage() {
   const [config, setConfig] = useState<SiteConfig | null>(null);
@@ -121,6 +139,9 @@ export default function SiteHomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
+  const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
+  const [plateOptions, setPlateOptions] = useState<Array<{plate: string, label: string}>>([]);
+  const [isLoadingPlates, setIsLoadingPlates] = useState(false);
 
   // Driver form
   const driverForm = useForm<DriverFormData>({
@@ -150,11 +171,26 @@ export default function SiteHomePage() {
     },
   });
 
+  // Complaint form
+  const complaintForm = useForm<ComplaintFormData>({
+    resolver: zodResolver(complaintSchema),
+    defaultValues: {
+      vehiclePlate: '',
+      complaintType: '',
+      description: '',
+      occurrenceDate: '',
+      occurrenceLocation: '',
+      complainantName: '',
+      complainantEmail: '',
+      complainantPhone: '',
+    },
+  });
+
   // Fetch site configuration
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
         const response = await fetch(`${API_URL}/api/site/configuration/`);
         if (response.ok) {
           const result = await response.json();
@@ -209,20 +245,51 @@ export default function SiteHomePage() {
   // Driver form submission
   const onDriverSubmit = async (data: DriverFormData) => {
     try {
-      console.log('Driver registration data:', data);
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch(`${API_URL}/api/requests/drivers/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: data.fullName,
+          cpf: data.cpf,
+          email: data.email,
+          phone: data.phone,
+          cnh_number: data.cnhNumber,
+          cnh_category: data.cnhCategory,
+          message: data.message || '',
+        }),
+      });
 
-      toast.success('Solicitação de cadastro enviada com sucesso!', {
-        description: 'Entraremos em contato em breve para concluir o cadastro.',
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        // Tratar erros específicos
+        if (response.status === 400) {
+          // Erros de validação
+          const errorMessage = errorData.detail ||
+                             errorData.cpf?.[0] ||
+                             errorData.email?.[0] ||
+                             'Erro na validação dos dados. Verifique as informações.';
+          throw new Error(errorMessage);
+        }
+
+        throw new Error('Erro ao enviar solicitação. Tente novamente.');
+      }
+
+      toast.success('Solicitação enviada com sucesso!', {
+        description: 'Sua solicitação de cadastro de motorista será analisada em breve.',
       });
 
       driverForm.reset();
       setIsDriverDialogOpen(false);
     } catch (error) {
+      console.error('Error submitting driver request:', error);
+
       toast.error('Erro ao enviar solicitação', {
-        description: 'Por favor, tente novamente mais tarde.',
+        description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
       });
     }
   };
@@ -230,20 +297,130 @@ export default function SiteHomePage() {
   // Vehicle form submission
   const onVehicleSubmit = async (data: VehicleFormData) => {
     try {
-      console.log('Vehicle registration data:', data);
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await fetch(`${API_URL}/api/requests/vehicles/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plate: data.plate.toUpperCase(),
+          brand: data.brand,
+          model: data.model,
+          year: parseInt(data.year),
+          color: data.color,
+          fuel_type: data.fuelType,
+          message: data.message || '',
+        }),
+      });
 
-      toast.success('Solicitação de cadastro enviada com sucesso!', {
-        description: 'Entraremos em contato em breve para concluir o cadastro.',
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        // Tratar erros específicos
+        if (response.status === 400) {
+          // Erros de validação
+          const errorMessage = errorData.detail ||
+                             errorData.plate?.[0] ||
+                             'Erro na validação dos dados. Verifique as informações.';
+          throw new Error(errorMessage);
+        }
+
+        throw new Error('Erro ao enviar solicitação. Tente novamente.');
+      }
+
+      toast.success('Solicitação enviada com sucesso!', {
+        description: 'Sua solicitação de cadastro de veículo será analisada em breve.',
       });
 
       vehicleForm.reset();
       setIsVehicleDialogOpen(false);
     } catch (error) {
+      console.error('Error submitting vehicle request:', error);
+
       toast.error('Erro ao enviar solicitação', {
-        description: 'Por favor, tente novamente mais tarde.',
+        description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
+      });
+    }
+  };
+
+  // Autocomplete de placas
+  const searchPlates = async (query: string) => {
+    if (query.length < 2) {
+      setPlateOptions([]);
+      return;
+    }
+
+    setIsLoadingPlates(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_URL}/api/complaints/vehicles/autocomplete/?q=${encodeURIComponent(query)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlateOptions(data);
+      }
+    } catch (error) {
+      console.error('Error searching plates:', error);
+    } finally {
+      setIsLoadingPlates(false);
+    }
+  };
+
+  // Debounce para autocomplete
+  const debouncedSearchPlates = useCallback((query: string) => {
+    const timer = setTimeout(() => searchPlates(query), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Complaint form submission
+  const onComplaintSubmit = async (data: ComplaintFormData) => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+      const response = await fetch(`${API_URL}/api/complaints/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          vehicle_plate: data.vehiclePlate.toUpperCase(),
+          complaint_type: data.complaintType,
+          description: data.description,
+          occurrence_date: data.occurrenceDate || null,
+          occurrence_location: data.occurrenceLocation || null,
+          complainant_name: data.complainantName || null,
+          complainant_email: data.complainantEmail || null,
+          complainant_phone: data.complainantPhone || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+
+        if (response.status === 400) {
+          const errorMessage = errorData.detail ||
+                             errorData.vehicle_plate?.[0] ||
+                             errorData.description?.[0] ||
+                             'Erro na validação dos dados. Verifique as informações.';
+          throw new Error(errorMessage);
+        }
+
+        throw new Error('Erro ao enviar denúncia. Tente novamente.');
+      }
+
+      toast.success('Denúncia enviada com sucesso!', {
+        description: 'Sua denúncia será analisada pela equipe responsável.',
+      });
+
+      complaintForm.reset();
+      setIsComplaintDialogOpen(false);
+    } catch (error) {
+      console.error('Error submitting complaint:', error);
+
+      toast.error('Erro ao enviar denúncia', {
+        description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
       });
     }
   };
@@ -319,17 +496,17 @@ export default function SiteHomePage() {
                 Sobre
               </button>
               <button
+                onClick={() => scrollToSection('denuncias')}
+                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+              >
+                Denúncias
+              </button>
+              <button
                 onClick={() => scrollToSection('contato')}
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
               >
                 Contato
               </button>
-              <Link href="/auth/login">
-                <Button variant="default" className="gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </Button>
-              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -375,17 +552,17 @@ export default function SiteHomePage() {
                   Sobre
                 </button>
                 <button
+                  onClick={() => scrollToSection('denuncias')}
+                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Denúncias
+                </button>
+                <button
                   onClick={() => scrollToSection('contato')}
                   className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   Contato
                 </button>
-                <Link href="/auth/login" className="px-4 py-2">
-                  <Button variant="default" className="w-full gap-2">
-                    <LogIn className="w-4 h-4" />
-                    Login
-                  </Button>
-                </Link>
               </div>
             </div>
           )}
@@ -505,7 +682,7 @@ export default function SiteHomePage() {
                 </div>
                 <CardTitle className="text-2xl">Cadastrar Motorista</CardTitle>
                 <CardDescription className="text-base">
-                  Solicite o cadastro de um novo condutor na plataforma
+                  Solicite o cadastro de um novo condutor
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -539,6 +716,45 @@ export default function SiteHomePage() {
                 >
                   <Car className="w-5 h-5" />
                   Solicitar Cadastro de Veículo
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Complaints Section */}
+      <section id="denuncias" className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Denúncias
+            </h2>
+            <p className="text-xl text-gray-600">
+              Relate situações irregulares envolvendo veículos
+            </p>
+            <div className="w-20 h-1 bg-red-600 mx-auto mt-4"></div>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-red-500">
+              <CardHeader className="text-center pb-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-4 mx-auto group-hover:bg-red-600 transition-colors">
+                  <AlertTriangle className="w-10 h-10 text-red-600 group-hover:text-white transition-colors" />
+                </div>
+                <CardTitle className="text-2xl">Fazer Denúncia</CardTitle>
+                <CardDescription className="text-base">
+                  Informe situações irregulares ou perigosas envolvendo veículos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => setIsComplaintDialogOpen(true)}
+                  className="w-full gap-2 text-base py-6 bg-red-600 hover:bg-red-700"
+                  size="lg"
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                  Registrar Denúncia
                 </Button>
               </CardContent>
             </Card>
@@ -882,6 +1098,210 @@ export default function SiteHomePage() {
                   </>
                 ) : (
                   'Enviar Solicitação'
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Complaint Dialog */}
+      <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              Registrar Denúncia
+            </DialogTitle>
+            <DialogDescription>
+              Preencha os dados abaixo para registrar uma denúncia sobre um veículo.
+              Suas informações pessoais são opcionais.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={complaintForm.handleSubmit(onComplaintSubmit)} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="vehiclePlate" className="flex items-center gap-2">
+                <Car className="w-4 h-4" />
+                Placa do Veículo *
+              </Label>
+              <Input
+                id="vehiclePlate"
+                placeholder="ABC1234"
+                maxLength={10}
+                {...complaintForm.register('vehiclePlate')}
+                onChange={(e) => {
+                  complaintForm.setValue('vehiclePlate', e.target.value.toUpperCase());
+                  debouncedSearchPlates(e.target.value);
+                }}
+                className="uppercase"
+              />
+              {isLoadingPlates && (
+                <p className="text-xs text-muted-foreground">Buscando veículos...</p>
+              )}
+              {plateOptions.length > 0 && (
+                <div className="border rounded-md mt-1 max-h-32 overflow-y-auto">
+                  {plateOptions.map((option, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        complaintForm.setValue('vehiclePlate', option.plate);
+                        setPlateOptions([]);
+                      }}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {complaintForm.formState.errors.vehiclePlate && (
+                <p className="text-sm text-red-600">
+                  {complaintForm.formState.errors.vehiclePlate.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="complaintType" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Tipo de Denúncia *
+              </Label>
+              <Select
+                onValueChange={(value) => complaintForm.setValue('complaintType', value)}
+              >
+                <SelectTrigger id="complaintType">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excesso_velocidade">Excesso de Velocidade</SelectItem>
+                  <SelectItem value="direcao_perigosa">Direção Perigosa</SelectItem>
+                  <SelectItem value="uso_celular">Uso de Celular ao Dirigir</SelectItem>
+                  <SelectItem value="veiculo_mal_conservado">Veículo Mal Conservado</SelectItem>
+                  <SelectItem value="desrespeito_sinalizacao">Desrespeito à Sinalização</SelectItem>
+                  <SelectItem value="embriaguez">Suspeita de Embriaguez</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+              {complaintForm.formState.errors.complaintType && (
+                <p className="text-sm text-red-600">
+                  {complaintForm.formState.errors.complaintType.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                Descrição da Denúncia *
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Descreva detalhadamente o que aconteceu (mínimo 20 caracteres)..."
+                rows={4}
+                {...complaintForm.register('description')}
+              />
+              <p className="text-xs text-muted-foreground">
+                {complaintForm.watch('description')?.length || 0}/20 caracteres mínimos
+              </p>
+              {complaintForm.formState.errors.description && (
+                <p className="text-sm text-red-600">
+                  {complaintForm.formState.errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="occurrenceDate" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Data da Ocorrência
+                </Label>
+                <Input
+                  id="occurrenceDate"
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  {...complaintForm.register('occurrenceDate')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="occurrenceLocation" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Local da Ocorrência
+                </Label>
+                <Input
+                  id="occurrenceLocation"
+                  placeholder="Ex: Av. Principal, 1000"
+                  {...complaintForm.register('occurrenceLocation')}
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Informações do denunciante (opcional - você pode fazer denúncia anônima)
+              </p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="complainantName">Seu Nome</Label>
+                  <Input
+                    id="complainantName"
+                    placeholder="Nome completo (opcional)"
+                    {...complaintForm.register('complainantName')}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="complainantEmail">Seu Email</Label>
+                    <Input
+                      id="complainantEmail"
+                      type="email"
+                      placeholder="email@exemplo.com (opcional)"
+                      {...complaintForm.register('complainantEmail')}
+                    />
+                    {complaintForm.formState.errors.complainantEmail && (
+                      <p className="text-sm text-red-600">
+                        {complaintForm.formState.errors.complainantEmail.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="complainantPhone">Seu Telefone</Label>
+                    <Input
+                      id="complainantPhone"
+                      placeholder="(00) 00000-0000 (opcional)"
+                      {...complaintForm.register('complainantPhone')}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsComplaintDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                disabled={complaintForm.formState.isSubmitting}
+              >
+                {complaintForm.formState.isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  'Enviar Denúncia'
                 )}
               </Button>
             </div>

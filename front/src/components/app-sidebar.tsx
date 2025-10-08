@@ -8,6 +8,8 @@ import {
   HelpCircle,
   Car,
   Globe,
+  ClipboardList,
+  AlertTriangle,
 } from "lucide-react"
 import { useAuthContext } from "@/context/AuthContext"
 import { NavMain } from "@/components/nav-main"
@@ -56,6 +58,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/vehicles",
       icon: Truck,
       isActive: pathname.startsWith("/vehicles"),
+    },
+    {
+      title: "Solicitações",
+      url: "/solicitacoes",
+      icon: ClipboardList,
+      isActive: pathname.startsWith("/solicitacoes"),
+    },
+    {
+      title: "Denúncias",
+      url: "/denuncias",
+      icon: AlertTriangle,
+      isActive: pathname.startsWith("/denuncias"),
     },
     {
       title: "Site",

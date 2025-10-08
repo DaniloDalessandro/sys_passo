@@ -56,33 +56,3 @@ class EncodingMiddleware(MiddlewareMixin):
         return None
 
 
-class JSONParsingMiddleware(MiddlewareMixin):
-    """
-    Middleware to catch JSON parsing errors and return proper error responses.
-    """
-
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        """
-        Process view to catch JSON parsing errors early.
-        """
-        if request.content_type and 'application/json' in request.content_type:
-            if request.body:
-                try:
-                    # Try to parse JSON to detect errors early
-                    json.loads(request.body.decode('utf-8'))
-                except json.JSONDecodeError as e:
-                    logger.error(f"JSON parsing error: {e}")
-                    return JsonResponse({
-                        'error': 'JSON inválido',
-                        'message': 'Formato de dados JSON inválido.',
-                        'details': f'Erro na linha {e.lineno}, coluna {e.colno}: {e.msg}'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                except UnicodeDecodeError as e:
-                    logger.error(f"UTF-8 decoding error in JSON: {e}")
-                    return JsonResponse({
-                        'error': 'Erro de codificação',
-                        'message': 'Problema na codificação de caracteres no JSON.',
-                        'details': 'Verifique se todos os caracteres especiais estão em UTF-8.'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-
-        return None

@@ -9,12 +9,12 @@ urlpatterns = [
     path('<int:pk>/', views.ConductorDetailView.as_view(), name='conductor-detail'),
 
     # Search and stats endpoints
-    path('search/', views.conductor_search, name='conductor-search'),
-    path('stats/', views.conductor_stats, name='conductor-stats'),
+    path('search/', views.ConductorSearchView.as_view(), name='conductor-search'),
+    path('stats/', views.ConductorStatsView.as_view(), name='conductor-stats'),
 
     # Validation endpoints
-    path('check-duplicate/', views.check_duplicate_field, name='check-duplicate-field'),
+    path('check-duplicate/', views.CheckDuplicateFieldView.as_view(), name='check-duplicate-field'),
 
     # Bulk operations
-    path('bulk/deactivate/', views.bulk_deactivate_conductors, name='bulk-deactivate-conductors'),
+    path('bulk/deactivate/', views.BulkDeactivateConductorsView.as_view(), name='bulk-deactivate-conductors'),
 ]
