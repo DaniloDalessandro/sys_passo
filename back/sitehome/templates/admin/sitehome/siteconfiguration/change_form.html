@@ -1,0 +1,82 @@
+{% extends "admin/change_form.html" %}
+{% load i18n static %}
+
+{% block content_title %}
+    {% if original %}
+        <h1>Configuração do Site</h1>
+        <div class="help">
+            <strong>Informação:</strong> Esta é a configuração única do seu site.
+            Edite os campos abaixo e salve para atualizar o site público imediatamente.
+            Todas as alterações são refletidas em tempo real no frontend.
+        </div>
+    {% else %}
+        <h1>{% trans "Add" %} {{ opts.verbose_name }}</h1>
+    {% endif %}
+{% endblock %}
+
+{% block after_field_sets %}
+    {{ block.super }}
+    <div class="singleton-help">
+        <strong>Nota sobre Singleton:</strong><br>
+        Este modelo segue o padrão Singleton, o que significa que apenas uma configuração pode existir.
+        Você não pode adicionar ou deletar esta configuração, apenas editar seus valores.
+    </div>
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+    <div class="submit-row">
+        {% if show_save %}
+            <input type="submit" value="{% trans 'Salvar' %}" class="default" name="_save">
+        {% endif %}
+        {% if show_save_and_continue %}
+            <input type="submit" value="{% trans 'Salvar e continuar editando' %}" name="_continue">
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        /* Additional inline styles for better visual hierarchy */
+        .form-row {
+            padding: 15px 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .form-row:last-child {
+            border-bottom: none;
+        }
+
+        .field-logo_preview {
+            text-align: center;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        fieldset.module h2 {
+            background: linear-gradient(to right, #417690, #4a90af);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .help {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+{% endblock %}

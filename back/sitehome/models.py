@@ -124,7 +124,10 @@ class SiteConfiguration(models.Model):
         """
         Prevent deletion of the singleton instance.
         """
-        raise ValidationError('Não é possível deletar a configuração do site.')
+        raise ValidationError(
+            'Não é possível deletar a configuração do site. '
+            'Esta é uma configuração única e necessária para o funcionamento do sistema.'
+        )
 
     @property
     def logo_url(self):

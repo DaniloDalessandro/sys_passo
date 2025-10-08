@@ -1,0 +1,112 @@
+/**
+ * Custom CSS for SiteConfiguration Admin
+ * Enhances the visual appearance of the singleton configuration page
+ */
+
+/* Logo preview styling */
+.field-logo_preview img {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.field-logo_preview img:hover {
+    transform: scale(1.05);
+}
+
+/* Fieldset descriptions */
+.fieldset-description {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-left: 3px solid #417690;
+    border-radius: 3px;
+}
+
+/* Help text styling */
+.help {
+    background: #e8f4f8;
+    padding: 12px 15px;
+    border-left: 4px solid #2196F3;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Custom message for singleton info */
+.messagelist .info {
+    background: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* Form field improvements */
+.form-row {
+    margin-bottom: 20px;
+}
+
+/* Textarea styling for about_text */
+textarea {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* Submit row buttons */
+.submit-row {
+    padding: 12px 14px;
+    background: #f8f9fa;
+    border-top: 2px solid #e0e0e0;
+}
+
+.submit-row input[type="submit"] {
+    margin-right: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Readonly fields styling */
+.readonly {
+    color: #666;
+    background-color: #f5f5f5;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Collapse toggle styling */
+.collapse h2 {
+    background: #f0f0f0;
+    border-radius: 4px;
+}
+
+/* Form title */
+#content h1 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* Help text for singleton pattern */
+.singleton-help {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 12px 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* URL field icons */
+input[type="url"] {
+    padding-left: 30px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23666"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5A6.5 6.5 0 118 1.5a6.5 6.5 0 010 13z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: 8px center;
+}
