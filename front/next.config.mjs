@@ -6,6 +6,17 @@ const nextConfig = {
       underscore: 'lodash',
     },
   },
+  // Configuração para imagens externas
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   // Configuração para resolver problemas de build no Windows
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
@@ -15,7 +26,7 @@ const nextConfig = {
         ignored: /node_modules/,
       }
     }
-    
+
     return config
   },
   // Otimizações para desenvolvimento

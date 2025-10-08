@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,7 +28,9 @@ import {
   Palette,
   Fuel,
   CreditCard,
-  AlertTriangle
+  AlertTriangle,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -82,6 +84,22 @@ const formatPhoneDisplay = (phone: string): string => {
   return phone;
 };
 
+// Authenticated fetch helper (for client-side authenticated API calls)
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('access_token');
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+  });
+
+  return response;
+};
+
 // Zod validation schemas
 const driverSchema = z.object({
   fullName: z.string().min(3, 'Nome completo é obrigatório'),
@@ -133,6 +151,71 @@ type DriverFormData = z.infer<typeof driverSchema>;
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 type ComplaintFormData = z.infer<typeof complaintSchema>;
 
+// Animated Counter Component
+function AnimatedCounter({ end, duration = 2000, label }: { end: number; duration?: number; label: string }) {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const counterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (counterRef.current) {
+      observer.observe(counterRef.current);
+    }
+
+    return () => {
+      if (counterRef.current) {
+        observer.unobserve(counterRef.current);
+      }
+    };
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let startTime: number | null = null;
+    let animationFrame: number;
+
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeOutQuart * end));
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [end, duration, isVisible]);
+
+  return (
+    <div ref={counterRef} className="text-center">
+      <div className="text-5xl md:text-6xl font-bold text-white mb-2">
+        {count.toLocaleString('pt-BR')}
+      </div>
+      <div className="text-xl text-blue-100">{label}</div>
+    </div>
+  );
+}
+
 export default function SiteHomePage() {
   const [config, setConfig] = useState<SiteConfig | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -142,6 +225,9 @@ export default function SiteHomePage() {
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
   const [plateOptions, setPlateOptions] = useState<Array<{plate: string, label: string}>>([]);
   const [isLoadingPlates, setIsLoadingPlates] = useState(false);
+  const [vehicleCount, setVehicleCount] = useState(0);
+  const [conductorCount, setConductorCount] = useState(0);
+  const [isLoadingCounts, setIsLoadingCounts] = useState(true);
 
   // Driver form
   const driverForm = useForm<DriverFormData>({
@@ -214,6 +300,45 @@ export default function SiteHomePage() {
     };
 
     fetchConfig();
+  }, []);
+
+  // Fetch vehicle and conductor counts
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+        // Try to fetch counts with authentication (will work if user is logged in)
+        // If not authenticated, these will gracefully fail and show 0
+        try {
+          const vehiclesResponse = await fetchWithAuth(`${API_URL}/api/vehicles/`);
+          if (vehiclesResponse.ok) {
+            const vehiclesData = await vehiclesResponse.json();
+            const count = vehiclesData.count || vehiclesData.length || 0;
+            setVehicleCount(count);
+          }
+        } catch (error) {
+          console.log('Could not fetch vehicle count (may require authentication)');
+        }
+
+        try {
+          const conductorsResponse = await fetchWithAuth(`${API_URL}/api/conductors/`);
+          if (conductorsResponse.ok) {
+            const conductorsData = await conductorsResponse.json();
+            const count = conductorsData.count || conductorsData.length || 0;
+            setConductorCount(count);
+          }
+        } catch (error) {
+          console.log('Could not fetch conductor count (may require authentication)');
+        }
+      } catch (error) {
+        console.error('Error fetching counts:', error);
+      } finally {
+        setIsLoadingCounts(false);
+      }
+    };
+
+    fetchCounts();
   }, []);
 
   // Handle scroll for navbar
@@ -569,18 +694,34 @@ export default function SiteHomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section id="inicio" className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 text-white pt-32">
-        <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-10"></div>
-        <div className="relative container mx-auto px-4 py-24 lg:py-32">
+      {/* Hero Section with Background Image */}
+      <section id="inicio" className="relative min-h-[700px] text-white pt-32 overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1588783948922-17f4b0d4c935?q=80&w=2070&auto=format&fit=crop"
+            alt="Cidade de Passo do Lumiar"
+            fill
+            className="object-cover"
+            priority
+            quality={85}
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-blue-700/85"></div>
+          {/* Pattern overlay */}
+          <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-5"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative container mx-auto px-4 py-16 lg:py-24">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
               {config.hero_title}
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-10 leading-relaxed">
+            <p className="text-xl md:text-2xl text-blue-50 mb-10 leading-relaxed drop-shadow-md">
               {config.hero_subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <a
                 href={formatWhatsAppLink(
                   config.whatsapp,
@@ -588,34 +729,60 @@ export default function SiteHomePage() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
               >
                 <MessageCircle className="w-5 h-5" />
                 Fale Conosco
               </a>
               <button
                 onClick={() => scrollToSection('about')}
-                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 border border-white/30"
+                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
               >
                 Saiba Mais
               </button>
             </div>
+
+            {/* Animated Counters */}
+            {!isLoadingCounts && (vehicleCount > 0 || conductorCount > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-2xl mx-auto mt-12">
+                {vehicleCount > 0 && (
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
+                    <Car className="w-12 h-12 text-blue-200 mx-auto mb-4" />
+                    <AnimatedCounter end={vehicleCount} label="Veículos Cadastrados" />
+                  </div>
+                )}
+                {conductorCount > 0 && (
+                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
+                    <Users className="w-12 h-12 text-blue-200 mx-auto mb-4" />
+                    <AnimatedCounter end={conductorCount} label="Motoristas Registrados" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Wave Divider */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
             <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#ffffff"/>
           </svg>
         </div>
       </section>
 
       {/* Features/Services Section */}
-      <section id="servicos" className="py-20 bg-white">
+      <section id="servicos" className="py-20 lg:py-28 bg-white">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Nossos Serviços
             </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
+              Soluções completas para gestão eficiente da sua frota
+            </p>
             <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -661,13 +828,20 @@ export default function SiteHomePage() {
       </section>
 
       {/* Registration Section */}
-      <section id="cadastro" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <section id="cadastro" className="py-20 lg:py-28 bg-gradient-to-br from-gray-50 to-blue-50 relative">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <FileText className="w-8 h-8 text-blue-600" />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Solicite Seu Cadastro
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Cadastre motoristas e veículos de forma rápida e fácil
             </p>
             <div className="w-20 h-1 bg-blue-600 mx-auto mt-4"></div>
@@ -724,13 +898,16 @@ export default function SiteHomePage() {
       </section>
 
       {/* Complaints Section */}
-      <section id="denuncias" className="py-20 bg-white">
+      <section id="denuncias" className="py-20 lg:py-28 bg-white border-t-2 border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
               Denúncias
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Relate situações irregulares envolvendo veículos
             </p>
             <div className="w-20 h-1 bg-red-600 mx-auto mt-4"></div>
@@ -1310,67 +1487,78 @@ export default function SiteHomePage() {
       </Dialog>
 
       {/* About Section */}
-      <section id="about" className="py-20 bg-white">
+      <section id="about" className="py-20 lg:py-28 bg-gradient-to-br from-blue-50 to-white border-t-2 border-blue-100">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <Shield className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
                 Sobre a {config.company_name}
               </h2>
               <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
             </div>
-            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-line">
-              {config.about_text}
+            <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 border border-gray-100">
+              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-line">
+                {config.about_text}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Contact Section */}
-      <section id="contato" className="py-20 bg-gray-50">
+      <section id="contato" className="py-20 lg:py-28 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <Phone className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
                 Entre em Contato
               </h2>
-              <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Estamos prontos para atender você
+              </p>
+              <div className="w-20 h-1 bg-blue-600 mx-auto mt-4"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Contact Info */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <a
                   href={`tel:${config.phone.replace(/\D/g, '')}`}
-                  className="flex items-start gap-4 p-4 rounded-lg hover:bg-white transition-colors duration-200 group"
+                  className="flex items-start gap-4 p-6 rounded-xl bg-white hover:shadow-lg transition-all duration-200 group border border-gray-100 hover:border-blue-200"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <Phone className="w-6 h-6 text-blue-600" />
+                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                    <Phone className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Telefone</h3>
+                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">Telefone</h3>
                     <p className="text-gray-600">{formatPhoneDisplay(config.phone)}</p>
                   </div>
                 </a>
 
                 <a
                   href={`mailto:${config.email}`}
-                  className="flex items-start gap-4 p-4 rounded-lg hover:bg-white transition-colors duration-200 group"
+                  className="flex items-start gap-4 p-6 rounded-xl bg-white hover:shadow-lg transition-all duration-200 group border border-gray-100 hover:border-blue-200"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                    <Mail className="w-6 h-6 text-blue-600" />
+                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                    <Mail className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">E-mail</h3>
-                    <p className="text-gray-600">{config.email}</p>
+                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">E-mail</h3>
+                    <p className="text-gray-600 break-all">{config.email}</p>
                   </div>
                 </a>
 
-                <div className="flex items-start gap-4 p-4 rounded-lg">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="flex items-start gap-4 p-6 rounded-xl bg-white border border-gray-100 shadow-sm">
+                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
                     <MapPin className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Endereço</h3>
+                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">Endereço</h3>
                     <p className="text-gray-600">{config.address}</p>
                   </div>
                 </div>
@@ -1382,36 +1570,46 @@ export default function SiteHomePage() {
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-4 p-4 rounded-lg bg-green-50 hover:bg-green-100 transition-colors duration-200 group"
+                  className="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all duration-200 group shadow-lg hover:shadow-xl hover:scale-105"
                 >
-                  <div className="flex-shrink-0 w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="flex-shrink-0 w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">WhatsApp</h3>
-                    <p className="text-gray-600">Clique para conversar</p>
+                    <h3 className="font-semibold text-white mb-1 text-lg">WhatsApp</h3>
+                    <p className="text-green-50">Clique para conversar</p>
                   </div>
                 </a>
               </div>
 
               {/* Call to Action Card */}
-              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-8 text-white">
-                <h3 className="text-2xl font-bold mb-4">Pronto para começar?</h3>
-                <p className="mb-6 text-blue-100">
-                  Entre em contato conosco e descubra como podemos ajudar sua empresa
-                  a ter mais eficiência e controle sobre sua frota.
-                </p>
-                <a
-                  href={formatWhatsAppLink(
-                    config.whatsapp,
-                    'Olá! Gostaria de uma demonstração do sistema.'
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors duration-200"
-                >
-                  Solicitar Demonstração
-                </a>
+              <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-8 md:p-10 text-white shadow-2xl relative overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+                <div className="relative">
+                  <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl mb-4">
+                    <TrendingUp className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-4">Pronto para começar?</h3>
+                  <p className="mb-8 text-blue-50 leading-relaxed">
+                    Entre em contato conosco e descubra como podemos ajudar sua empresa
+                    a ter mais eficiência e controle sobre sua frota.
+                  </p>
+                  <a
+                    href={formatWhatsAppLink(
+                      config.whatsapp,
+                      'Olá! Gostaria de uma demonstração do sistema.'
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                  >
+                    <Activity className="w-5 h-5" />
+                    Solicitar Demonstração
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -1419,26 +1617,33 @@ export default function SiteHomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
+      <footer className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white py-16 relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl"></div>
+
+        <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
               <div className="text-center md:text-left">
-                <h3 className="text-xl font-semibold mb-2">{config.company_name}</h3>
-                <p className="text-gray-400">
+                <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
+                  <Truck className="w-8 h-8 text-blue-500" />
+                  <h3 className="text-2xl font-bold">{config.company_name}</h3>
+                </div>
+                <p className="text-gray-400 text-lg">
                   Gestão Inteligente de Frotas e Veículos
                 </p>
               </div>
 
               {/* Social Media Links */}
               {(config.facebook_url || config.instagram_url || config.linkedin_url) && (
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   {config.facebook_url && (
                     <a
                       href={config.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors duration-200"
+                      className="w-12 h-12 bg-gray-800 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
                       aria-label="Facebook"
                     >
                       <Facebook className="w-5 h-5" />
@@ -1449,7 +1654,7 @@ export default function SiteHomePage() {
                       href={config.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 bg-gray-800 hover:bg-pink-600 rounded-full flex items-center justify-center transition-colors duration-200"
+                      className="w-12 h-12 bg-gray-800 hover:bg-pink-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
                       aria-label="Instagram"
                     >
                       <Instagram className="w-5 h-5" />
@@ -1460,7 +1665,7 @@ export default function SiteHomePage() {
                       href={config.linkedin_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 bg-gray-800 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors duration-200"
+                      className="w-12 h-12 bg-gray-800 hover:bg-blue-700 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
                       aria-label="LinkedIn"
                     >
                       <Linkedin className="w-5 h-5" />
@@ -1470,8 +1675,10 @@ export default function SiteHomePage() {
               )}
             </div>
 
-            <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
-              <p>&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
+            <div className="pt-8 border-t border-gray-800 text-center">
+              <p className="text-gray-400">
+                &copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.
+              </p>
             </div>
           </div>
         </div>
