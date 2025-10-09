@@ -7,12 +7,24 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useAuthContext } from "@/context/AuthContext"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [forgotPasswordError, setForgotPasswordError] = useState("")
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState("")
+  const [isSubmittingForgotPassword, setIsSubmittingForgotPassword] = useState(false)
   const router = useRouter()
   const { login } = useAuthContext()
 
@@ -49,6 +61,48 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     } catch (err) {
       console.error("Erro no login:", err)
       setError("Erro de conexão com o servidor. Tente novamente mais tarde.")
+    }
+  }
+
+  async function handleForgotPassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setForgotPasswordError("")
+    setForgotPasswordSuccess("")
+    setIsSubmittingForgotPassword(true)
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+      const response = await fetch(`${API_URL}/api/auth/password/reset/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setForgotPasswordSuccess(
+          data.message || "Instruções de recuperação de senha foram enviadas para seu email."
+        )
+        setForgotPasswordEmail("")
+
+        // Fechar o modal após 3 segundos
+        setTimeout(() => {
+          setIsForgotPasswordOpen(false)
+          setForgotPasswordSuccess("")
+        }, 3000)
+      } else {
+        const errorMessage =
+          data?.detail ||
+          data?.email?.[0] ||
+          "Erro ao enviar email de recuperação. Verifique o endereço informado."
+        setForgotPasswordError(errorMessage)
+      }
+    } catch (err) {
+      console.error("Erro ao solicitar recuperação de senha:", err)
+      setForgotPasswordError("Erro de conexão com o servidor. Tente novamente mais tarde.")
+    } finally {
+      setIsSubmittingForgotPassword(false)
     }
   }
 
@@ -118,9 +172,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
                     Senha
                   </Label>
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPasswordOpen(true)}
+                    className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
+                  >
                     Esqueceu a senha?
-                  </a>
+                  </button>
                 </div>
                 <Input
                   id="password"
@@ -148,6 +206,122 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       <div className="text-center text-gray-500 text-sm">
         <p>© 2024 ViaLumiar. Todos os direitos reservados.</p>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <svg
+                className="w-6 h-6 text-blue-600"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Recuperar Senha
+            </DialogTitle>
+            <DialogDescription>
+              Digite seu email e enviaremos instruções para recuperar sua senha.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleForgotPassword} className="space-y-6 mt-4">
+            {forgotPasswordError && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+                <div className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-red-500 mr-3"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 102 0V7zm-1 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-red-800 text-sm">{forgotPasswordError}</span>
+                </div>
+              </div>
+            )}
+
+            {forgotPasswordSuccess && (
+              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
+                <div className="flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-green-500 mr-3"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-green-800 text-sm">{forgotPasswordSuccess}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="forgotPasswordEmail" className="block text-sm font-medium text-gray-700">
+                Email
+              </Label>
+              <Input
+                id="forgotPasswordEmail"
+                type="email"
+                placeholder="seu.email@exemplo.com"
+                required
+                value={forgotPasswordEmail}
+                onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                className="w-full h-12 px-4 bg-gray-50 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                disabled={isSubmittingForgotPassword}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsForgotPasswordOpen(false)
+                  setForgotPasswordEmail("")
+                  setForgotPasswordError("")
+                  setForgotPasswordSuccess("")
+                }}
+                className="flex-1 h-12"
+                disabled={isSubmittingForgotPassword}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                disabled={isSubmittingForgotPassword}
+              >
+                {isSubmittingForgotPassword ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  "Enviar"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
