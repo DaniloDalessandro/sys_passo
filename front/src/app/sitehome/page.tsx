@@ -30,7 +30,8 @@ import {
   CreditCard,
   AlertTriangle,
   TrendingUp,
-  Activity
+  Activity,
+  Camera
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -710,7 +711,7 @@ export default function SiteHomePage() {
         </div>
       </nav>
 
-      {/* Hero Section - Moderno com Animações de Veículos */}
+      {/* Hero Section */}
       <section id="inicio" className="relative min-h-[75vh] bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-24 pb-12 overflow-hidden">
         {/* Enhanced Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -724,16 +725,32 @@ export default function SiteHomePage() {
 
         {/* Floating Icons */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 left-1/4 animate-float-1">
+          <div className="absolute top-1/3 left-1/4 animate-float-icon-1">
             <Users className="w-12 h-12 text-blue-300/20" />
           </div>
 
-          <div className="absolute bottom-1/4 right-1/4 animate-float-2">
+          <div className="absolute bottom-1/4 right-1/4 animate-float-icon-2">
             <Shield className="w-10 h-10 text-purple-300/20" />
           </div>
 
-          <div className="absolute top-2/3 left-1/3 animate-float-1" style={{ animationDelay: '2s' }}>
+          <div className="absolute top-2/3 left-1/3 animate-float-icon-3" style={{ animationDelay: '2s' }}>
             <Activity className="w-10 h-10 text-indigo-300/20" />
+          </div>
+
+          <div className="absolute top-1/4 right-1/3 animate-float-icon-1" style={{ animationDelay: '1s' }}>
+            <Car className="w-16 h-16 text-blue-300/10" />
+          </div>
+
+          <div className="absolute bottom-1/3 left-1/2 animate-float-icon-2" style={{ animationDelay: '3s' }}>
+            <Car className="w-10 h-10 text-purple-300/10" />
+          </div>
+
+          <div className="absolute top-1/2 right-1/2 animate-float-icon-3" style={{ animationDelay: '4s' }}>
+            <Car className="w-12 h-12 text-indigo-300/10" />
+          </div>
+
+          <div className="absolute bottom-1/2 left-1/4 animate-float-icon-1" style={{ animationDelay: '5s' }}>
+            <Car className="w-8 h-8 text-blue-300/10" />
           </div>
         </div>
 
@@ -748,27 +765,26 @@ export default function SiteHomePage() {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <a
-                href={formatWhatsAppLink(
-                  config.whatsapp,
-                  'Olá! Gostaria de saber mais sobre os serviços da ' + config.company_name
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white px-8 py-4 rounded-full text-sm font-medium transition-all duration-300 hover:shadow-xl hover:scale-105"
-              >
-                <MessageCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                Fale Conosco
-              </a>
-              <button
-                onClick={() => setIsVehicleSearchDialogOpen(true)}
-                className="group inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 px-8 py-4 rounded-full text-sm font-medium border-2 border-gray-200 hover:border-gray-900 transition-all duration-300 hover:shadow-lg hover:scale-105"
-              >
-                <Car className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Consultar Veículo
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </button>
+            <div className="w-full max-w-2xl mx-auto pt-2 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className="relative flex items-center">
+                <div className="absolute top-1/2 left-2 -translate-y-1/2 flex items-center">
+                    <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 text-gray-500 hover:text-gray-800">
+                        <Camera className="w-6 h-6" />
+                    </Button>
+                </div>
+                <Input
+                  type="text"
+                  placeholder="Digite a placa do veículo"
+                  className="w-full pl-16 pr-6 py-5 text-lg text-gray-700 bg-white border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 transition-all"
+                  value={searchPlate}
+                  onChange={(e) => setSearchPlate(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setIsVehicleSearchDialogOpen(true);
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             {/* Animated Counters */}
@@ -780,11 +796,11 @@ export default function SiteHomePage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-pulse"></div>
 
                     {/* Rotating border effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
 
                     <div className="relative z-10">
                       <Car className="w-8 h-8 mx-auto mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
-                      <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                      <div className="text-5xl font-bold text-gray-800 mb-2 group-hover:scale-110 transition-transform">
                         <AnimatedCounter end={vehicleCount} label="" />
                       </div>
                       <div className="text-sm font-medium text-gray-600">Veículos Cadastrados</div>
@@ -797,11 +813,11 @@ export default function SiteHomePage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 animate-pulse"></div>
 
                     {/* Rotating border effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
 
                     <div className="relative z-10">
                       <Users className="w-8 h-8 mx-auto mb-2 text-purple-600 group-hover:scale-110 transition-transform" />
-                      <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                      <div className="text-5xl font-bold text-gray-800 mb-2 group-hover:scale-110 transition-transform">
                         <AnimatedCounter end={conductorCount} label="" />
                       </div>
                       <div className="text-sm font-medium text-gray-600">Motoristas Ativos</div>
@@ -912,89 +928,7 @@ export default function SiteHomePage() {
           }
         }
 
-        @keyframes wheel-spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes speed-lines {
-          0%, 100% {
-            opacity: 0.2;
-            transform: translateX(0);
-          }
-          50% {
-            opacity: 0.5;
-            transform: translateX(-15px);
-          }
-        }
-
-        @keyframes shadow-pulse {
-          0%, 100% {
-            opacity: 0.3;
-            transform: scaleX(1);
-          }
-          50% {
-            opacity: 0.5;
-            transform: scaleX(1.05);
-          }
-        }
-
-        @keyframes vehicle-subtle {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-2px);
-          }
-        }
-
-        @keyframes window-tint {
-          0%, 100% {
-            opacity: 0.7;
-          }
-          50% {
-            opacity: 0.85;
-          }
-        }
-
-        @keyframes headlight-glow {
-          0%, 100% {
-            opacity: 0.8;
-            filter: brightness(1);
-          }
-          50% {
-            opacity: 1;
-            filter: brightness(1.3);
-          }
-        }
-
-        @keyframes accent-shimmer {
-          0% {
-            opacity: 0.3;
-            stroke-dashoffset: 0;
-          }
-          50% {
-            opacity: 0.7;
-            stroke-dashoffset: 50;
-          }
-          100% {
-            opacity: 0.3;
-            stroke-dashoffset: 100;
-          }
-        }
-
-        @keyframes road-lines {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-100px);
-          }
-        }
+        
 
         @keyframes spin-slow {
           0% {
@@ -1045,37 +979,7 @@ export default function SiteHomePage() {
           animation: float-icon-3 9s ease-in-out infinite 1s;
         }
 
-        .animate-wheel-spin {
-          animation: wheel-spin 4s linear infinite;
-        }
-
-        .animate-speed-lines {
-          animation: speed-lines 3s ease-in-out infinite;
-        }
-
-        .animate-shadow-pulse {
-          animation: shadow-pulse 10s ease-in-out infinite;
-        }
-
-        .animate-vehicle-subtle {
-          animation: vehicle-subtle 5s ease-in-out infinite;
-        }
-
-        .animate-window-tint {
-          animation: window-tint 6s ease-in-out infinite;
-        }
-
-        .animate-headlight-glow {
-          animation: headlight-glow 4s ease-in-out infinite;
-        }
-
-        .animate-accent-shimmer {
-          animation: accent-shimmer 8s linear infinite;
-        }
-
-        .animate-road-lines {
-          animation: road-lines 15s linear infinite;
-        }
+        
 
         .animate-spin-slow {
           animation: spin-slow 3s linear infinite;
@@ -1108,7 +1012,7 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* Registration Section - Moderno com Animações */}
+      {/* Registration Section */}
       <section id="cadastro" className="py-16 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
