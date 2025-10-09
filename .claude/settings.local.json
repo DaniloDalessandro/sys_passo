@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"venv\\Scripts\\python.exe\" manage.py shell -c \"from sitehome.models import SiteConfiguration; print(''Total antes:'', SiteConfiguration.objects.count()); config = SiteConfiguration.objects.get_configuration(); print(''ID:'', config.id); config.company_name = ''Sys Passo''; config.save(); print(''Total depois de atualizar:'', SiteConfiguration.objects.count()); print(''Singleton funcionando corretamente!'')\")"
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": []

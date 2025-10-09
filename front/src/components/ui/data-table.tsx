@@ -8,6 +8,8 @@ import {
   getSortedRowModel,
   flexRender,
   getFilteredRowModel,
+  ColumnDef,
+  VisibilityState,
 } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +53,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function DataTable({
+interface DataTableProps<TData> {
+  columns: ColumnDef<TData, any>[];
+  data: TData[];
+  title: string;
+  subtitle?: string;
+  pageSize?: number;
+  pageIndex?: number;
+  totalCount?: number;
+  onPageChange?: (pageIndex: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  onAdd?: () => void;
+  onEdit?: (row: TData) => void;
+  onDelete?: (row: TData) => void;
+  onViewDetails?: (row: TData) => void;
+  onFilterChange?: (columnId: string, value: string) => void;
+  onSortingChange?: (sorting: any[]) => void;
+  readOnly?: boolean;
+  defaultVisibleColumns?: string[] | null;
+  columnVisibility?: VisibilityState | null;
+  onColumnVisibilityChange?: React.Dispatch<React.SetStateAction<VisibilityState>> | null;
+}
+
+export function DataTable<TData>({
   columns,
   data,
   title,
@@ -68,13 +92,28 @@ export function DataTable({
   onFilterChange,
   onSortingChange,
   readOnly = false,
-}) {
+  defaultVisibleColumns = null,
+  columnVisibility: externalColumnVisibility = null,
+  onColumnVisibilityChange: externalOnColumnVisibilityChange = null,
+}: DataTableProps<TData>) {
   // Initialize column visibility with audit fields hidden by default
   const getInitialColumnVisibility = React.useCallback(() => {
+    // If parent provides default visible columns, use those
+    if (defaultVisibleColumns) {
+      const initialVisibility = {};
+      columns.forEach(column => {
+        const columnId = column.accessorKey || column.id;
+        // Only show columns that are in the defaultVisibleColumns array
+        initialVisibility[columnId] = defaultVisibleColumns.includes(columnId);
+      });
+      return initialVisibility;
+    }
+
+    // Otherwise, use the legacy system (hide audit fields by default)
     const hiddenByDefaultFields = [
       // Audit fields
       'created_at', 'criado_em', 'createdAt',
-      'created_by', 'criado_por', 'createdBy', 
+      'created_by', 'criado_por', 'createdBy',
       'updated_at', 'atualizado_em', 'updatedAt',
       'updated_by', 'atualizado_por', 'updatedBy',
       // Budget Lines secondary fields
@@ -89,40 +128,46 @@ export function DataTable({
       // Optional fields that should be hidden by default
       'phone', 'telefone'
     ];
-    
+
     const initialVisibility = {};
     columns.forEach(column => {
       const columnId = column.accessorKey || column.id;
       const headerText = (column.header || '').toString().toLowerCase();
-      
+
       // Check if this field should be hidden by default
-      const shouldHide = hiddenByDefaultFields.some(field => 
-        columnId === field || 
-        headerText.includes('criado') || 
+      const shouldHide = hiddenByDefaultFields.some(field =>
+        columnId === field ||
+        headerText.includes('criado') ||
         headerText.includes('atualizado') ||
         headerText.includes('created') ||
         headerText.includes('updated') ||
         headerText.includes('telefone')
       );
-      
+
       if (shouldHide) {
         initialVisibility[columnId] = false;
       }
     });
-    
+
     return initialVisibility;
-  }, [columns]);
+  }, [columns, defaultVisibleColumns]);
 
-  const [columnVisibility, setColumnVisibility] = React.useState(() => getInitialColumnVisibility());
-  const [selectedRow, setSelectedRow] = React.useState(null);
-  const [sorting, setSorting] = React.useState([]);
-  const [columnFilters, setColumnFilters] = React.useState([]);
-  const [openFilterId, setOpenFilterId] = React.useState(null);
+  const [internalColumnVisibility, setInternalColumnVisibility] = React.useState<VisibilityState>(() => getInitialColumnVisibility());
+  const [selectedRow, setSelectedRow] = React.useState<TData | null>(null);
+  const [sorting, setSorting] = React.useState<any[]>([]);
+  const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
+  const [openFilterId, setOpenFilterId] = React.useState<string | null>(null);
 
-  // Update column visibility when columns change
+  // Use external column visibility if provided, otherwise use internal state
+  const columnVisibility: VisibilityState = externalColumnVisibility !== null ? externalColumnVisibility : internalColumnVisibility;
+  const setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>> = externalOnColumnVisibilityChange !== null ? externalOnColumnVisibilityChange : setInternalColumnVisibility;
+
+  // Update column visibility when columns change (only for internal state)
   React.useEffect(() => {
-    setColumnVisibility(prev => ({ ...getInitialColumnVisibility(), ...prev }));
-  }, [getInitialColumnVisibility]);
+    if (externalColumnVisibility === null) {
+      setInternalColumnVisibility(prev => ({ ...getInitialColumnVisibility(), ...prev }));
+    }
+  }, [getInitialColumnVisibility, externalColumnVisibility]);
 
   const table = useReactTable({
     data,
@@ -246,25 +291,56 @@ export function DataTable({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Settings className="h-6 w-6 cursor-pointer" />
+                <Settings
+                  className="h-6 w-6 cursor-pointer"
+                  aria-label="Configurar colunas"
+                  role="button"
+                />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onSelect={(e) => {
-                        e.preventDefault();
-                        column.toggleVisibility(!column.getIsVisible());
-                      }}
-                    >
-                      {column.columnDef.header || column.id}
-                    </DropdownMenuCheckboxItem>
-                  ))}
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5 text-sm font-semibold border-b mb-1">
+                  Colunas Visíveis
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onSelect={(e) => {
+                          e.preventDefault();
+                          column.toggleVisibility(!column.getIsVisible());
+                        }}
+                      >
+                        {column.columnDef.header || column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </div>
+                {defaultVisibleColumns && (
+                  <>
+                    <div className="border-t my-1" />
+                    <div className="px-2 py-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => {
+                          const defaultVisibility = {};
+                          columns.forEach(column => {
+                            const columnId = column.accessorKey || column.id;
+                            defaultVisibility[columnId] = defaultVisibleColumns.includes(columnId);
+                          });
+                          setColumnVisibility(defaultVisibility);
+                        }}
+                      >
+                        Resetar para Padrão
+                      </Button>
+                    </div>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

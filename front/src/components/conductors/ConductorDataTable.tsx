@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTable } from "@/components/ui/data-table";
@@ -15,6 +15,17 @@ interface ConductorDataTableProps {
   isLoading?: boolean;
 }
 
+const STORAGE_KEY = "conductor-table-column-visibility";
+
+// Default visible columns - only 5 main columns
+const DEFAULT_VISIBLE_COLUMNS = [
+  "name",
+  "cpf",
+  "license_number",
+  "license_category",
+  "is_active"
+];
+
 export function ConductorDataTable({
   conductors,
   onAdd,
@@ -25,6 +36,28 @@ export function ConductorDataTable({
 }: ConductorDataTableProps) {
   // Status filter state - empty means show only active by default
   const [statusFilter, setStatusFilter] = useState<string>("");
+
+  // Column visibility state with localStorage persistence
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Failed to parse saved column visibility", e);
+        }
+      }
+    }
+    return {};
+  });
+
+  // Save column visibility to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && Object.keys(columnVisibility).length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(columnVisibility));
+    }
+  }, [columnVisibility]);
 
   const isLicenseExpiringSoon = (dateString: string) => {
     const date = new Date(dateString);
@@ -68,6 +101,47 @@ export function ConductorDataTable({
         },
       },
       {
+        accessorKey: "license_number",
+        header: "CNH",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.license_number;
+        },
+      },
+      {
+        accessorKey: "license_category",
+        header: "Categoria",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.license_category;
+        },
+      },
+      {
+        accessorKey: "is_active",
+        header: "Status",
+        meta: {
+          showFilterIcon: true,
+          filterType: "select",
+          filterOptions: [
+            { value: "Todos", label: "Todos" },
+            { value: "Inativo", label: "Inativo" },
+          ],
+          filterValue: statusFilter,
+          onFilterChange: setStatusFilter,
+        },
+        cell: ({ row }: any) => {
+          const isActive = row.getValue("is_active") as boolean;
+          return isActive ? "Ativo" : "Inativo";
+        },
+      },
+      // Optional columns (hidden by default)
+      {
         accessorKey: "phone",
         header: "Telefone",
         meta: {
@@ -87,6 +161,17 @@ export function ConductorDataTable({
         cell: ({ row }: any) => {
           const conductor = row.original as Conductor;
           return conductor.whatsapp || "-";
+        },
+      },
+      {
+        accessorKey: "email",
+        header: "Email",
+        meta: {
+          showFilterIcon: true,
+        },
+        cell: ({ row }: any) => {
+          const conductor = row.original as Conductor;
+          return conductor.email || "-";
         },
       },
       {
@@ -136,28 +221,6 @@ export function ConductorDataTable({
         },
       },
       {
-        accessorKey: "license_category",
-        header: "Categoria CNH",
-        meta: {
-          showFilterIcon: true,
-        },
-        cell: ({ row }: any) => {
-          const conductor = row.original as Conductor;
-          return conductor.license_category;
-        },
-      },
-      {
-        accessorKey: "license_number",
-        header: "Nº CNH",
-        meta: {
-          showFilterIcon: true,
-        },
-        cell: ({ row }: any) => {
-          const conductor = row.original as Conductor;
-          return conductor.license_number;
-        },
-      },
-      {
         accessorKey: "license_expiry_date",
         header: "Validade CNH",
         meta: {
@@ -190,24 +253,6 @@ export function ConductorDataTable({
               {docs.length > 0 ? docs.join(", ") : "-"}
             </div>
           );
-        },
-      },
-      {
-        accessorKey: "is_active",
-        header: "Status",
-        meta: {
-          showFilterIcon: true,
-          filterType: "select",
-          filterOptions: [
-            { value: "Todos", label: "Todos" },
-            { value: "Inativo", label: "Inativo" },
-          ],
-          filterValue: statusFilter,
-          onFilterChange: setStatusFilter,
-        },
-        cell: ({ row }: any) => {
-          const isActive = row.getValue("is_active") as boolean;
-          return isActive ? "Ativo" : "Inativo";
         },
       },
       {
@@ -257,6 +302,9 @@ export function ConductorDataTable({
         onFilterChange={() => {}}
         onSortingChange={() => {}}
         readOnly={false}
+        defaultVisibleColumns={DEFAULT_VISIBLE_COLUMNS}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
       />
     </div>
   );
