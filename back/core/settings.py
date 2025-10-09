@@ -1,4 +1,3 @@
-
 """
 Django settings for core project.
 
@@ -36,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -349,4 +349,12 @@ LOGGING = {
             'propagate': True,
         },
     },
+}
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Sys Passo Admin",
+    "site_header": "Sys Passo",
+    "site_brand": "Sys Passo",
+    "welcome_sign": "Bem-vindo ao Sys Passo",
+    "copyright": "Sys Passo",
 }

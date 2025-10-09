@@ -207,11 +207,9 @@ function AnimatedCounter({ end, duration = 2000, label }: { end: number; duratio
   }, [end, duration, isVisible]);
 
   return (
-    <div ref={counterRef} className="text-center">
-      <div className="text-5xl md:text-6xl font-bold text-white mb-2">
-        {count.toLocaleString('pt-BR')}
-      </div>
-      <div className="text-xl text-blue-100">{label}</div>
+    <div ref={counterRef}>
+      {count.toLocaleString('pt-BR')}
+      {label && <div className="text-xl text-blue-100">{label}</div>}
     </div>
   );
 }
@@ -223,11 +221,16 @@ export default function SiteHomePage() {
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
+  const [isVehicleSearchDialogOpen, setIsVehicleSearchDialogOpen] = useState(false);
   const [plateOptions, setPlateOptions] = useState<Array<{plate: string, label: string}>>([]);
   const [isLoadingPlates, setIsLoadingPlates] = useState(false);
   const [vehicleCount, setVehicleCount] = useState(0);
   const [conductorCount, setConductorCount] = useState(0);
   const [isLoadingCounts, setIsLoadingCounts] = useState(true);
+  const [searchPlate, setSearchPlate] = useState('');
+  const [vehicleData, setVehicleData] = useState<any>(null);
+  const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   // Driver form
   const driverForm = useForm<DriverFormData>({
@@ -562,129 +565,142 @@ export default function SiteHomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
+    <div className="min-h-screen bg-white">
+      {/* Navbar - Minimalista */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'bg-white shadow-lg'
-            : 'bg-white/90 backdrop-blur-sm'
+            ? 'bg-white border-b border-gray-100'
+            : 'bg-white/80 backdrop-blur-md'
         }`}
       >
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center">
               {config.logo_url ? (
                 <Image
                   src={config.logo_url}
                   alt={config.company_name}
-                  width={120}
-                  height={40}
-                  className="h-10 w-auto"
+                  width={100}
+                  height={32}
+                  className="h-8 w-auto"
                   priority
                 />
               ) : (
-                <div className="flex items-center gap-2">
-                  <Truck className="w-8 h-8 text-blue-600" />
-                  <span className="text-xl font-bold text-gray-900">
-                    {config.company_name}
-                  </span>
-                </div>
+                <span className="text-lg font-semibold text-gray-900">
+                  {config.company_name}
+                </span>
               )}
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-2">
               <button
                 onClick={() => scrollToSection('inicio')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                className="relative text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all group"
               >
                 Início
-              </button>
-              <button
-                onClick={() => scrollToSection('servicos')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Serviços
-              </button>
-              <button
-                onClick={() => scrollToSection('cadastro')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Cadastro
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-3/4 transition-all duration-300"></span>
               </button>
               <button
                 onClick={() => scrollToSection('about')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                className="relative text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all group"
               >
                 Sobre
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-3/4 transition-all duration-300"></span>
+              </button>
+              <button
+                onClick={() => scrollToSection('cadastro')}
+                className="relative text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all group"
+              >
+                Cadastros
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-3/4 transition-all duration-300"></span>
               </button>
               <button
                 onClick={() => scrollToSection('denuncias')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                className="relative text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all group"
               >
                 Denúncias
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-3/4 transition-all duration-300"></span>
               </button>
               <button
-                onClick={() => scrollToSection('contato')}
-                className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                onClick={() => {
+                  const section = document.querySelector('section.py-20.bg-gradient-to-br.from-gray-50.to-white');
+                  if (section) {
+                    const offset = 80;
+                    const elementPosition = section.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - offset;
+                    window.scrollTo({
+                      top: offsetPosition,
+                      behavior: 'smooth',
+                    });
+                  }
+                }}
+                className="relative text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all group"
               >
                 Contato
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-3/4 transition-all duration-300"></span>
               </button>
             </div>
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? (
-                <X className="w-6 h-6 text-gray-700" />
+                <X className="w-5 h-5 text-gray-700" />
               ) : (
-                <Menu className="w-6 h-6 text-gray-700" />
+                <Menu className="w-5 h-5 text-gray-700" />
               )}
             </button>
           </div>
 
           {/* Mobile Navigation */}
           {isMobileMenuOpen && (
-            <div className="lg:hidden py-4 border-t border-gray-200">
-              <div className="flex flex-col gap-2">
+            <div className="lg:hidden py-4 border-t border-gray-100">
+              <div className="flex flex-col gap-1">
                 <button
                   onClick={() => scrollToSection('inicio')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="text-left text-sm px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
                 >
                   Início
                 </button>
                 <button
-                  onClick={() => scrollToSection('servicos')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Serviços
-                </button>
-                <button
-                  onClick={() => scrollToSection('cadastro')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Cadastro
-                </button>
-                <button
                   onClick={() => scrollToSection('about')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="text-left text-sm px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
                 >
                   Sobre
                 </button>
                 <button
+                  onClick={() => scrollToSection('cadastro')}
+                  className="text-left text-sm px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
+                >
+                  Cadastros
+                </button>
+                <button
                   onClick={() => scrollToSection('denuncias')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="text-left text-sm px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
                 >
                   Denúncias
                 </button>
                 <button
-                  onClick={() => scrollToSection('contato')}
-                  className="text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => {
+                    const section = document.querySelector('section.py-20.bg-gradient-to-br.from-gray-50.to-white');
+                    if (section) {
+                      const offset = 80;
+                      const elementPosition = section.getBoundingClientRect().top;
+                      const offsetPosition = elementPosition + window.pageYOffset - offset;
+                      window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth',
+                      });
+                    }
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-left text-sm px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all"
                 >
                   Contato
                 </button>
@@ -694,34 +710,45 @@ export default function SiteHomePage() {
         </div>
       </nav>
 
-      {/* Hero Section with Background Image */}
-      <section id="inicio" className="relative min-h-[700px] text-white pt-32 overflow-hidden">
-        {/* Background Image with Overlay */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1588783948922-17f4b0d4c935?q=80&w=2070&auto=format&fit=crop"
-            alt="Cidade de Passo do Lumiar"
-            fill
-            className="object-cover"
-            priority
-            quality={85}
-          />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-blue-700/85"></div>
-          {/* Pattern overlay */}
-          <div className="absolute inset-0 bg-[url('/hero-pattern.svg')] opacity-5"></div>
+      {/* Hero Section - Moderno com Animações de Veículos */}
+      <section id="inicio" className="relative min-h-[75vh] bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-24 pb-12 overflow-hidden">
+        {/* Enhanced Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/15 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-blue-200/15 to-purple-200/15 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+
+          {/* Animated gradient mesh overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 animate-gradient-shift"></div>
         </div>
 
-        {/* Content */}
-        <div className="relative container mx-auto px-4 py-16 lg:py-24">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
-              {config.hero_title}
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-50 mb-10 leading-relaxed drop-shadow-md">
-              {config.hero_subtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+        {/* Floating Icons */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/3 left-1/4 animate-float-1">
+            <Users className="w-12 h-12 text-blue-300/20" />
+          </div>
+
+          <div className="absolute bottom-1/4 right-1/4 animate-float-2">
+            <Shield className="w-10 h-10 text-purple-300/20" />
+          </div>
+
+          <div className="absolute top-2/3 left-1/3 animate-float-1" style={{ animationDelay: '2s' }}>
+            <Activity className="w-10 h-10 text-indigo-300/20" />
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <div className="space-y-4 animate-fade-in">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 tracking-tight animate-slide-up">
+                {config.hero_title}
+              </h1>
+              <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                {config.hero_subtitle}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <a
                 href={formatWhatsAppLink(
                   config.whatsapp,
@@ -729,212 +756,579 @@ export default function SiteHomePage() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
+                className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white px-8 py-4 rounded-full text-sm font-medium transition-all duration-300 hover:shadow-xl hover:scale-105"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
                 Fale Conosco
               </a>
               <button
-                onClick={() => scrollToSection('about')}
-                className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 border border-white/30 hover:border-white/50"
+                onClick={() => setIsVehicleSearchDialogOpen(true)}
+                className="group inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-900 px-8 py-4 rounded-full text-sm font-medium border-2 border-gray-200 hover:border-gray-900 transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
-                Saiba Mais
+                <Car className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                Consultar Veículo
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
             </div>
 
             {/* Animated Counters */}
             {!isLoadingCounts && (vehicleCount > 0 || conductorCount > 0) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-2xl mx-auto mt-12">
+              <div className="grid grid-cols-2 gap-6 max-w-lg mx-auto pt-10 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                 {vehicleCount > 0 && (
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
-                    <Car className="w-12 h-12 text-blue-200 mx-auto mb-4" />
-                    <AnimatedCounter end={vehicleCount} label="Veículos Cadastrados" />
+                  <div className="group relative text-center p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                    {/* Animated background pulse */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 animate-pulse"></div>
+
+                    {/* Rotating border effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
+
+                    <div className="relative z-10">
+                      <Car className="w-8 h-8 mx-auto mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
+                      <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                        <AnimatedCounter end={vehicleCount} label="" />
+                      </div>
+                      <div className="text-sm font-medium text-gray-600">Veículos Cadastrados</div>
+                    </div>
                   </div>
                 )}
                 {conductorCount > 0 && (
-                  <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-2xl">
-                    <Users className="w-12 h-12 text-blue-200 mx-auto mb-4" />
-                    <AnimatedCounter end={conductorCount} label="Motoristas Registrados" />
+                  <div className="group relative text-center p-6 rounded-2xl bg-white/50 backdrop-blur-sm border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
+                    {/* Animated background pulse */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 animate-pulse"></div>
+
+                    {/* Rotating border effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm animate-spin-slow"></div>
+
+                    <div className="relative z-10">
+                      <Users className="w-8 h-8 mx-auto mb-2 text-purple-600 group-hover:scale-110 transition-transform" />
+                      <div className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 group-hover:scale-110 transition-transform">
+                        <AnimatedCounter end={conductorCount} label="" />
+                      </div>
+                      <div className="text-sm font-medium text-gray-600">Motoristas Ativos</div>
+                    </div>
                   </div>
                 )}
               </div>
             )}
           </div>
         </div>
-
-        {/* Wave Divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#ffffff"/>
-          </svg>
-        </div>
       </section>
 
-      {/* Features/Services Section */}
-      <section id="servicos" className="py-20 lg:py-28 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-              <BarChart3 className="w-8 h-8 text-blue-600" />
-            </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Nossos Serviços
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
-              Soluções completas para gestão eficiente da sua frota
-            </p>
-            <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: Truck,
-                title: 'Controle de Frota',
-                description: 'Gerencie todos os seus veículos em um só lugar'
-              },
-              {
-                icon: Users,
-                title: 'Gestão de Motoristas',
-                description: 'Acompanhe e organize sua equipe de condutores'
-              },
-              {
-                icon: Shield,
-                title: 'Segurança Total',
-                description: 'Dados protegidos e sistema confiável'
-              },
-              {
-                icon: BarChart3,
-                title: 'Relatórios Completos',
-                description: 'Análises detalhadas para melhor tomada de decisão'
-              }
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="text-center p-6 rounded-xl hover:bg-gray-50 transition-all duration-300 hover:shadow-lg group"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 group-hover:bg-blue-600 transition-colors">
-                  <feature.icon className="w-8 h-8 text-blue-600 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
 
-      {/* Registration Section */}
-      <section id="cadastro" className="py-20 lg:py-28 bg-gradient-to-br from-gray-50 to-blue-50 relative">
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes pulse-slow {
+          0%, 100% {
+            opacity: 0.8;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+        }
+
+        @keyframes gradient-shift {
+          0%, 100% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
+        @keyframes float-main {
+          0%, 100% {
+            transform: translateY(0) translateX(0) scale(1);
+          }
+          33% {
+            transform: translateY(-25px) translateX(8px) scale(1.015);
+          }
+          66% {
+            transform: translateY(-15px) translateX(-5px) scale(1.008);
+          }
+        }
+
+        @keyframes float-secondary {
+          0%, 100% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) translateX(-10px) rotate(-1deg);
+          }
+        }
+
+        @keyframes float-tertiary {
+          0%, 100% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-18px) translateX(12px) rotate(1deg);
+          }
+        }
+
+        @keyframes float-icon-1 {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg) scale(1);
+          }
+          50% {
+            transform: translateY(-22px) rotate(8deg) scale(1.1);
+          }
+        }
+
+        @keyframes float-icon-2 {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg) scale(1);
+          }
+          50% {
+            transform: translateY(-18px) rotate(-8deg) scale(1.08);
+          }
+        }
+
+        @keyframes float-icon-3 {
+          0%, 100% {
+            transform: translateY(0) rotate(0deg) scale(1);
+          }
+          50% {
+            transform: translateY(-20px) rotate(5deg) scale(1.12);
+          }
+        }
+
+        @keyframes wheel-spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes speed-lines {
+          0%, 100% {
+            opacity: 0.2;
+            transform: translateX(0);
+          }
+          50% {
+            opacity: 0.5;
+            transform: translateX(-15px);
+          }
+        }
+
+        @keyframes shadow-pulse {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scaleX(1);
+          }
+          50% {
+            opacity: 0.5;
+            transform: scaleX(1.05);
+          }
+        }
+
+        @keyframes vehicle-subtle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+
+        @keyframes window-tint {
+          0%, 100% {
+            opacity: 0.7;
+          }
+          50% {
+            opacity: 0.85;
+          }
+        }
+
+        @keyframes headlight-glow {
+          0%, 100% {
+            opacity: 0.8;
+            filter: brightness(1);
+          }
+          50% {
+            opacity: 1;
+            filter: brightness(1.3);
+          }
+        }
+
+        @keyframes accent-shimmer {
+          0% {
+            opacity: 0.3;
+            stroke-dashoffset: 0;
+          }
+          50% {
+            opacity: 0.7;
+            stroke-dashoffset: 50;
+          }
+          100% {
+            opacity: 0.3;
+            stroke-dashoffset: 100;
+          }
+        }
+
+        @keyframes road-lines {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-100px);
+          }
+        }
+
+        @keyframes spin-slow {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.8s ease-out;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.8s ease-out backwards;
+        }
+
+        .animate-pulse-slow {
+          animation: pulse-slow 6s ease-in-out infinite;
+        }
+
+        .animate-gradient-shift {
+          animation: gradient-shift 8s ease-in-out infinite;
+        }
+
+        .animate-float-main {
+          animation: float-main 10s ease-in-out infinite;
+        }
+
+        .animate-float-secondary {
+          animation: float-secondary 12s ease-in-out infinite;
+        }
+
+        .animate-float-tertiary {
+          animation: float-tertiary 14s ease-in-out infinite 1s;
+        }
+
+        .animate-float-icon-1 {
+          animation: float-icon-1 7s ease-in-out infinite;
+        }
+
+        .animate-float-icon-2 {
+          animation: float-icon-2 8s ease-in-out infinite 0.5s;
+        }
+
+        .animate-float-icon-3 {
+          animation: float-icon-3 9s ease-in-out infinite 1s;
+        }
+
+        .animate-wheel-spin {
+          animation: wheel-spin 4s linear infinite;
+        }
+
+        .animate-speed-lines {
+          animation: speed-lines 3s ease-in-out infinite;
+        }
+
+        .animate-shadow-pulse {
+          animation: shadow-pulse 10s ease-in-out infinite;
+        }
+
+        .animate-vehicle-subtle {
+          animation: vehicle-subtle 5s ease-in-out infinite;
+        }
+
+        .animate-window-tint {
+          animation: window-tint 6s ease-in-out infinite;
+        }
+
+        .animate-headlight-glow {
+          animation: headlight-glow 4s ease-in-out infinite;
+        }
+
+        .animate-accent-shimmer {
+          animation: accent-shimmer 8s linear infinite;
+        }
+
+        .animate-road-lines {
+          animation: road-lines 15s linear infinite;
+        }
+
+        .animate-spin-slow {
+          animation: spin-slow 3s linear infinite;
+        }
+      `}</style>
+
+      {/* About Section - Moderno (Logo após Hero) */}
+      <section id="about" className="py-16 bg-white relative overflow-hidden">
         {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 -translate-y-1/2 translate-x-1/2"></div>
 
         <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-              <FileText className="w-8 h-8 text-blue-600" />
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                Sobre Nós
+              </h2>
+              <div className="w-20 h-1 bg-gradient-to-r from-blue-600 to-purple-600 mx-auto rounded-full"></div>
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Solicite Seu Cadastro
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Cadastre motoristas e veículos de forma rápida e fácil
-            </p>
-            <div className="w-20 h-1 bg-blue-600 mx-auto mt-4"></div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Driver Registration Card */}
-            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-blue-500">
-              <CardHeader className="text-center pb-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4 mx-auto group-hover:bg-blue-600 transition-colors">
-                  <User className="w-10 h-10 text-blue-600 group-hover:text-white transition-colors" />
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+              <div className="relative bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-gray-100 hover:border-transparent transition-all duration-500">
+                <div className="text-gray-700 text-lg leading-relaxed whitespace-pre-line">
+                  {config.about_text}
                 </div>
-                <CardTitle className="text-2xl">Cadastrar Motorista</CardTitle>
-                <CardDescription className="text-base">
-                  Solicite o cadastro de um novo condutor
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setIsDriverDialogOpen(true)}
-                  className="w-full gap-2 text-base py-6"
-                  size="lg"
-                >
-                  <User className="w-5 h-5" />
-                  Solicitar Cadastro de Motorista
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Vehicle Registration Card */}
-            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-blue-500">
-              <CardHeader className="text-center pb-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4 mx-auto group-hover:bg-blue-600 transition-colors">
-                  <Car className="w-10 h-10 text-blue-600 group-hover:text-white transition-colors" />
-                </div>
-                <CardTitle className="text-2xl">Cadastrar Veículo</CardTitle>
-                <CardDescription className="text-base">
-                  Solicite o cadastro de um novo veículo na frota
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setIsVehicleDialogOpen(true)}
-                  className="w-full gap-2 text-base py-6"
-                  size="lg"
-                >
-                  <Car className="w-5 h-5" />
-                  Solicitar Cadastro de Veículo
-                </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Complaints Section */}
-      <section id="denuncias" className="py-20 lg:py-28 bg-white border-t-2 border-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
-              <AlertTriangle className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Denúncias
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Relate situações irregulares envolvendo veículos
-            </p>
-            <div className="w-20 h-1 bg-red-600 mx-auto mt-4"></div>
-          </div>
+      {/* Registration Section - Moderno com Animações */}
+      <section id="cadastro" className="py-16 bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-10 right-10 w-64 h-64 bg-blue-200/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 left-10 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+        </div>
 
-          <div className="max-w-2xl mx-auto">
-            <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-2 hover:border-red-500">
-              <CardHeader className="text-center pb-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-4 mx-auto group-hover:bg-red-600 transition-colors">
-                  <AlertTriangle className="w-10 h-10 text-red-600 group-hover:text-white transition-colors" />
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                Cadastros
+              </h2>
+              <p className="text-lg text-gray-600">
+                Solicite cadastro de motoristas e veículos de forma rápida
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Driver Registration Card */}
+              <button
+                onClick={() => setIsDriverDialogOpen(true)}
+                className="group relative bg-white hover:bg-gradient-to-br hover:from-blue-600 hover:to-purple-600 border-2 border-gray-200 hover:border-transparent rounded-3xl p-8 text-left transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 group-hover:bg-white/20 mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-white mb-3 transition-colors duration-300">
+                    Cadastrar Motorista
+                  </h3>
+                  <p className="text-sm text-gray-600 group-hover:text-white/90 transition-colors duration-300">
+                    Solicite o cadastro de um novo condutor para sua frota
+                  </p>
+
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-blue-600 group-hover:text-white transition-colors">
+                    <span>Iniciar cadastro</span>
+                    <span className="group-hover:translate-x-2 transition-transform duration-300">→</span>
+                  </div>
                 </div>
-                <CardTitle className="text-2xl">Fazer Denúncia</CardTitle>
-                <CardDescription className="text-base">
-                  Informe situações irregulares ou perigosas envolvendo veículos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setIsComplaintDialogOpen(true)}
-                  className="w-full gap-2 text-base py-6 bg-red-600 hover:bg-red-700"
-                  size="lg"
-                >
-                  <AlertTriangle className="w-5 h-5" />
-                  Registrar Denúncia
-                </Button>
-              </CardContent>
-            </Card>
+              </button>
+
+              {/* Vehicle Registration Card */}
+              <button
+                onClick={() => setIsVehicleDialogOpen(true)}
+                className="group relative bg-white hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 border-2 border-gray-200 hover:border-transparent rounded-3xl p-8 text-left transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 group-hover:bg-white/20 mb-5 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                    <Car className="w-8 h-8 text-white" />
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-gray-900 group-hover:text-white mb-3 transition-colors duration-300">
+                    Cadastrar Veículo
+                  </h3>
+                  <p className="text-sm text-gray-600 group-hover:text-white/90 transition-colors duration-300">
+                    Adicione um novo veículo à sua frota de forma simples
+                  </p>
+
+                  <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-purple-600 group-hover:text-white transition-colors">
+                    <span>Iniciar cadastro</span>
+                    <span className="group-hover:translate-x-2 transition-transform duration-300">→</span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Denúncias Section - Compacto */}
+      <section id="denuncias" className="py-12 bg-gradient-to-br from-red-50 via-orange-50 to-white relative overflow-hidden">
+        {/* Background decorativo */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-10 right-10 w-48 h-48 bg-red-200/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-2xl mb-3">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                Canal de Denúncias
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Ajude a manter a segurança no trânsito
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 md:p-6 shadow-lg border border-gray-100 mb-5">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Como funciona?</h3>
+              <div className="space-y-3 text-sm text-gray-700">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-xs font-bold text-red-600">1</span>
+                  </div>
+                  <p>Identifique a placa do veículo envolvido na situação irregular</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-xs font-bold text-red-600">2</span>
+                  </div>
+                  <p>Selecione o tipo de denúncia (excesso de velocidade, direção perigosa, etc.)</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-xs font-bold text-red-600">3</span>
+                  </div>
+                  <p>Descreva detalhadamente o ocorrido (data, local e circunstâncias)</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-xs font-bold text-red-600">4</span>
+                  </div>
+                  <p>Você pode fazer a denúncia de forma anônima ou identificada</p>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p className="text-xs text-blue-900">
+                  <strong>Importante:</strong> Todas as denúncias são analisadas pela equipe responsável.
+                  Denúncias falsas podem ser enquadradas como crime de denunciação caluniosa.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => setIsComplaintDialogOpen(true)}
+                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:shadow-xl hover:scale-105"
+              >
+                <AlertTriangle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                Fazer Denúncia
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section - Completo e Expandido */}
+      <section id="contato" className="py-14 bg-gradient-to-br from-gray-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                Entre em Contato
+              </h2>
+              <p className="text-lg text-gray-600">
+                Estamos prontos para atender você
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Telefone */}
+              <a
+                href={`tel:${config.phone.replace(/\D/g, '')}`}
+                className="group flex items-center gap-4 p-6 rounded-2xl bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-100"
+              >
+                <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Phone className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500 mb-1">Telefone</div>
+                  <div className="text-lg font-bold text-gray-900">{formatPhoneDisplay(config.phone)}</div>
+                </div>
+              </a>
+
+              {/* E-mail */}
+              <a
+                href={`mailto:${config.email}`}
+                className="group flex items-center gap-4 p-6 rounded-2xl bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-100"
+              >
+                <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Mail className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-gray-500 mb-1">E-mail</div>
+                  <div className="text-lg font-bold text-gray-900 break-all">{config.email}</div>
+                </div>
+              </a>
+
+              {/* Endereço */}
+              <div className="flex items-center gap-4 p-6 rounded-2xl bg-white border border-gray-100">
+                <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                  <MapPin className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-gray-500 mb-1">Endereço</div>
+                  <div className="text-lg font-bold text-gray-900">{config.address}</div>
+                </div>
+              </div>
+
+              {/* WhatsApp */}
+              <a
+                href={formatWhatsAppLink(
+                  config.whatsapp,
+                  'Olá! Gostaria de saber mais sobre os serviços.'
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4 p-6 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all duration-300 hover:shadow-xl hover:scale-105"
+              >
+                <div className="flex-shrink-0 w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <MessageCircle className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-green-100 mb-1">WhatsApp</div>
+                  <div className="text-lg font-bold text-white">Iniciar conversa agora</div>
+                </div>
+                <span className="text-white text-2xl group-hover:translate-x-2 transition-transform">→</span>
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -1282,6 +1676,185 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
+      {/* Vehicle Search Dialog */}
+      <Dialog open={isVehicleSearchDialogOpen} onOpenChange={setIsVehicleSearchDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Car className="w-6 h-6 text-blue-600" />
+              Consultar Veículo
+            </DialogTitle>
+            <DialogDescription>
+              Digite a placa do veículo para consultar suas informações.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="searchPlate" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Placa do Veículo
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="searchPlate"
+                  placeholder="ABC1D23"
+                  maxLength={7}
+                  value={searchPlate}
+                  onChange={(e) => {
+                    setSearchPlate(e.target.value.toUpperCase());
+                    setSearchError('');
+                    setVehicleData(null);
+                  }}
+                  className="uppercase"
+                />
+                <Button
+                  onClick={async () => {
+                    if (!searchPlate || searchPlate.length < 7) {
+                      setSearchError('Digite uma placa válida');
+                      return;
+                    }
+
+                    setIsSearchingVehicle(true);
+                    setSearchError('');
+                    setVehicleData(null);
+
+                    try {
+                      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+                      const response = await fetch(`${API_URL}/api/vehicles/by-plate/${searchPlate}/`);
+
+                      if (!response.ok) {
+                        if (response.status === 404) {
+                          setSearchError('Veículo não encontrado');
+                        } else {
+                          setSearchError('Erro ao consultar veículo');
+                        }
+                        return;
+                      }
+
+                      const data = await response.json();
+                      setVehicleData(data);
+                    } catch (error) {
+                      setSearchError('Erro ao conectar com o servidor');
+                    } finally {
+                      setIsSearchingVehicle(false);
+                    }
+                  }}
+                  disabled={isSearchingVehicle}
+                  className="px-6"
+                >
+                  {isSearchingVehicle ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    'Buscar'
+                  )}
+                </Button>
+              </div>
+              {searchError && (
+                <p className="text-sm text-red-600">{searchError}</p>
+              )}
+            </div>
+
+            {vehicleData && (
+              <div className="space-y-4 animate-slide-up">
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Car className="w-5 h-5 text-blue-600" />
+                    Informações do Veículo
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Placa</div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicleData.plate}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Marca</div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicleData.brand}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Modelo</div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicleData.model}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Ano</div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicleData.year}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Cor</div>
+                      <div className="text-sm font-semibold text-gray-900">{vehicleData.color}</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-3">
+                      <div className="text-xs text-gray-500 mb-1">Combustível</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {vehicleData.fuel_type === 'gasoline' ? 'Gasolina' :
+                         vehicleData.fuel_type === 'ethanol' ? 'Etanol' :
+                         vehicleData.fuel_type === 'flex' ? 'Flex' :
+                         vehicleData.fuel_type === 'diesel' ? 'Diesel' :
+                         vehicleData.fuel_type === 'electric' ? 'Elétrico' :
+                         vehicleData.fuel_type === 'hybrid' ? 'Híbrido' : vehicleData.fuel_type}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {vehicleData.current_conductor && (
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <User className="w-5 h-5 text-purple-600" />
+                      Motorista Atual
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500 mb-1">Nome</div>
+                        <div className="text-sm font-semibold text-gray-900">{vehicleData.current_conductor.full_name}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500 mb-1">CPF</div>
+                        <div className="text-sm font-semibold text-gray-900">{vehicleData.current_conductor.cpf}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500 mb-1">CNH</div>
+                        <div className="text-sm font-semibold text-gray-900">{vehicleData.current_conductor.cnh_number}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3">
+                        <div className="text-xs text-gray-500 mb-1">Categoria</div>
+                        <div className="text-sm font-semibold text-gray-900">{vehicleData.current_conductor.cnh_category}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!vehicleData.current_conductor && (
+                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                    <p className="text-sm text-yellow-800">
+                      Este veículo não possui motorista vinculado no momento.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsVehicleSearchDialogOpen(false);
+                setSearchPlate('');
+                setVehicleData(null);
+                setSearchError('');
+              }}
+              className="flex-1"
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Complaint Dialog */}
       <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -1486,151 +2059,23 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* About Section */}
-      <section id="about" className="py-20 lg:py-28 bg-gradient-to-br from-blue-50 to-white border-t-2 border-blue-100">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <Shield className="w-8 h-8 text-blue-600" />
-              </div>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                Sobre a {config.company_name}
-              </h2>
-              <div className="w-20 h-1 bg-blue-600 mx-auto"></div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 border border-gray-100">
-              <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-line">
-                {config.about_text}
-              </div>
-            </div>
-          </div>
+
+      {/* Footer - Moderno com Gradiente */}
+      <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12 overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
         </div>
-      </section>
 
-      {/* Contact Section */}
-      <section id="contato" className="py-20 lg:py-28 bg-gradient-to-br from-gray-50 to-gray-100 border-t-2 border-gray-200">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <Phone className="w-8 h-8 text-blue-600" />
-              </div>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                Entre em Contato
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Estamos prontos para atender você
-              </p>
-              <div className="w-20 h-1 bg-blue-600 mx-auto mt-4"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Contact Info */}
-              <div className="space-y-4">
-                <a
-                  href={`tel:${config.phone.replace(/\D/g, '')}`}
-                  className="flex items-start gap-4 p-6 rounded-xl bg-white hover:shadow-lg transition-all duration-200 group border border-gray-100 hover:border-blue-200"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                    <Phone className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">Telefone</h3>
-                    <p className="text-gray-600">{formatPhoneDisplay(config.phone)}</p>
-                  </div>
-                </a>
-
-                <a
-                  href={`mailto:${config.email}`}
-                  className="flex items-start gap-4 p-6 rounded-xl bg-white hover:shadow-lg transition-all duration-200 group border border-gray-100 hover:border-blue-200"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                    <Mail className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">E-mail</h3>
-                    <p className="text-gray-600 break-all">{config.email}</p>
-                  </div>
-                </a>
-
-                <div className="flex items-start gap-4 p-6 rounded-xl bg-white border border-gray-100 shadow-sm">
-                  <div className="flex-shrink-0 w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <MapPin className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">Endereço</h3>
-                    <p className="text-gray-600">{config.address}</p>
-                  </div>
-                </div>
-
-                <a
-                  href={formatWhatsAppLink(
-                    config.whatsapp,
-                    'Olá! Gostaria de saber mais sobre os serviços.'
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all duration-200 group shadow-lg hover:shadow-xl hover:scale-105"
-                >
-                  <div className="flex-shrink-0 w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                    <MessageCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white mb-1 text-lg">WhatsApp</h3>
-                    <p className="text-green-50">Clique para conversar</p>
-                  </div>
-                </a>
-              </div>
-
-              {/* Call to Action Card */}
-              <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-2xl p-8 md:p-10 text-white shadow-2xl relative overflow-hidden">
-                {/* Decorative circles */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-
-                <div className="relative">
-                  <div className="inline-flex items-center justify-center w-14 h-14 bg-white/20 rounded-xl mb-4">
-                    <TrendingUp className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-bold mb-4">Pronto para começar?</h3>
-                  <p className="mb-8 text-blue-50 leading-relaxed">
-                    Entre em contato conosco e descubra como podemos ajudar sua empresa
-                    a ter mais eficiência e controle sobre sua frota.
-                  </p>
-                  <a
-                    href={formatWhatsAppLink(
-                      config.whatsapp,
-                      'Olá! Gostaria de uma demonstração do sistema.'
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
-                  >
-                    <Activity className="w-5 h-5" />
-                    Solicitar Demonstração
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 text-white py-16 relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full filter blur-3xl"></div>
-
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
               <div className="text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start gap-3 mb-3">
-                  <Truck className="w-8 h-8 text-blue-500" />
-                  <h3 className="text-2xl font-bold">{config.company_name}</h3>
-                </div>
-                <p className="text-gray-400 text-lg">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                  {config.company_name}
+                </h3>
+                <p className="text-sm text-gray-400">
                   Gestão Inteligente de Frotas e Veículos
                 </p>
               </div>
@@ -1643,10 +2088,10 @@ export default function SiteHomePage() {
                       href={config.facebook_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-12 h-12 bg-gray-800 hover:bg-blue-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50"
                       aria-label="Facebook"
                     >
-                      <Facebook className="w-5 h-5" />
+                      <Facebook className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     </a>
                   )}
                   {config.instagram_url && (
@@ -1654,10 +2099,10 @@ export default function SiteHomePage() {
                       href={config.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-12 h-12 bg-gray-800 hover:bg-pink-600 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-pink-500/50"
                       aria-label="Instagram"
                     >
-                      <Instagram className="w-5 h-5" />
+                      <Instagram className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     </a>
                   )}
                   {config.linkedin_url && (
@@ -1665,18 +2110,18 @@ export default function SiteHomePage() {
                       href={config.linkedin_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-12 h-12 bg-gray-800 hover:bg-blue-700 rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-blue-700 hover:to-blue-600 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-700/50"
                       aria-label="LinkedIn"
                     >
-                      <Linkedin className="w-5 h-5" />
+                      <Linkedin className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     </a>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="pt-8 border-t border-gray-800 text-center">
-              <p className="text-gray-400">
+            <div className="pt-6 border-t border-white/10 text-center">
+              <p className="text-sm text-gray-400">
                 &copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.
               </p>
             </div>
