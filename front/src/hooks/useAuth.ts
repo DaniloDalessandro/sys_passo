@@ -1,9 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 
+interface UserProfile {
+  is_email_verified: boolean;
+  email_verified_at: string | null;
+}
+
 interface UserData {
   id: string;
   email: string;
-  name: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  date_joined: string;
+  last_login: string | null;
+  is_active: boolean;
+  profile?: UserProfile;
 }
 
 interface UseAuthReturn {
@@ -33,13 +44,15 @@ export function useAuth(): UseAuthReturn {
       const userData = {
         id: localStorage.getItem("user_id") || '',
         email: localStorage.getItem("user_email") || '',
-        name: localStorage.getItem("user_name") || '',
+        username: localStorage.getItem("user_username") || '',
+        first_name: localStorage.getItem("user_first_name") || '',
+        last_name: localStorage.getItem("user_last_name") || '',
       };
-      
+
       // Se não tem dados do usuário OU token, não há sessão válida
-      return { 
+      return {
         token,
-        userData: token && userData.id ? userData : null 
+        userData: token && userData.id ? userData : null
       };
     } catch (error) {
       console.error("Error reading auth data", error);
@@ -52,11 +65,13 @@ export function useAuth(): UseAuthReturn {
     // localStorage.setItem("access", token);
     localStorage.setItem("user_id", userData.id);
     localStorage.setItem("user_email", userData.email);
-    localStorage.setItem("user_name", userData.name);
-    
+    localStorage.setItem("user_username", userData.username);
+    localStorage.setItem("user_first_name", userData.first_name);
+    localStorage.setItem("user_last_name", userData.last_name);
+
     // Definir APENAS cookie seguro (8 horas)
     document.cookie = `access=${token}; path=/; max-age=${8 * 60 * 60}; secure=${window.location.protocol === 'https:'}; samesite=strict`;
-    
+
     setAccessToken(token);
     setUser(userData);
   }, []);
@@ -67,11 +82,13 @@ export function useAuth(): UseAuthReturn {
     localStorage.removeItem("refresh");
     localStorage.removeItem("user_id");
     localStorage.removeItem("user_email");
-    localStorage.removeItem("user_name");
-    
+    localStorage.removeItem("user_username");
+    localStorage.removeItem("user_first_name");
+    localStorage.removeItem("user_last_name");
+
     // Remover cookie
     document.cookie = 'access=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    
+
     setUser(null);
     setAccessToken(null);
   }, []);
@@ -79,7 +96,7 @@ export function useAuth(): UseAuthReturn {
   // Sincroniza entre abas - agora monitora localStorage de dados do usuário
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "user_id" || e.key === "user_email" || e.key === "user_name") {
+      if (e.key === "user_id" || e.key === "user_email" || e.key === "user_username" || e.key === "user_first_name" || e.key === "user_last_name") {
         const { token, userData } = getAuthData();
         setAccessToken(token);
         setUser(userData);

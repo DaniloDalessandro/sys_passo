@@ -92,10 +92,6 @@ class UserProfile(models.Model):
     Extended user profile model to store additional user information
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
-    bio = models.TextField(max_length=500, blank=True)
-    location = models.CharField(max_length=30, blank=True)
     is_email_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -117,11 +113,9 @@ def create_user_profile(sender, instance, created, **kwargs):
         # Create user profile with explicit defaults
         UserProfile.objects.create(
             user=instance,
-            is_email_verified=False,
-            bio='',
-            location=''
+            is_email_verified=False
         )
-        
+
         # Create email verification token
         EmailVerification.objects.create(user=instance)
 

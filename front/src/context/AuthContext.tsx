@@ -3,10 +3,21 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import { jwtDecode } from "jwt-decode"
 
+interface UserProfile {
+  is_email_verified: boolean
+  email_verified_at: string | null
+}
+
 interface UserData {
   id: string
   email: string
-  name: string
+  username: string
+  first_name: string
+  last_name: string
+  date_joined: string
+  last_login: string | null
+  is_active: boolean
+  profile?: UserProfile
 }
 
 interface AuthContextType {
@@ -46,15 +57,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = {
         id: localStorage.getItem("user_id") || '',
         email: localStorage.getItem("user_email") || '',
-        name: localStorage.getItem("user_name") || '',
+        username: localStorage.getItem("user_username") || '',
+        first_name: localStorage.getItem("user_first_name") || '',
+        last_name: localStorage.getItem("user_last_name") || '',
       }
-      
-      const result = { 
+
+      const result = {
         token,
         userData: token && userData.id ? userData : null,
         timestamp: now
       }
-      
+
       // Atualiza o cache
       authDataCache = result
       return result
@@ -85,9 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ["refresh", data.refresh],
         ["user_id", data.user.id],
         ["user_email", data.user.email],
-        ["user_name", data.user.name]
+        ["user_username", data.user.username],
+        ["user_first_name", data.user.first_name],
+        ["user_last_name", data.user.last_name]
       ]
-      
+
       writes.forEach(([key, value]) => localStorage.setItem(key, value))
 
       // Set cookies
@@ -110,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Função de logout otimizada
   const logout = useCallback(() => {
     try {
-      const keys = ["access_token", "refresh", "user_id", "user_email", "user_name"]
+      const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
       keys.forEach(key => localStorage.removeItem(key))
 
       // Clear cookies

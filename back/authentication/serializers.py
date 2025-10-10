@@ -100,7 +100,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('phone_number', 'date_of_birth', 'bio', 'location')
+        fields = ('is_email_verified', 'email_verified_at')
+        read_only_fields = ('is_email_verified', 'email_verified_at')
 
 
 class UserSerializer(serializers.ModelSerializer):

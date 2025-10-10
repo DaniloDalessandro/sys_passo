@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(if exist .next rmdir /s /q .next)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(venvScripts:*)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations authentication --name remove_profile_fields)"
     ],
     "deny": [],
     "ask": []

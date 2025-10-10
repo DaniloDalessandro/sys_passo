@@ -10,7 +10,7 @@ import {
   Sparkles,
   User,
   Mail,
-  Phone,
+  Lock,
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
@@ -65,7 +65,9 @@ export function NavUser({
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
+  const [oldPassword, setOldPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleLogout = () => {
     // Remove tokens from localStorage
@@ -103,7 +105,6 @@ export function NavUser({
         setFirstName(userData.first_name || "")
         setLastName(userData.last_name || "")
         setEmail(userData.email || "")
-        setPhone(userData.profile?.phone || "")
       } else {
         toast.error("Erro ao carregar dados da conta")
       }
@@ -130,23 +131,17 @@ export function NavUser({
           first_name: firstName,
           last_name: lastName,
           email: email,
-          phone: phone,
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
 
-        // Update local user data
+        // Update local user data in localStorage
         const updatedUser = data.user || data
-        const storedUser = localStorage.getItem("user")
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser)
-          parsedUser.first_name = updatedUser.first_name
-          parsedUser.last_name = updatedUser.last_name
-          parsedUser.email = updatedUser.email
-          localStorage.setItem("user", JSON.stringify(parsedUser))
-        }
+        localStorage.setItem("user_first_name", updatedUser.first_name || "")
+        localStorage.setItem("user_last_name", updatedUser.last_name || "")
+        localStorage.setItem("user_email", updatedUser.email || "")
 
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
@@ -163,6 +158,96 @@ export function NavUser({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleChangePassword = async () => {
+    // Validações
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.error("Preencha todos os campos de senha")
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não conferem")
+      return
+    }
+
+    if (newPassword.length < 8) {
+      toast.error("A nova senha deve ter pelo menos 8 caracteres")
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const token = localStorage.getItem("access_token") || localStorage.getItem("access")
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+
+      const response = await fetch(`${API_URL}/api/auth/password/change/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword,
+          new_password_confirm: confirmPassword,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // Atualizar tokens no localStorage
+        if (data.tokens) {
+          localStorage.setItem("access_token", data.tokens.access)
+          localStorage.setItem("refresh", data.tokens.refresh)
+        }
+
+        toast.success("Senha alterada com sucesso!")
+
+        // Limpar campos de senha
+        setOldPassword("")
+        setNewPassword("")
+        setConfirmPassword("")
+      } else {
+        const errorData = await response.json()
+
+        // Tratar erros específicos
+        if (errorData.details) {
+          const errors = errorData.details
+          if (errors.old_password) {
+            toast.error("Senha atual incorreta")
+          } else if (errors.new_password_confirm) {
+            toast.error("As novas senhas não conferem")
+          } else if (errors.new_password) {
+            toast.error(errors.new_password[0] || "Senha inválida")
+          } else {
+            toast.error(errorData.error || "Erro ao alterar senha")
+          }
+        } else {
+          toast.error(errorData.error || "Erro ao alterar senha")
+        }
+      }
+    } catch (error) {
+      console.error("Error changing password:", error)
+      toast.error("Erro ao conectar com o servidor")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCloseDialog = () => {
+    setIsAccountDialogOpen(false)
+    // Limpar campos de senha
+    setOldPassword("")
+    setNewPassword("")
+    setConfirmPassword("")
+  }
+
+  const getFullName = (firstName: string, lastName: string) => {
+    return `${firstName} ${lastName}`.trim() || "Usuário"
   }
 
   const getInitials = (name: string) => {
@@ -319,20 +404,77 @@ export function NavUser({
                   className="h-11"
                 />
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  Telefone
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="(00) 00000-0000"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="h-11"
-                />
+            {/* Seção de Alteração de Senha */}
+            <div className="space-y-4 pt-4 border-t">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                Alterar Senha
+              </h3>
+
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="oldPassword" className="text-sm">
+                    Senha Atual
+                  </Label>
+                  <Input
+                    id="oldPassword"
+                    type="password"
+                    placeholder="Digite sua senha atual"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-sm">
+                    Nova Senha
+                  </Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    placeholder="Digite a nova senha (mín. 8 caracteres)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm">
+                    Confirmar Nova Senha
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Digite novamente a nova senha"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleChangePassword}
+                  variant="outline"
+                  className="w-full h-11"
+                  disabled={isSubmitting || !oldPassword || !newPassword || !confirmPassword}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                      Alterando...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Alterar Senha
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -341,7 +483,7 @@ export function NavUser({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsAccountDialogOpen(false)}
+                onClick={handleCloseDialog}
                 className="flex-1 h-11"
                 disabled={isSubmitting}
               >

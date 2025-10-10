@@ -111,7 +111,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser
           user={{
-            name: user.name || user.email?.split("@")[0] || "Usuário",
+            name: `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email?.split("@")[0] || "Usuário",
             email: user.email || "",
             avatar: "/avatars/default.svg",
           }}
