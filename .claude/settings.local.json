@@ -10,7 +10,10 @@
       "Bash(venvScripts:*)",
       "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations authentication --name remove_profile_fields)",
       "Bash(npm run build:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(python:*)",
+      "Bash(venvScriptspython.exe insert_100_conductors.py:*)",
+      "Bash(\"./venv/Scripts/python.exe\":*)"
     ],
     "deny": [],
     "ask": []

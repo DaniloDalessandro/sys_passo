@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useCallback } from "react"
 
+// Interfaces permanecem as mesmas...
 export interface Vehicle {
   id: number
   modelo: string
@@ -68,84 +69,78 @@ export interface ConductorFormData {
 
 const API_BASE_URL = "http://localhost:8000/api"
 
+// Parâmetros para a busca na API
+interface FetchParams {
+  page?: number
+  pageSize?: number
+  filters?: Record<string, any>
+}
+
 export function useConductors() {
   const [conductors, setConductors] = useState<Conductor[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchConductors = async () => {
+  const fetchConductors = useCallback(async (params: FetchParams = {}) => {
     setIsLoading(true)
     setError(null)
 
+    const { page = 1, pageSize = 10, filters = {} } = params
+
     try {
-      // Os cabeçalhos de autorização agora são tratados pelo interceptor
-      const response = await fetch(`${API_BASE_URL}/conductors/`)
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        page_size: pageSize.toString(),
+      })
+
+      // Adiciona filtros aos parâmetros da query
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          queryParams.append(key, value.toString())
+        }
+      })
+
+      const response = await fetch(`${API_BASE_URL}/conductors/?${queryParams.toString()}`)
 
       if (!response.ok) {
         throw new Error("Erro ao carregar condutores")
       }
 
       const data = await response.json()
-      setConductors(data.results || data)
+      setConductors(data.results || [])
+      setTotalCount(data.count || 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro desconhecido")
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      setConductors([])
+      setTotalCount(0)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   const createConductor = async (conductorData: ConductorFormData): Promise<Conductor> => {
     setError(null)
+    const formData = new FormData()
+    Object.entries(conductorData).forEach(([key, value]) => {
+      if (value instanceof Date) {
+        formData.append(key, value.toISOString().split('T')[0])
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, value as string | Blob)
+      }
+    })
 
     try {
-      const formData = new FormData()
-
-      // Adicionar dados do formulário
-      formData.append("name", conductorData.name)
-      formData.append("cpf", conductorData.cpf)
-      formData.append("email", conductorData.email)
-      formData.append("license_number", conductorData.license_number)
-      formData.append("license_category", conductorData.license_category)
-      formData.append("birth_date", conductorData.birth_date.toISOString().split('T')[0])
-      formData.append("license_expiry_date", conductorData.license_expiry_date.toISOString().split('T')[0])
-      formData.append("is_active", conductorData.is_active.toString())
-      formData.append("phone", conductorData.phone)
-      formData.append("street", conductorData.street)
-      formData.append("number", conductorData.number)
-      formData.append("neighborhood", conductorData.neighborhood)
-      formData.append("city", conductorData.city)
-      formData.append("gender", conductorData.gender)
-      formData.append("nationality", conductorData.nationality)
-
-      if (conductorData.reference_point) {
-        formData.append("reference_point", conductorData.reference_point)
-      }
-
-      if (conductorData.whatsapp) {
-        formData.append("whatsapp", conductorData.whatsapp)
-      }
-
-      if (conductorData.document) {
-        formData.append("document", conductorData.document)
-      }
-
-      if (conductorData.cnh_digital) {
-        formData.append("cnh_digital", conductorData.cnh_digital)
-      }
-
       const response = await fetch(`${API_BASE_URL}/conductors/`, {
         method: "POST",
         body: formData,
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao criar condutor")
       }
-
-      const newConductor = await response.json()
-      setConductors(prev => [...prev, newConductor])
-      return newConductor
+      return await response.json()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       setError(errorMessage)
@@ -155,11 +150,8 @@ export function useConductors() {
 
   const updateConductor = async (id: number, conductorData: Partial<ConductorFormData>): Promise<Conductor> => {
     setError(null)
-
-    try {
-      const formData = new FormData()
-
-      Object.entries(conductorData).forEach(([key, value]) => {
+    const formData = new FormData()
+    Object.entries(conductorData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'birth_date' || key === 'license_expiry_date') {
             if (value instanceof Date) {
@@ -175,23 +167,16 @@ export function useConductors() {
         }
       })
 
+    try {
       const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "PATCH",
         body: formData,
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao atualizar condutor")
       }
-
-      const updatedConductor = await response.json()
-      setConductors(prev =>
-        prev.map(conductor =>
-          conductor.id === id ? updatedConductor : conductor
-        )
-      )
-      return updatedConductor
+      return await response.json()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       setError(errorMessage)
@@ -201,18 +186,14 @@ export function useConductors() {
 
   const deleteConductor = async (id: number): Promise<void> => {
     setError(null)
-
     try {
       const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "DELETE",
       })
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao excluir condutor")
       }
-
-      setConductors(prev => prev.filter(conductor => conductor.id !== id))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       setError(errorMessage)
@@ -222,15 +203,12 @@ export function useConductors() {
 
   const getConductor = async (id: number): Promise<Conductor> => {
     setError(null)
-
     try {
       const response = await fetch(`${API_BASE_URL}/conductors/${id}/`)
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao carregar condutor")
       }
-
       return await response.json()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
@@ -243,52 +221,26 @@ export function useConductors() {
     field: 'cpf' | 'email' | 'license_number',
     value: string,
     excludeId?: number
-  ): Promise<{
-    exists: boolean;
-    message?: string;
-    duplicateConductor?: {
-      id: number;
-      name: string;
-      cpf: string;
-      email: string;
-      license_number: string;
-      is_active: boolean;
-    };
-  }> => {
+  ): Promise<any> => {
     try {
-      const params = new URLSearchParams({
-        field,
-        value: value.trim(),
-      })
-
+      const params = new URLSearchParams({ field, value: value.trim() })
       if (excludeId) {
         params.append('exclude_id', excludeId.toString())
       }
-
       const response = await fetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`)
-
       if (!response.ok) {
         throw new Error("Erro ao verificar duplicatas")
       }
-
-      const data = await response.json()
-      return {
-        exists: data.exists,
-        message: data.message,
-        duplicateConductor: data.duplicate_conductor
-      }
+      return await response.json()
     } catch (err) {
       console.error("Error checking duplicate field:", err)
       return { exists: false }
     }
   }
 
-  useEffect(() => {
-    fetchConductors()
-  }, [])
-
   return {
     conductors,
+    totalCount,
     isLoading,
     error,
     fetchConductors,
