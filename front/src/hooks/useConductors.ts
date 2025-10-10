@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuthContext } from "@/context/AuthContext"
 
 export interface Vehicle {
   id: number
@@ -73,20 +72,14 @@ export function useConductors() {
   const [conductors, setConductors] = useState<Conductor[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { accessToken } = useAuthContext()
 
   const fetchConductors = async () => {
-    if (!accessToken) return
-
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
+      // Os cabeçalhos de autorização agora são tratados pelo interceptor
+      const response = await fetch(`${API_BASE_URL}/conductors/`)
 
       if (!response.ok) {
         throw new Error("Erro ao carregar condutores")
@@ -102,8 +95,6 @@ export function useConductors() {
   }
 
   const createConductor = async (conductorData: ConductorFormData): Promise<Conductor> => {
-    if (!accessToken) throw new Error("Token de acesso não encontrado")
-
     setError(null)
 
     try {
@@ -118,7 +109,6 @@ export function useConductors() {
       formData.append("birth_date", conductorData.birth_date.toISOString().split('T')[0])
       formData.append("license_expiry_date", conductorData.license_expiry_date.toISOString().split('T')[0])
       formData.append("is_active", conductorData.is_active.toString())
-
       formData.append("phone", conductorData.phone)
       formData.append("street", conductorData.street)
       formData.append("number", conductorData.number)
@@ -145,9 +135,6 @@ export function useConductors() {
 
       const response = await fetch(`${API_BASE_URL}/conductors/`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
         body: formData,
       })
 
@@ -167,14 +154,11 @@ export function useConductors() {
   }
 
   const updateConductor = async (id: number, conductorData: Partial<ConductorFormData>): Promise<Conductor> => {
-    if (!accessToken) throw new Error("Token de acesso não encontrado")
-
     setError(null)
 
     try {
       const formData = new FormData()
 
-      // Adicionar dados do formulário
       Object.entries(conductorData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           if (key === 'birth_date' || key === 'license_expiry_date') {
@@ -193,9 +177,6 @@ export function useConductors() {
 
       const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
         body: formData,
       })
 
@@ -219,16 +200,11 @@ export function useConductors() {
   }
 
   const deleteConductor = async (id: number): Promise<void> => {
-    if (!accessToken) throw new Error("Token de acesso não encontrado")
-
     setError(null)
 
     try {
       const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
       })
 
       if (!response.ok) {
@@ -245,16 +221,10 @@ export function useConductors() {
   }
 
   const getConductor = async (id: number): Promise<Conductor> => {
-    if (!accessToken) throw new Error("Token de acesso não encontrado")
-
     setError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
+      const response = await fetch(`${API_BASE_URL}/conductors/${id}/`)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -285,8 +255,6 @@ export function useConductors() {
       is_active: boolean;
     };
   }> => {
-    if (!accessToken) throw new Error("Token de acesso não encontrado")
-
     try {
       const params = new URLSearchParams({
         field,
@@ -297,11 +265,7 @@ export function useConductors() {
         params.append('exclude_id', excludeId.toString())
       }
 
-      const response = await fetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
+      const response = await fetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`)
 
       if (!response.ok) {
         throw new Error("Erro ao verificar duplicatas")
@@ -315,15 +279,13 @@ export function useConductors() {
       }
     } catch (err) {
       console.error("Error checking duplicate field:", err)
-      // Return false for duplicates on error to avoid blocking form submission
       return { exists: false }
     }
   }
 
-  // Carregar condutores ao montar o componente
   useEffect(() => {
     fetchConductors()
-  }, [accessToken])
+  }, [])
 
   return {
     conductors,

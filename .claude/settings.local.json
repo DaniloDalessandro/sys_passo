@@ -8,7 +8,9 @@
       "Bash(ls:*)",
       "Bash(python manage.py makemigrations:*)",
       "Bash(venvScripts:*)",
-      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations authentication --name remove_profile_fields)"
+      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations authentication --name remove_profile_fields)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

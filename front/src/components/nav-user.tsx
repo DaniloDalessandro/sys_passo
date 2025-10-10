@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from "react"
 import {
@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth" // IMPORTADO
 
 import {
   Avatar,
@@ -58,8 +59,11 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
+  const { logout } = useAuth() // USANDO O HOOK DE AUTENTICAÇÃO
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false)
 
   // Form states
   const [firstName, setFirstName] = useState("")
@@ -70,33 +74,26 @@ export function NavUser({
   const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleLogout = () => {
-    // Remove tokens from localStorage
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("refresh_token")
-    localStorage.removeItem("access")
-    localStorage.removeItem("refresh")
-    localStorage.removeItem("user")
-
-    // Clear any other auth-related data
-    localStorage.clear()
-
-    // Redirect to login
+    logout() // USANDO FUNÇÃO DE LOGOUT DO CONTEXTO
     router.push("/login")
   }
 
   const handleOpenAccountDialog = async () => {
+    // FIX: Fecha dropdown ANTES de abrir dialog
+    setIsDropdownOpen(false)
+
+    // Pequeno delay para animação do dropdown fechar
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    setIsLoadingProfile(true)
     setIsAccountDialogOpen(true)
 
     // Load user data from API
     try {
-      const token = localStorage.getItem("access_token") || localStorage.getItem("access")
       const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
-      const response = await fetch(`${API_URL}/api/auth/profile/`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      })
+      // O interceptor irá adicionar o cabeçalho de autorização automaticamente
+      const response = await fetch(`${API_URL}/api/auth/profile/`)
 
       if (response.ok) {
         const data = await response.json()
@@ -105,12 +102,18 @@ export function NavUser({
         setFirstName(userData.first_name || "")
         setLastName(userData.last_name || "")
         setEmail(userData.email || "")
+      } else if (response.status === 401) {
+        toast.error("Sessão expirada. Faça login novamente.")
+        logout()
+        router.push("/login")
       } else {
         toast.error("Erro ao carregar dados da conta")
       }
     } catch (error) {
       console.error("Error loading user data:", error)
       toast.error("Erro ao conectar com o servidor")
+    } finally {
+      setIsLoadingProfile(false)
     }
   }
 
@@ -118,14 +121,13 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const token = localStorage.getItem("access_token") || localStorage.getItem("access")
       const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
       const response = await fetch(`${API_URL}/api/auth/profile/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           first_name: firstName,
@@ -137,7 +139,6 @@ export function NavUser({
       if (response.ok) {
         const data = await response.json()
 
-        // Update local user data in localStorage
         const updatedUser = data.user || data
         localStorage.setItem("user_first_name", updatedUser.first_name || "")
         localStorage.setItem("user_last_name", updatedUser.last_name || "")
@@ -146,8 +147,7 @@ export function NavUser({
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
 
-        // Reload page to update UI
-        window.location.reload()
+        window.location.reload() // Mantido por enquanto para garantir a atualização da UI
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || "Erro ao atualizar dados")
@@ -161,7 +161,6 @@ export function NavUser({
   }
 
   const handleChangePassword = async () => {
-    // Validações
     if (!oldPassword || !newPassword || !confirmPassword) {
       toast.error("Preencha todos os campos de senha")
       return
@@ -180,14 +179,13 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const token = localStorage.getItem("access_token") || localStorage.getItem("access")
       const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
 
       const response = await fetch(`${API_URL}/api/auth/password/change/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           old_password: oldPassword,
@@ -199,7 +197,6 @@ export function NavUser({
       if (response.ok) {
         const data = await response.json()
 
-        // Atualizar tokens no localStorage
         if (data.tokens) {
           localStorage.setItem("access_token", data.tokens.access)
           localStorage.setItem("refresh", data.tokens.refresh)
@@ -207,14 +204,12 @@ export function NavUser({
 
         toast.success("Senha alterada com sucesso!")
 
-        // Limpar campos de senha
         setOldPassword("")
         setNewPassword("")
         setConfirmPassword("")
       } else {
         const errorData = await response.json()
 
-        // Tratar erros específicos
         if (errorData.details) {
           const errors = errorData.details
           if (errors.old_password) {
@@ -240,14 +235,9 @@ export function NavUser({
 
   const handleCloseDialog = () => {
     setIsAccountDialogOpen(false)
-    // Limpar campos de senha
     setOldPassword("")
     setNewPassword("")
     setConfirmPassword("")
-  }
-
-  const getFullName = (firstName: string, lastName: string) => {
-    return `${firstName} ${lastName}`.trim() || "Usuário"
   }
 
   const getInitials = (name: string) => {
@@ -268,7 +258,7 @@ export function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -342,7 +332,6 @@ export function NavUser({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            {/* Avatar Section */}
             <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
               <Avatar className="h-20 w-20 rounded-xl">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -358,7 +347,6 @@ export function NavUser({
               </div>
             </div>
 
-            {/* Form Fields */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -366,13 +354,17 @@ export function NavUser({
                     <User className="w-4 h-4" />
                     Nome
                   </Label>
-                  <Input
-                    id="firstName"
-                    placeholder="Digite seu nome"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="h-11"
-                  />
+                  {isLoadingProfile ? (
+                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                  ) : (
+                    <Input
+                      id="firstName"
+                      placeholder="Digite seu nome"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="h-11"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -380,13 +372,17 @@ export function NavUser({
                     <User className="w-4 h-4" />
                     Sobrenome
                   </Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Digite seu sobrenome"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="h-11"
-                  />
+                  {isLoadingProfile ? (
+                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                  ) : (
+                    <Input
+                      id="lastName"
+                      placeholder="Digite seu sobrenome"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="h-11"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -395,18 +391,21 @@ export function NavUser({
                   <Mail className="w-4 h-4" />
                   Email
                 </Label>
-                <Input
-                  id="accountEmail"
-                  type="email"
-                  placeholder="seu.email@exemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-11"
-                />
+                {isLoadingProfile ? (
+                  <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                ) : (
+                  <Input
+                    id="accountEmail"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11"
+                  />
+                )}
               </div>
             </div>
 
-            {/* Seção de Alteração de Senha */}
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Lock className="w-4 h-4" />
@@ -478,7 +477,6 @@ export function NavUser({
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3 pt-4 border-t">
               <Button
                 type="button"

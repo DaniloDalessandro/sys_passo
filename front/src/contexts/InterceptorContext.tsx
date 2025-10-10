@@ -1,119 +1,141 @@
 "use client";
 
-import { createContext, useContext, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useRef } from "react";
+import { useAuthContext } from "@/context/AuthContext";
 
-interface InterceptorContextType {
-  setupInterceptors: () => void;
-}
+// Flag global para evitar múltiplas tentativas de refresh simultâneas
+let isRefreshing = false;
+// Fila de requisições que falharam e estão aguardando o novo token
+let failedQueue: any[] = [];
 
-const InterceptorContext = createContext<InterceptorContextType | null>(null);
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
 
+// O provider do contexto agora é mais simples e foca em configurar o interceptor
 export function InterceptorProvider({ children }: { children: React.ReactNode }) {
-  const { logout } = useAuth();
-  
-  // Contador para retry antes de forçar logout
-  let retryCount = new Map<string, number>();
+  // USA AuthContext ao invés de useAuth para consistência
+  const authContext = useAuthContext();
+  const originalFetch = useRef<typeof window.fetch | null>(null);
+  const interceptorSetup = useRef(false);
 
-  const setupInterceptors = () => {
-    // Interceptar fetch global
-    const originalFetch = window.fetch;
-    
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      try {
-        const response = await originalFetch(input, init);
-        
-        // Se receber 401, tentar algumas vezes antes de logout forçado
-        if (response.status === 401) {
-          const url = typeof input === 'string' ? input : input instanceof URL ? input.href : '';
-          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-          
-          // Só processar se for da nossa API
-          if (url.includes(baseUrl) || url.includes('/api/v1/')) {
-            const currentRetries = retryCount.get(url) || 0;
-            
-            // Permitir até 5 tentativas antes de logout
-            if (currentRetries < 5) {
-              console.warn(`Interceptado erro 401 tentativa ${currentRetries + 1}/6 para ${url}`);
-              retryCount.set(url, currentRetries + 1);
-              
-              // Aguardar mais tempo antes de retry
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              
-              // Tentar novamente
-              return originalFetch(input, init);
-            } else {
-              console.warn("Múltiplos erros 401 - Fazendo logout automático");
-              retryCount.delete(url); // Limpar contador
-              
-              await logout();
-              setTimeout(() => {
-                window.location.href = '/login';
-              }, 100);
-            }
-          }
-        } else {
-          // Se requisição passou, limpar contador de retry para esta URL
-          const url = typeof input === 'string' ? input : input instanceof URL ? input.href : '';
-          retryCount.delete(url);
-        }
-        
-        return response;
-      } catch (error) {
-        console.error("Erro interceptado na requisição:", error);
-        throw error;
-      }
-    };
+  // CRITICAL FIX: Usar ref para sempre ter a versão mais recente das funções
+  const authContextRef = useRef(authContext);
 
-    // Interceptar XMLHttpRequest também (caso alguma biblioteca use)
-    const originalOpen = XMLHttpRequest.prototype.open;
-    const originalSend = XMLHttpRequest.prototype.send;
-
-    XMLHttpRequest.prototype.open = function(method: string, url: string | URL, ...args: any[]) {
-      this.addEventListener('readystatechange', async function() {
-        if (this.readyState === 4 && this.status === 401) {
-          const urlStr = typeof url === 'string' ? url : url.toString();
-          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-          
-          if (urlStr.includes(baseUrl) || urlStr.includes('/api/v1/')) {
-            const currentRetries = retryCount.get(urlStr) || 0;
-            
-            if (currentRetries < 2) {
-              console.warn(`XMLHttpRequest 401 tentativa ${currentRetries + 1}/3 para ${urlStr}`);
-              retryCount.set(urlStr, currentRetries + 1);
-              // Para XMLHttpRequest, não podemos fazer retry automático, apenas contar
-            } else {
-              console.warn("Múltiplos erros 401 via XMLHttpRequest - Fazendo logout");
-              retryCount.delete(urlStr);
-              
-              await logout();
-              setTimeout(() => {
-                window.location.href = '/login';
-              }, 100);
-            }
-          }
-        }
-      });
-      
-      return originalOpen.call(this, method, url, ...args);
-    };
-  };
+  // Atualiza a ref sempre que o contexto mudar
+  useEffect(() => {
+    authContextRef.current = authContext;
+  }, [authContext]);
 
   useEffect(() => {
-    setupInterceptors();
-  }, [logout]);
+    // CRÍTICO: Configura o interceptor APENAS UMA VEZ
+    if (interceptorSetup.current) {
+      return;
+    }
+    interceptorSetup.current = true;
 
-  return (
-    <InterceptorContext.Provider value={{ setupInterceptors }}>
-      {children}
-    </InterceptorContext.Provider>
-  );
-}
+    // Armazena a função fetch original do navegador uma única vez
+    if (originalFetch.current === null) {
+      originalFetch.current = window.fetch;
+    }
 
-export function useInterceptor() {
-  const context = useContext(InterceptorContext);
-  if (!context) {
-    throw new Error('useInterceptor deve ser usado dentro de InterceptorProvider');
-  }
-  return context;
+    const newFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const fetcher = originalFetch.current;
+      if (!fetcher) {
+        throw new Error("Função fetch original não encontrada.");
+      }
+
+      // FIX: Usar a versão mais recente do contexto através da ref
+      const { refreshAccessToken, logout } = authContextRef.current;
+
+      // Adiciona o token de autorização a cada requisição
+      const token = localStorage.getItem('access_token');
+      const headers = new Headers(init?.headers);
+
+      // FIX: Apenas adiciona o header se houver token
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+
+      const newInit = { ...init, headers };
+
+      // Faz a requisição original
+      let response = await fetcher(input, newInit);
+
+      const url = typeof input === 'string' ? input : input.toString();
+      const isRefreshRequest = url.includes('/api/auth/refresh/');
+
+      // Se a requisição falhou com 401 (Não Autorizado) e não é uma requisição de refresh
+      if (response.status === 401 && !isRefreshRequest) {
+        if (isRefreshing) {
+          // Se já existe um refresh em andamento, coloca a requisição na fila de espera
+          return new Promise((resolve, reject) => {
+            failedQueue.push({
+              resolve: (newToken: string) => {
+                // FIX: Criar novos headers para evitar mutação
+                const newHeaders = new Headers(init?.headers);
+                newHeaders.set('Authorization', `Bearer ${newToken}`);
+                resolve(fetcher(input, { ...init, headers: newHeaders }));
+              },
+              reject
+            });
+          });
+        }
+
+        isRefreshing = true;
+
+        try {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            const newToken = localStorage.getItem('access_token');
+            processQueue(null, newToken);
+
+            // FIX: Criar novos headers para evitar mutação
+            const newHeaders = new Headers(init?.headers);
+            if (newToken) {
+              newHeaders.set('Authorization', `Bearer ${newToken}`);
+            }
+
+            // Tenta novamente a requisição original com o novo token
+            return await fetcher(input, { ...init, headers: newHeaders });
+          } else {
+            // Se o refresh falhar, rejeita a fila e desloga
+            const error = new Error("Sessão expirada. Por favor, faça login novamente.");
+            processQueue(error, null);
+            logout();
+            return Promise.reject(error);
+          }
+        } catch (error: any) {
+          processQueue(error, null);
+          logout();
+          return Promise.reject(error);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+
+      return response;
+    };
+
+    // Sobrescreve a função fetch global APENAS UMA VEZ
+    window.fetch = newFetch;
+
+    // Função de limpeza para restaurar o fetch original ao desmontar
+    return () => {
+      if (originalFetch.current) {
+        window.fetch = originalFetch.current;
+      }
+      interceptorSetup.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ARRAY VAZIO - configura apenas uma vez na montagem
+
+  return <>{children}</>;
 }
