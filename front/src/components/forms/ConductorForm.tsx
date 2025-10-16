@@ -369,7 +369,7 @@ export default function ConductorForm({
                 <CreditCard className="h-4 w-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-gray-700">Detalhes da CNH</h3>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor="license_number" className="text-xs font-medium text-gray-700">Número da CNH *</Label>
                   <Input
@@ -399,7 +399,7 @@ export default function ConductorForm({
                   </Select>
                   {errors.license_category && <span className="text-xs text-red-500">{errors.license_category}</span>}
                 </div>
-                <div className="grid gap-1.5 col-span-2">
+                <div className="grid gap-1.5">
                   <Label htmlFor="license_expiry_date" className="text-xs font-medium text-gray-700">Validade da CNH *</Label>
                   <Input
                     type="date"
@@ -410,25 +410,6 @@ export default function ConductorForm({
                   />
                   {errors.license_expiry_date && <span className="text-xs text-red-500">{errors.license_expiry_date}</span>}
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <UserCheck className="h-4 w-4 text-teal-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Status</h3>
-              </div>
-              <div className="grid gap-1.5 w-1/2">
-                <Label htmlFor="is_active" className="text-xs font-medium text-gray-700">Disponibilidade *</Label>
-                <Select value={formData.is_active ? "true" : "false"} onValueChange={(value) => handleBooleanChange("is_active", value === "true")}>
-                  <SelectTrigger id="is_active" className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Ativo</SelectItem>
-                    <SelectItem value="false">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
