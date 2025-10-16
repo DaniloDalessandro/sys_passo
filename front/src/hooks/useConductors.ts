@@ -97,18 +97,26 @@ export function useConductors() {
 
       // Adiciona filtros aos parâmetros da query
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
+        // Permite valores booleanos como string ('true', 'false')
+        if (value !== undefined && value !== null && value !== '') {
           queryParams.append(key, value.toString())
         }
       })
 
-      const response = await authFetch(`${API_BASE_URL}/conductors/?${queryParams.toString()}`)
+      const url = `${API_BASE_URL}/conductors/?${queryParams.toString()}`
+      console.log('URL da requisição:', url)
+      const response = await authFetch(url)
 
       if (!response.ok) {
         throw new Error("Erro ao carregar condutores")
       }
 
       const data = await response.json()
+      console.log('Resposta da API:', {
+        count: data.count,
+        resultsLength: data.results?.length,
+        firstResult: data.results?.[0]
+      })
       setConductors(data.results || [])
       setTotalCount(data.count || 0)
     } catch (err) {
