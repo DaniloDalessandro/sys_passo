@@ -1,7 +1,10 @@
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { buildApiUrl } from "@/lib/api-client"
 
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   const token = localStorage.getItem('access_token');
+  const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
+    ? pathOrUrl
+    : buildApiUrl(pathOrUrl);
 
   const response = await fetch(url, {
     ...options,
@@ -66,7 +69,7 @@ export async function getComplaints(filters?: ComplaintFilters): Promise<Complai
   if (filters?.priority) params.append('priority', filters.priority);
   if (filters?.search) params.append('search', filters.search);
 
-  const url = `${API_URL}/api/complaints/${params.toString() ? '?' + params.toString() : ''}`;
+  const url = `api/complaints/${params.toString() ? '?' + params.toString() : ''}`;
   const response = await fetchWithAuth(url);
 
   if (!response.ok) throw new Error('Erro ao buscar denúncias');
@@ -84,7 +87,7 @@ export async function getComplaints(filters?: ComplaintFilters): Promise<Complai
 }
 
 export async function updateComplaintStatus(id: number, status: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/complaints/${id}/change_status/`, {
+  const response = await fetchWithAuth(`api/complaints/${id}/change_status/`, {
     method: 'POST',
     body: JSON.stringify({ status }),
   });
@@ -96,7 +99,7 @@ export async function updateComplaintStatus(id: number, status: string): Promise
 }
 
 export async function updateComplaintPriority(id: number, priority: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/complaints/${id}/change_priority/`, {
+  const response = await fetchWithAuth(`api/complaints/${id}/change_priority/`, {
     method: 'POST',
     body: JSON.stringify({ priority }),
   });
@@ -111,7 +114,7 @@ export async function updateComplaint(id: number, data: {
   admin_notes?: string;
   resolution_notes?: string;
 }): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/complaints/${id}/`, {
+  const response = await fetchWithAuth(`api/complaints/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   });

@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/useAuth" // IMPORTADO
+import { useAuthContext } from "@/context/AuthContext"
 
 import {
   Avatar,
@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { buildApiUrl } from "@/lib/api-client"
 
 export function NavUser({
   user,
@@ -59,7 +60,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { logout } = useAuth() // USANDO O HOOK DE AUTENTICAÇÃO
+  const { logout } = useAuthContext()
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,10 +91,8 @@ export function NavUser({
 
     // Load user data from API
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
       // O interceptor irá adicionar o cabeçalho de autorização automaticamente
-      const response = await fetch(`${API_URL}/api/auth/profile/`)
+      const response = await fetch(buildApiUrl("api/auth/profile/"))
 
       if (response.ok) {
         const data = await response.json()
@@ -121,9 +120,7 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
-      const response = await fetch(`${API_URL}/api/auth/profile/`, {
+      const response = await fetch(buildApiUrl("api/auth/profile/"), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -179,9 +176,7 @@ export function NavUser({
     setIsSubmitting(true)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-
-      const response = await fetch(`${API_URL}/api/auth/password/change/`, {
+      const response = await fetch(buildApiUrl("api/auth/password/change/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,7 +315,7 @@ export function NavUser({
 
       {/* Account Dialog */}
       <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[min(95vw,520px)] md:w-[min(90vw,600px)] max-h-[85vh] overflow-y-auto px-5 py-6 sm:rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <User className="w-6 h-6 text-blue-600" />
@@ -332,14 +327,14 @@ export function NavUser({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
-              <Avatar className="h-20 w-20 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+              <Avatar className="h-16 w-16 rounded-xl sm:h-20 sm:w-20">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-xl text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
+                <AvatarFallback className="rounded-xl text-xl sm:text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="space-y-1 text-center sm:text-left">
                 <h3 className="font-semibold text-lg text-gray-900">
                   {capitalizeFirstLetter(user.name)}
                 </h3>

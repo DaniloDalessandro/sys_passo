@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 
 export default function Error({
@@ -12,7 +12,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated, accessToken } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {

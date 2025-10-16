@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function NotFound() {
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated, accessToken } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {

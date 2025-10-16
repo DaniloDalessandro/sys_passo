@@ -1,18 +1,20 @@
-from rest_framework import serializers
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
-from .models import DriverRequest, VehicleRequest
-from conductors.models import Conductor
-from vehicles.models import Vehicle
-import re
 import logging
+import re
+
+from django.contrib.auth.models import User
+from django.utils import timezone
+from rest_framework import serializers
+
+from conductors.models import Conductor
+from conductors.serializers import validate_text_field
+from vehicles.models import Vehicle
+from .models import DriverRequest, VehicleRequest
 
 logger = logging.getLogger(__name__)
 
 
-# Serializers para dados aninhados (nested)
 class UserNestedSerializer(serializers.ModelSerializer):
-    """Serializer para exibir dados básicos do usuário revisor"""
+    """Serializer para exibir dados básicos do usuário revisor."""
 
     class Meta:
         model = User
@@ -21,16 +23,25 @@ class UserNestedSerializer(serializers.ModelSerializer):
 
 
 class ConductorNestedSerializer(serializers.ModelSerializer):
-    """Serializer para exibir dados básicos do condutor criado"""
+    """Serializer para exibir dados básicos do condutor criado."""
 
     class Meta:
         model = Conductor
-        fields = ['id', 'name', 'cpf', 'email', 'phone', 'license_number', 'license_category', 'is_active']
+        fields = [
+            'id',
+            'name',
+            'cpf',
+            'email',
+            'phone',
+            'license_number',
+            'license_category',
+            'is_active',
+        ]
         read_only_fields = fields
 
 
 class VehicleNestedSerializer(serializers.ModelSerializer):
-    """Serializer para exibir dados básicos do veículo criado"""
+    """Serializer para exibir dados básicos do veículo criado."""
 
     class Meta:
         model = Vehicle
@@ -40,56 +51,76 @@ class VehicleNestedSerializer(serializers.ModelSerializer):
 
 # ========== DRIVER REQUEST SERIALIZERS ==========
 
-class DriverRequestCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer para criação de solicitações de motoristas (site público).
 
-    Validações:
-    - CPF deve ter 11 dígitos (após normalização)
-    - Email deve ser único entre solicitações em análise
-    - CNH categoria deve ser válida
-    """
+class DriverRequestCreateSerializer(serializers.ModelSerializer):
+    """Serializer para criação de solicitações de motoristas (site público)."""
 
     class Meta:
         model = DriverRequest
         fields = [
-            'full_name',
+            'name',
             'cpf',
+            'birth_date',
+            'gender',
+            'nationality',
+            'street',
+            'number',
+            'neighborhood',
+            'city',
+            'reference_point',
             'email',
             'phone',
-            'cnh_number',
-            'cnh_category',
+            'whatsapp',
+            'license_number',
+            'license_category',
+            'license_expiry_date',
+            'document',
+            'cnh_digital',
             'message',
         ]
+        extra_kwargs = {
+            'reference_point': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'whatsapp': {'required': False, 'allow_null': True, 'allow_blank': True},
+            'document': {'required': False, 'allow_null': True},
+            'cnh_digital': {'required': False, 'allow_null': True},
+            'message': {'required': False, 'allow_null': True},
+        }
+
+    # ---- Validações de campos ----
+
+    def validate_name(self, value):
+        return validate_text_field(value, 'nome')
+
+    def validate_nationality(self, value):
+        return validate_text_field(value, 'nacionalidade')
+
+    def validate_street(self, value):
+        return validate_text_field(value, 'rua/avenida')
+
+    def validate_number(self, value):
+        return validate_text_field(value, 'número')
+
+    def validate_neighborhood(self, value):
+        return validate_text_field(value, 'bairro')
+
+    def validate_city(self, value):
+        return validate_text_field(value, 'cidade')
+
+    def validate_reference_point(self, value):
+        if value:
+            return validate_text_field(value, 'ponto de referência')
+        return value
 
     def validate_cpf(self, value):
-        """
-        Valida e normaliza o CPF.
+        cpf_cleaned = re.sub(r'[^0-9]', '', value or '')
 
-        Remove caracteres não numéricos e verifica se tem 11 dígitos.
-        """
-        # Normalizar CPF (remover pontos, traços e espaços)
-        cpf_cleaned = re.sub(r'[^0-9]', '', value)
-
-        # Validar se tem 11 dígitos
         if len(cpf_cleaned) != 11:
-            raise serializers.ValidationError(
-                'O CPF deve conter exatamente 11 dígitos.'
-            )
+            raise serializers.ValidationError('O CPF deve conter exatamente 11 dígitos.')
 
-        # Validar se não são todos os dígitos iguais (ex: 111.111.111-11)
         if cpf_cleaned == cpf_cleaned[0] * 11:
-            raise serializers.ValidationError(
-                'O CPF informado não é válido.'
-            )
+            raise serializers.ValidationError('O CPF informado não é válido.')
 
-        # Verificar se já existe uma solicitação em análise com este CPF
-        existing_request = DriverRequest.objects.filter(
-            cpf=cpf_cleaned,
-            status='em_analise'
-        ).exists()
-
-        if existing_request:
+        if DriverRequest.objects.filter(cpf=cpf_cleaned, status='em_analise').exists():
             raise serializers.ValidationError(
                 'Já existe uma solicitação em análise para este CPF. Aguarde a aprovação ou reprovação.'
             )
@@ -97,65 +128,103 @@ class DriverRequestCreateSerializer(serializers.ModelSerializer):
         return cpf_cleaned
 
     def validate_email(self, value):
-        """
-        Valida se o email é único entre solicitações em análise.
-        """
-        existing_request = DriverRequest.objects.filter(
-            email=value,
-            status='em_analise'
-        ).exists()
+        email = (value or '').strip().lower()
 
-        if existing_request:
+        if DriverRequest.objects.filter(email=email, status='em_analise').exists():
             raise serializers.ValidationError(
                 'Já existe uma solicitação em análise com este e-mail. Aguarde a aprovação ou reprovação.'
             )
 
-        return value.lower()
+        return email
 
-    def validate_cnh_category(self, value):
-        """
-        Valida se a categoria da CNH é válida.
-        """
-        valid_categories = ['A', 'B', 'AB', 'C', 'D', 'E']
+    def validate_birth_date(self, value):
+        if value is None:
+            raise serializers.ValidationError('Data de nascimento é obrigatória.')
 
+        today = timezone.now().date()
+        age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
+        if age < 18:
+            raise serializers.ValidationError('O condutor deve ter pelo menos 18 anos.')
+
+        return value
+
+    def validate_license_expiry_date(self, value):
+        if value is None:
+            raise serializers.ValidationError('A data de validade da CNH é obrigatória.')
+
+        if value < timezone.now().date():
+            raise serializers.ValidationError('A data de validade da CNH não pode estar no passado.')
+
+        return value
+
+    def validate_license_category(self, value):
+        valid_categories = [choice[0] for choice in DriverRequest.CNH_CATEGORY_CHOICES]
         if value not in valid_categories:
             raise serializers.ValidationError(
                 f'Categoria de CNH inválida. Categorias válidas: {", ".join(valid_categories)}'
             )
+        return value
 
+    def validate_license_number(self, value):
+        cleaned = (value or '').strip()
+        if not cleaned:
+            raise serializers.ValidationError('O número da CNH é obrigatório.')
+        return cleaned
+
+    def validate_phone(self, value):
+        phone = (value or '').strip()
+        if len(re.sub(r'[^0-9]', '', phone)) < 10:
+            raise serializers.ValidationError('Telefone inválido. Informe DDD e número.')
+        return phone
+
+    def validate_whatsapp(self, value):
+        if value:
+            phone = value.strip()
+            if len(re.sub(r'[^0-9]', '', phone)) < 10:
+                raise serializers.ValidationError('WhatsApp inválido. Informe DDD e número.')
+            return phone
         return value
 
     def create(self, validated_data):
-        """
-        Cria uma nova solicitação com status 'em_analise'.
-        """
-        logger.info(f"Nova solicitação de motorista criada: {validated_data.get('cpf')}")
+        logger.info("Nova solicitação de motorista criada: CPF %s", validated_data.get('cpf'))
         return super().create(validated_data)
 
 
 class DriverRequestListSerializer(serializers.ModelSerializer):
-    """
-    Serializer para listagem de solicitações de motoristas (admin).
-
-    Inclui dados aninhados do revisor e do condutor criado.
-    """
+    """Serializer para listagem e detalhes das solicitações de motoristas."""
 
     reviewed_by = UserNestedSerializer(read_only=True)
     conductor = ConductorNestedSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    cnh_category_display = serializers.CharField(source='get_cnh_category_display', read_only=True)
+    license_category_display = serializers.CharField(source='get_license_category_display', read_only=True)
+    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    address = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverRequest
         fields = [
             'id',
-            'full_name',
+            'name',
             'cpf',
+            'birth_date',
+            'gender',
+            'gender_display',
+            'nationality',
+            'street',
+            'number',
+            'neighborhood',
+            'city',
+            'reference_point',
+            'address',
             'email',
             'phone',
-            'cnh_number',
-            'cnh_category',
-            'cnh_category_display',
+            'whatsapp',
+            'license_number',
+            'license_category',
+            'license_category_display',
+            'license_expiry_date',
+            'document',
+            'cnh_digital',
             'message',
             'status',
             'status_display',
@@ -173,29 +242,20 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
             'conductor',
         ]
 
+    def get_address(self, obj):
+        parts = [item for item in [obj.street, obj.number, obj.neighborhood, obj.city] if item]
+        return ', '.join(parts)
+
 
 class DriverRequestActionSerializer(serializers.Serializer):
     """
     Serializer para ações de aprovação/reprovação de solicitações de motoristas.
-
-    Validações:
-    - rejection_reason é obrigatório se status for 'reprovado'
     """
 
-    status = serializers.ChoiceField(
-        choices=['aprovado', 'reprovado'],
-        required=True
-    )
-    rejection_reason = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        max_length=2000
-    )
+    status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)
+    rejection_reason = serializers.CharField(required=False, allow_blank=True, max_length=2000)
 
     def validate(self, data):
-        """
-        Valida que rejection_reason é obrigatório quando status é 'reprovado'.
-        """
         status = data.get('status')
         rejection_reason = data.get('rejection_reason', '').strip()
 
@@ -208,6 +268,7 @@ class DriverRequestActionSerializer(serializers.Serializer):
 
 
 # ========== VEHICLE REQUEST SERIALIZERS ==========
+
 
 class VehicleRequestCreateSerializer(serializers.ModelSerializer):
     """
@@ -234,20 +295,9 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
     def validate_plate(self, value):
         """
         Valida e normaliza a placa do veículo.
-
-        Remove espaços e converte para maiúsculas.
-        Aceita formatos brasileiro antigo (AAA-9999) e Mercosul (AAA9A99).
         """
-        # Normalizar placa (uppercase, sem espaços, sem traços)
-        plate_cleaned = value.upper().strip().replace(' ', '').replace('-', '')
+        plate_cleaned = value.upper().replace('-', '').replace(' ', '')
 
-        # Validar se tem 7 caracteres
-        if len(plate_cleaned) != 7:
-            raise serializers.ValidationError(
-                'A placa deve conter exatamente 7 caracteres (formato brasileiro).'
-            )
-
-        # Validar formato da placa (brasileiro antigo ou Mercosul)
         brazilian_pattern = r'^[A-Z]{3}[0-9]{4}$'  # AAA1234
         mercosul_pattern = r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$'  # AAA1A23
 
@@ -256,13 +306,7 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
                 'Formato de placa inválido. Use o formato brasileiro (AAA1234) ou Mercosul (AAA1A23).'
             )
 
-        # Verificar se já existe uma solicitação em análise com esta placa
-        existing_request = VehicleRequest.objects.filter(
-            plate=plate_cleaned,
-            status='em_analise'
-        ).exists()
-
-        if existing_request:
+        if VehicleRequest.objects.filter(plate=plate_cleaned, status='em_analise').exists():
             raise serializers.ValidationError(
                 'Já existe uma solicitação em análise para esta placa. Aguarde a aprovação ou reprovação.'
             )
@@ -273,7 +317,6 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
         """
         Valida se o ano está entre 1900 e ano atual + 1.
         """
-        import datetime
         current_year = datetime.datetime.now().year
 
         if value < 1900 or value > current_year + 1:
@@ -297,10 +340,7 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        """
-        Cria uma nova solicitação com status 'em_analise'.
-        """
-        logger.info(f"Nova solicitação de veículo criada: {validated_data.get('plate')}")
+        logger.info("Nova solicitação de veículo criada: placa %s", validated_data.get('plate'))
         return super().create(validated_data)
 
 
@@ -353,20 +393,10 @@ class VehicleRequestActionSerializer(serializers.Serializer):
     - rejection_reason é obrigatório se status for 'reprovado'
     """
 
-    status = serializers.ChoiceField(
-        choices=['aprovado', 'reprovado'],
-        required=True
-    )
-    rejection_reason = serializers.CharField(
-        required=False,
-        allow_blank=True,
-        max_length=2000
-    )
+    status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)
+    rejection_reason = serializers.CharField(required=False, allow_blank=True, max_length=2000)
 
     def validate(self, data):
-        """
-        Valida que rejection_reason é obrigatório quando status é 'reprovado'.
-        """
         status = data.get('status')
         rejection_reason = data.get('rejection_reason', '').strip()
 

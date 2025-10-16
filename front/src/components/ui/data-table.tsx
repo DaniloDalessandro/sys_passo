@@ -10,7 +10,19 @@ import {
   getFilteredRowModel,
   ColumnDef,
   VisibilityState,
+  SortingState,
 } from "@tanstack/react-table";
+
+// Extend ColumnMeta to include custom filter properties
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData, TValue> {
+    showFilterIcon?: boolean;
+    filterType?: 'text' | 'select';
+    filterOptions?: Array<{ value: string; label: string }>;
+    filterValue?: string;
+    onFilterChange?: (value: string) => void;
+  }
+}
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -53,7 +65,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface DataTableProps<TData> {
+export interface PaginationState {
+  pageIndex: number;
+  pageSize: number;
+}
+
+interface DataTableProps<TData extends { id?: any }> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
   title: string;
@@ -61,21 +78,23 @@ interface DataTableProps<TData> {
   pageSize?: number;
   pageIndex?: number;
   totalCount?: number;
+  initialFilters?: { id: string; value: any }[];
   onPageChange?: (pageIndex: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onSortingChange?: (sorting: SortingState) => void;
+  onFilterChange?: (columnId: string, value: any) => void;
   onAdd?: () => void;
   onEdit?: (row: TData) => void;
   onDelete?: (row: TData) => void;
   onViewDetails?: (row: TData) => void;
-  onFilterChange?: (columnId: string, value: string) => void;
-  onSortingChange?: (sorting: any[]) => void;
   readOnly?: boolean;
+  isLoading?: boolean;
   defaultVisibleColumns?: string[] | null;
   columnVisibility?: VisibilityState | null;
   onColumnVisibilityChange?: React.Dispatch<React.SetStateAction<VisibilityState>> | null;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData extends { id?: any }>({
   columns,
   data,
   title,
@@ -83,15 +102,17 @@ export function DataTable<TData>({
   pageSize = 10,
   pageIndex = 0,
   totalCount = 0,
+  initialFilters,
   onPageChange,
   onPageSizeChange,
+  onSortingChange,
+  onFilterChange,
   onAdd,
   onEdit,
   onDelete,
   onViewDetails,
-  onFilterChange,
-  onSortingChange,
   readOnly = false,
+  isLoading = false,
   defaultVisibleColumns = null,
   columnVisibility: externalColumnVisibility = null,
   onColumnVisibilityChange: externalOnColumnVisibilityChange = null,
@@ -154,7 +175,7 @@ export function DataTable<TData>({
 
   const [internalColumnVisibility, setInternalColumnVisibility] = React.useState<VisibilityState>(() => getInitialColumnVisibility());
   const [selectedRow, setSelectedRow] = React.useState<TData | null>(null);
-  const [sorting, setSorting] = React.useState<any[]>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [openFilterId, setOpenFilterId] = React.useState<string | null>(null);
 
@@ -203,6 +224,18 @@ export function DataTable<TData>({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  // Apply initial filters when component mounts
+  React.useEffect(() => {
+    if (initialFilters && initialFilters.length > 0) {
+      initialFilters.forEach(filter => {
+        const column = table.getColumn(filter.id);
+        if (column) {
+          column.setFilterValue(filter.value);
+        }
+      });
+    }
+  }, [initialFilters]);
+
   // Filtragem, ordenação etc precisam ser refletidos na query backend
   // Para simplificação, agora a paginação já é controlada externamente
 
@@ -224,18 +257,32 @@ export function DataTable<TData>({
   };
 
   const clearAllFilters = () => {
+    // Limpar filtros de texto
     table.getAllColumns().forEach((col) => {
       col.setFilterValue("");
-      // Reset select filters to empty string (default state)
-      if (col.columnDef.meta?.filterType === "select" && col.columnDef.meta?.onFilterChange) {
-        col.columnDef.meta.onFilterChange("");
+    });
+
+    // Restaurar filtros padrão (select filters)
+    table.getAllColumns().forEach((col) => {
+      if (col.columnDef.meta?.filterType === "select") {
+        const defaultFilter = initialFilters?.find(f => f.id === col.id);
+        const defaultValue = defaultFilter?.value || "";
+
+        if (col.columnDef.meta?.onFilterChange) {
+          col.columnDef.meta.onFilterChange(defaultValue);
+        }
       }
     });
+
     setOpenFilterId(null);
-    // Call parent callback to clear all filters
+
+    // Notificar o componente pai sobre a limpeza
     if (onFilterChange) {
       table.getAllColumns().forEach((col) => {
-        if (col.getFilterValue()) {
+        const defaultFilter = initialFilters?.find(f => f.id === col.id);
+        if (defaultFilter) {
+          onFilterChange(col.id, defaultFilter.value);
+        } else if (col.getFilterValue()) {
           onFilterChange(col.id, "");
         }
       });
@@ -246,8 +293,35 @@ export function DataTable<TData>({
     (f) => f.value !== undefined && f.value !== ""
   );
 
+  // Determinar quais são os filtros padrão
+  const defaultFilterIds = (initialFilters || []).map(f => f.id);
+  const isDefaultFilter = (filterId: string, value: any) => {
+    const defaultFilter = initialFilters?.find(f => f.id === filterId);
+    if (!defaultFilter) return false;
+    // Comparar valores (considerar que podem ser strings ou outros tipos)
+    return String(defaultFilter.value).toLowerCase() === String(value).toLowerCase();
+  };
+
+  // Filtrar os badges exibíveis
+  const displayableFilters = activeFilters.filter(
+    (f) => {
+      const value = String(f.value || '').toLowerCase();
+      // Não exibir se for filtro padrão ou se o valor for "todos"/"all"
+      return !isDefaultFilter(f.id, f.value) && value !== 'todos' && value !== 'all' && value !== '';
+    }
+  );
+
+  // Verificar se há filtros exibíveis
+  const hasDisplayableFilters = displayableFilters.length > 0 ||
+    table.getAllColumns().some((col) => {
+      const filterValue = col.columnDef.meta?.filterValue;
+      if (!filterValue || filterValue === '') return false;
+      const value = String(filterValue).toLowerCase();
+      return !isDefaultFilter(col.id, filterValue) && value !== 'todos' && value !== 'all';
+    });
+
   return (
-    <Card className="shadow-lg pb-0.5 h-full flex flex-col">
+    <Card className="shadow-lg pb-0.5 h-full flex flex-col w-full overflow-hidden">
       <CardHeader className="pb-1">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-100">
           <div>
@@ -349,9 +423,9 @@ export function DataTable<TData>({
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
         {/* TAGS DE FILTROS */}
-        {(activeFilters.length > 0 || table.getAllColumns().some((col) => col.columnDef.meta?.filterValue && col.columnDef.meta?.filterValue !== "Todos")) && (
+        {hasDisplayableFilters && (
           <div className="flex flex-wrap gap-2 mb-3">
-            {activeFilters.map((filter) => {
+            {displayableFilters.map((filter) => {
               const column = table.getColumn(filter.id);
               return (
                 <Badge
@@ -370,11 +444,12 @@ export function DataTable<TData>({
             })}
             {table.getAllColumns().map((column) => {
               const filterValue = column.columnDef.meta?.filterValue;
-              // Debug log
-              if (column.columnDef.meta?.filterType === "select") {
-                console.log(`Column: ${column.id}, FilterValue: "${filterValue}", Type: ${typeof filterValue}`);
-              }
               if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "") {
+                const value = String(filterValue).toLowerCase();
+                // Não exibir badge se for filtro padrão ou "todos"/"all"
+                if (isDefaultFilter(column.id, filterValue) || value === 'todos' || value === 'all') {
+                  return null;
+                }
                 return (
                   <Badge
                     key={column.id}
@@ -407,9 +482,9 @@ export function DataTable<TData>({
           </div>
         )}
 
-        <div className="border shadow-sm rounded-lg overflow-hidden flex-1 flex flex-col">
-          <div className="flex-1 overflow-auto">
-            <Table>
+        <div className="border shadow-sm rounded-lg overflow-hidden flex-1 flex flex-col w-full">
+          <div className="flex-1 overflow-auto w-full">
+            <Table className="w-full">
             <TableHeader className="bg-gray-50 sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -634,18 +709,6 @@ export function DataTable<TData>({
             >
               {">>"}
             </Button>
-
-            <select
-              className="ml-2 rounded border border-gray-300 px-2 py-1 text-sm"
-              value={pageSize}
-              onChange={(e) => onPageSizeChange && onPageSizeChange(Number(e.target.value))}
-            >
-              {[10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  Mostrar {size}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
       </CardContent>

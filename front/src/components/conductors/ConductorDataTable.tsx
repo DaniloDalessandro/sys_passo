@@ -50,7 +50,23 @@ export function ConductorDataTable({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     }
-    return {};
+
+    // Se não há nada salvo, usar DEFAULT_VISIBLE_COLUMNS
+    // Todas as colunas disponíveis
+    const allColumns = [
+      "name", "cpf", "license_number", "license_category", "phone",
+      "whatsapp", "email", "address", "nationality", "gender_display",
+      "birth_date", "license_expiry_date", "documents",
+      "created_at", "updated_at", "is_active"
+    ];
+
+    // Criar objeto de visibilidade: true apenas para as colunas em DEFAULT_VISIBLE_COLUMNS
+    const initialVisibility: Record<string, boolean> = {};
+    allColumns.forEach(col => {
+      initialVisibility[col] = DEFAULT_VISIBLE_COLUMNS.includes(col);
+    });
+
+    return initialVisibility;
   });
 
   useEffect(() => {
@@ -141,14 +157,18 @@ export function ConductorDataTable({
   );
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col w-full overflow-hidden">
       <DataTable
         columns={columns}
         data={conductors}
         title="Lista de Condutores"
         totalCount={totalCount}
-        pagination={pagination}
-        onPaginationChange={onPaginationChange}
+        pageSize={pagination.pageSize}
+        pageIndex={pagination.pageIndex}
+        initialFilters={[
+          { id: 'is_active', value: filters?.is_active || 'true' }
+        ]}
+        onPageChange={(pageIndex) => onPaginationChange({ ...pagination, pageIndex })}
         onAdd={onAdd}
         onEdit={onEdit}
         onDelete={onDelete}

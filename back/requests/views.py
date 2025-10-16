@@ -37,7 +37,7 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
     Filtros disponíveis:
     - status (exact)
     - created_at (gte, lte)
-    - search (full_name, cpf)
+    - search (name, cpf, email)
     """
 
     queryset = DriverRequest.objects.all()
@@ -46,8 +46,8 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
         'status': ['exact'],
         'created_at': ['gte', 'lte'],
     }
-    search_fields = ['full_name', 'cpf', 'email']
-    ordering_fields = ['created_at', 'status', 'full_name']
+    search_fields = ['name', 'cpf', 'email']
+    ordering_fields = ['created_at', 'status', 'name']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
@@ -128,12 +128,15 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 # Criar o condutor com dados básicos da solicitação
                 conductor = Conductor.objects.create(
-                    name=driver_request.full_name,
+                    name=driver_request.name,
                     cpf=driver_request.cpf,
                     email=driver_request.email,
                     phone=driver_request.phone,
-                    license_number=driver_request.cnh_number,
-                    license_category=driver_request.cnh_category,
+                    whatsapp=driver_request.whatsapp or '',
+                    license_number=driver_request.license_number,
+                    license_category=driver_request.license_category,
+                    gender=driver_request.gender or 'M',
+                    nationality=driver_request.nationality or 'Brasileira',
                     is_active=True,
                     created_by=request.user,
                     # Campos obrigatórios com valores padrão (devem ser atualizados depois)

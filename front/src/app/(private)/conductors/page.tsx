@@ -20,7 +20,7 @@ export default function ConductorsPage() {
 
   // State for server-side pagination and filtering
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [filters, setFilters] = useState<Record<string, any>>({ is_active: 'true' });
 
   const {
     conductors,
@@ -112,8 +112,8 @@ export default function ConductorsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full p-4 pt-0">
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col h-full p-4 pt-0 w-full overflow-hidden">
+      <div className="flex flex-col gap-6 w-full overflow-hidden">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Condutores</h1>
@@ -123,7 +123,7 @@ export default function ConductorsPage() {
 
         <ConductorStats conductors={conductors} />
 
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 w-full overflow-hidden">
           <ConductorDataTable
             conductors={conductors}
             totalCount={totalCount}

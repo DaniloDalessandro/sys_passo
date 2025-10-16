@@ -79,7 +79,7 @@ export default function Layout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="flex flex-col">
+      <SidebarInset className="flex flex-col overflow-hidden w-full">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />
           <Separator
@@ -88,7 +88,7 @@ export default function Layout({
           />
           <MemoizedBreadcrumb pathSegments={pathSegments} />
         </header>
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 overflow-hidden w-full">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

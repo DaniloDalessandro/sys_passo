@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { jwtDecode } from "jwt-decode"
+import { buildApiUrl } from "@/lib/api-client"
 
 interface UserProfile {
   is_email_verified: boolean
@@ -182,8 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoading(true)
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_URL}/api/auth/refresh/`, {
+      const response = await fetch(buildApiUrl("api/auth/refresh/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh }),

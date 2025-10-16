@@ -24,31 +24,63 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # Allow login with email or username
-        username_field = attrs.get(self.username_field)
-        password = attrs.get('password')
+        # Allow login with email or username (case-insensitive and trimmed)
+        raw_identifier = attrs.get(self.username_field) or self.initial_data.get(self.username_field)
+        password = attrs.get('password') or self.initial_data.get('password')
 
-        if username_field and password:
-            user = authenticate(username=username_field, password=password)
-            
-            # If authentication failed with username, try with email
-            if not user:
-                try:
-                    user_obj = User.objects.get(email=username_field)
-                    user = authenticate(username=user_obj.username, password=password)
-                except User.DoesNotExist:
-                    pass
-            
-            if user and user.is_active:
-                # Update last login
-                user.save(update_fields=['last_login'])
-                data = super().validate(attrs)
-                data['user'] = UserSerializer(user).data
-                return data
-            else:
-                raise serializers.ValidationError('Invalid credentials or inactive account.')
-        else:
+        if password is None:
             raise serializers.ValidationError('Username and password required.')
+
+        identifier_candidates = []
+
+        if isinstance(raw_identifier, str) and raw_identifier.strip():
+            identifier_candidates.append(raw_identifier.strip())
+
+        # Accept explicit email field from request payload
+        raw_email = self.initial_data.get('email')
+        if isinstance(raw_email, str):
+            cleaned_email = raw_email.strip()
+            if cleaned_email and cleaned_email.lower() not in [c.lower() for c in identifier_candidates]:
+                identifier_candidates.append(cleaned_email)
+
+        if not identifier_candidates:
+            raise serializers.ValidationError('Username and password required.')
+
+        user = None
+
+        for candidate in identifier_candidates:
+            # Try direct authentication using provided identifier
+            user = authenticate(username=candidate, password=password)
+            if user:
+                break
+
+            # Try matching by username case-insensitively
+            candidate_user = User.objects.filter(username__iexact=candidate).first()
+            if candidate_user:
+                user = authenticate(username=candidate_user.username, password=password)
+                if user:
+                    break
+
+            # Try matching by email case-insensitively
+            if '@' in candidate:
+                candidate_user = User.objects.filter(email__iexact=candidate).first()
+                if candidate_user:
+                    user = authenticate(username=candidate_user.username, password=password)
+                    if user:
+                        break
+
+        if user and user.is_active:
+            # Sync attrs so parent serializer can issue tokens correctly
+            attrs[self.username_field] = user.username
+            attrs['password'] = password
+
+            # Update last login
+            user.save(update_fields=['last_login'])
+            data = super().validate(attrs)
+            data['user'] = UserSerializer(user).data
+            return data
+
+        raise serializers.ValidationError('Invalid credentials or inactive account.')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

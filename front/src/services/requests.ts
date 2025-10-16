@@ -1,3 +1,5 @@
+import { buildApiUrl } from "@/lib/api-client"
+
 // Types
 export interface DriverRequest {
   id: number;
@@ -53,10 +55,11 @@ export interface RequestFilters {
 }
 
 // API Functions with authentication
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   const token = localStorage.getItem('access_token');
+  const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
+    ? pathOrUrl
+    : buildApiUrl(pathOrUrl);
 
   const response = await fetch(url, {
     ...options,
@@ -82,7 +85,7 @@ export async function getDriverRequests(filters?: RequestFilters): Promise<Drive
   if (filters?.status) params.append('status', filters.status);
   if (filters?.search) params.append('search', filters.search);
 
-  const url = `${API_URL}/api/requests/drivers/${params.toString() ? '?' + params.toString() : ''}`;
+  const url = `api/requests/drivers/${params.toString() ? '?' + params.toString() : ''}`;
   const response = await fetchWithAuth(url);
 
   if (!response.ok) throw new Error('Erro ao buscar solicitações de motoristas');
@@ -106,7 +109,7 @@ export async function getDriverRequests(filters?: RequestFilters): Promise<Drive
 }
 
 export async function getDriverRequestById(id: number): Promise<DriverRequest> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/drivers/${id}/`);
+  const response = await fetchWithAuth(`api/requests/drivers/${id}/`);
 
   if (!response.ok) throw new Error('Erro ao buscar detalhes da solicitação');
 
@@ -114,7 +117,7 @@ export async function getDriverRequestById(id: number): Promise<DriverRequest> {
 }
 
 export async function approveDriverRequest(id: number): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/drivers/${id}/approve/`, {
+  const response = await fetchWithAuth(`api/requests/drivers/${id}/approve/`, {
     method: 'POST',
   });
 
@@ -125,7 +128,7 @@ export async function approveDriverRequest(id: number): Promise<void> {
 }
 
 export async function rejectDriverRequest(id: number, reason: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/drivers/${id}/reject/`, {
+  const response = await fetchWithAuth(`api/requests/drivers/${id}/reject/`, {
     method: 'POST',
     body: JSON.stringify({ rejection_reason: reason }),
   });
@@ -142,7 +145,7 @@ export async function getVehicleRequests(filters?: RequestFilters): Promise<Vehi
   if (filters?.status) params.append('status', filters.status);
   if (filters?.search) params.append('search', filters.search);
 
-  const url = `${API_URL}/api/requests/vehicles/${params.toString() ? '?' + params.toString() : ''}`;
+  const url = `api/requests/vehicles/${params.toString() ? '?' + params.toString() : ''}`;
   const response = await fetchWithAuth(url);
 
   if (!response.ok) throw new Error('Erro ao buscar solicitações de veículos');
@@ -166,7 +169,7 @@ export async function getVehicleRequests(filters?: RequestFilters): Promise<Vehi
 }
 
 export async function getVehicleRequestById(id: number): Promise<VehicleRequest> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/vehicles/${id}/`);
+  const response = await fetchWithAuth(`api/requests/vehicles/${id}/`);
 
   if (!response.ok) throw new Error('Erro ao buscar detalhes da solicitação');
 
@@ -174,7 +177,7 @@ export async function getVehicleRequestById(id: number): Promise<VehicleRequest>
 }
 
 export async function approveVehicleRequest(id: number): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/vehicles/${id}/approve/`, {
+  const response = await fetchWithAuth(`api/requests/vehicles/${id}/approve/`, {
     method: 'POST',
   });
 
@@ -185,7 +188,7 @@ export async function approveVehicleRequest(id: number): Promise<void> {
 }
 
 export async function rejectVehicleRequest(id: number, reason: string): Promise<void> {
-  const response = await fetchWithAuth(`${API_URL}/api/requests/vehicles/${id}/reject/`, {
+  const response = await fetchWithAuth(`api/requests/vehicles/${id}/reject/`, {
     method: 'POST',
     body: JSON.stringify({ rejection_reason: reason }),
   });

@@ -52,7 +52,8 @@ class Conductor(models.Model):
     # Arquivos
     document = models.FileField(upload_to='conductors/documents/', blank=True, null=True, verbose_name='Documento do Condutor (PDF)')
     cnh_digital = models.FileField(upload_to='conductors/cnh/', blank=True, null=True, verbose_name='CNH Digital (PDF)')
-
+    photo = models.ImageField(upload_to='conductors/photos/', blank=True, null=True, verbose_name='Foto 1 (JPG/PNG)')
+    
     # Controle
     is_active = models.BooleanField(default=True, verbose_name='Ativo')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')

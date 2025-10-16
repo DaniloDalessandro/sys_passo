@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useAuthContext } from "@/context/AuthContext"
+import { buildApiUrl } from "@/lib/api-client"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const [email, setEmail] = useState("")
@@ -35,10 +36,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     try {
       console.log("Tentando fazer login com:", { username: email, password: "***" })
 
-      const response = await fetch("http://localhost:8000/api/auth/login/", {
+      const normalizedEmail = email.trim()
+      const response = await fetch(buildApiUrl("/api/auth/login/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: email, password }),
+        body: JSON.stringify({ username: normalizedEmail, email: normalizedEmail, password }),
       })
 
       console.log("Response status:", response.status)
@@ -71,11 +73,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setIsSubmittingForgotPassword(true)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
-      const response = await fetch(`${API_URL}/api/auth/password/reset/`, {
+      const response = await fetch(buildApiUrl("/api/auth/password/reset/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotPasswordEmail }),
+        body: JSON.stringify({ email: forgotPasswordEmail.trim() }),
       })
 
       const data = await response.json()

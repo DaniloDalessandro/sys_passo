@@ -31,10 +31,15 @@ import {
   AlertTriangle,
   TrendingUp,
   Activity,
-  Camera
+  Camera,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  Upload,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { buildApiUrl } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -54,6 +59,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LICENSE_CATEGORIES } from '@/constants/license-categories';
 
 // Types for site configuration
 interface SiteConfig {
@@ -86,8 +92,11 @@ const formatPhoneDisplay = (phone: string): string => {
 };
 
 // Authenticated fetch helper (for client-side authenticated API calls)
-const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+const fetchWithAuth = async (pathOrUrl: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('access_token');
+  const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
+    ? pathOrUrl
+    : buildApiUrl(pathOrUrl);
 
   const response = await fetch(url, {
     ...options,
@@ -101,18 +110,62 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   return response;
 };
 
+// Helper function to validate CPF
+const validateCPF = (cpf: string): boolean => {
+  const numbers = cpf.replace(/\D/g, '');
+  if (numbers.length !== 11 || /^(\d)\1+$/.test(numbers)) return false;
+  let sum = 0, remainder;
+  for (let i = 1; i <= 9; i++) sum += parseInt(numbers.substring(i - 1, i)) * (11 - i);
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(numbers.substring(9, 10))) return false;
+  sum = 0;
+  for (let i = 1; i <= 10; i++) sum += parseInt(numbers.substring(i - 1, i)) * (12 - i);
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  return remainder === parseInt(numbers.substring(10, 11));
+};
+
+// Helper function to validate age (minimum 18 years)
+const calculateAge = (birthDate: Date): number => {
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+};
+
 // Zod validation schemas
 const driverSchema = z.object({
-  fullName: z.string().min(3, 'Nome completo é obrigatório'),
-  cpf: z.string()
-    .min(11, 'CPF deve ter 11 dígitos')
-    .regex(/^\d{11}$/, 'CPF deve conter apenas números'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().min(10, 'Telefone inválido'),
-  cnhNumber: z.string().min(5, 'Número da CNH é obrigatório'),
-  cnhCategory: z.string().min(1, 'Categoria da CNH é obrigatória'),
-  message: z.string().optional(),
-});
+    name: z.string().min(3, 'Nome completo é obrigatório'),
+    cpf: z.string()
+      .min(11, 'CPF deve ter 11 dígitos')
+      .regex(/^\d{11}$/, 'CPF deve conter apenas números')
+      .refine((cpf) => validateCPF(cpf), 'CPF inválido'),
+    birth_date: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date', 'Data de nascimento inválida'),
+    gender: z.string().min(1, 'Gênero é obrigatório'),
+    nationality: z.string().min(3, 'Nacionalidade é obrigatória'),
+    street: z.string().min(3, 'Rua é obrigatória'),
+    number: z.string().min(1, 'Número é obrigatório'),
+    neighborhood: z.string().min(3, 'Bairro é obrigatório'),
+    city: z.string().min(3, 'Cidade é obrigatória'),
+    reference_point: z.string().optional(),
+    phone: z.string().min(10, 'Telefone inválido'),
+    email: z.string().email('Email inválido'),
+    whatsapp: z.string().optional(),
+    license_number: z.string().min(5, 'Número da CNH é obrigatório'),
+    license_category: z.string().min(1, 'Categoria da CNH é obrigatória'),
+    license_expiry_date: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date', 'Data de validade da CNH inválida'),
+    document: z.any().optional(),
+    cnh_digital: z.any().optional(),
+    message: z.string().optional(),
+  }).refine((data) => {
+    const age = calculateAge(new Date(data.birth_date));
+    return age >= 18;
+  }, {
+    message: 'Motorista deve ter pelo menos 18 anos',
+    path: ['birth_date']
+  });
 
 const vehicleSchema = z.object({
   plate: z.string()
@@ -237,13 +290,23 @@ export default function SiteHomePage() {
   const driverForm = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
-      fullName: '',
-      cpf: '',
-      email: '',
-      phone: '',
-      cnhNumber: '',
-      cnhCategory: '',
-      message: '',
+        name: '',
+        cpf: '',
+        birth_date: '',
+        gender: 'M',
+        nationality: 'Brasileira',
+        street: '',
+        number: '',
+        neighborhood: '',
+        city: '',
+        reference_point: '',
+        phone: '',
+        email: '',
+        whatsapp: '',
+        license_number: '',
+        license_category: 'B',
+        license_expiry_date: '',
+        message: '',
     },
   });
 
@@ -280,8 +343,7 @@ export default function SiteHomePage() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-        const response = await fetch(`${API_URL}/api/site/configuration/`);
+        const response = await fetch(buildApiUrl('api/site/configuration/'));
         if (response.ok) {
           const result = await response.json();
           const data = result.success ? result.data : result;
@@ -310,12 +372,10 @@ export default function SiteHomePage() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
         // Try to fetch counts with authentication (will work if user is logged in)
         // If not authenticated, these will gracefully fail and show 0
         try {
-          const vehiclesResponse = await fetchWithAuth(`${API_URL}/api/vehicles/`);
+          const vehiclesResponse = await fetchWithAuth('api/vehicles/');
           if (vehiclesResponse.ok) {
             const vehiclesData = await vehiclesResponse.json();
             const count = vehiclesData.count || vehiclesData.length || 0;
@@ -326,7 +386,7 @@ export default function SiteHomePage() {
         }
 
         try {
-          const conductorsResponse = await fetchWithAuth(`${API_URL}/api/conductors/`);
+          const conductorsResponse = await fetchWithAuth('api/conductors/');
           if (conductorsResponse.ok) {
             const conductorsData = await conductorsResponse.json();
             const count = conductorsData.count || conductorsData.length || 0;
@@ -373,39 +433,56 @@ export default function SiteHomePage() {
 
   // Driver form submission
   const onDriverSubmit = async (data: DriverFormData) => {
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const formData = new FormData();
 
-      const response = await fetch(`${API_URL}/api/requests/drivers/`, {
+    // Map and append form data
+    const fieldMapping: { [key in keyof DriverFormData]?: string } = {
+      name: 'name',
+      cpf: 'cpf',
+      birth_date: 'birth_date',
+      gender: 'gender',
+      nationality: 'nationality',
+      street: 'street',
+      number: 'number',
+      neighborhood: 'neighborhood',
+      city: 'city',
+      reference_point: 'reference_point',
+      phone: 'phone',
+      email: 'email',
+      whatsapp: 'whatsapp',
+      license_number: 'license_number',
+      license_category: 'license_category',
+      license_expiry_date: 'license_expiry_date',
+      message: 'message',
+    };
+
+    for (const key in data) {
+        const typedKey = key as keyof DriverFormData;
+        const backendKey = fieldMapping[typedKey];
+        if (backendKey && data[typedKey] !== undefined && data[typedKey] !== null) {
+            formData.append(backendKey, data[typedKey] as string);
+        }
+    }
+
+    // Append files if they exist
+    if (data.document && data.document[0]) {
+      formData.append('document', data.document[0]);
+    }
+    if (data.cnh_digital && data.cnh_digital[0]) {
+      formData.append('cnh_digital', data.cnh_digital[0]);
+    }
+
+    try {
+      const response = await fetch(buildApiUrl('api/requests/drivers/'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          full_name: data.fullName,
-          cpf: data.cpf,
-          email: data.email,
-          phone: data.phone,
-          cnh_number: data.cnhNumber,
-          cnh_category: data.cnhCategory,
-          message: data.message || '',
-        }),
+        body: formData,
+        // Headers are not needed for FormData; browser sets them automatically
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-
-        // Tratar erros específicos
-        if (response.status === 400) {
-          // Erros de validação
-          const errorMessage = errorData.detail ||
-                             errorData.cpf?.[0] ||
-                             errorData.email?.[0] ||
-                             'Erro na validação dos dados. Verifique as informações.';
-          throw new Error(errorMessage);
-        }
-
-        throw new Error('Erro ao enviar solicitação. Tente novamente.');
+        const errorMessage = Object.values(errorData).flat().join(' ') || 'Erro ao enviar solicitação.';
+        throw new Error(errorMessage);
       }
 
       toast.success('Solicitação enviada com sucesso!', {
@@ -416,7 +493,6 @@ export default function SiteHomePage() {
       setIsDriverDialogOpen(false);
     } catch (error) {
       console.error('Error submitting driver request:', error);
-
       toast.error('Erro ao enviar solicitação', {
         description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
       });
@@ -426,9 +502,7 @@ export default function SiteHomePage() {
   // Vehicle form submission
   const onVehicleSubmit = async (data: VehicleFormData) => {
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
-      const response = await fetch(`${API_URL}/api/requests/vehicles/`, {
+      const response = await fetch(buildApiUrl('api/requests/vehicles/'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -483,8 +557,7 @@ export default function SiteHomePage() {
 
     setIsLoadingPlates(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_URL}/api/complaints/vehicles/autocomplete/?q=${encodeURIComponent(query)}`);
+      const response = await fetch(buildApiUrl(`api/complaints/vehicles/autocomplete/?q=${encodeURIComponent(query)}`));
 
       if (response.ok) {
         const data = await response.json();
@@ -506,9 +579,7 @@ export default function SiteHomePage() {
   // Complaint form submission
   const onComplaintSubmit = async (data: ComplaintFormData) => {
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-
-      const response = await fetch(`${API_URL}/api/complaints/`, {
+      const response = await fetch(buildApiUrl('api/complaints/'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1250,149 +1321,152 @@ export default function SiteHomePage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={driverForm.handleSubmit(onDriverSubmit)} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Nome Completo *
-              </Label>
-              <Input
-                id="fullName"
-                placeholder="Digite o nome completo"
-                {...driverForm.register('fullName')}
-              />
-              {driverForm.formState.errors.fullName && (
-                <p className="text-sm text-red-600">
-                  {driverForm.formState.errors.fullName.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cpf" className="flex items-center gap-2">
-                <Hash className="w-4 h-4" />
-                CPF *
-              </Label>
-              <Input
-                id="cpf"
-                placeholder="00000000000"
-                maxLength={11}
-                {...driverForm.register('cpf')}
-              />
-              {driverForm.formState.errors.cpf && (
-                <p className="text-sm text-red-600">
-                  {driverForm.formState.errors.cpf.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email *
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@exemplo.com"
-                {...driverForm.register('email')}
-              />
-              {driverForm.formState.errors.email && (
-                <p className="text-sm text-red-600">
-                  {driverForm.formState.errors.email.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                Telefone *
-              </Label>
-              <Input
-                id="phone"
-                placeholder="(00) 00000-0000"
-                {...driverForm.register('phone')}
-              />
-              {driverForm.formState.errors.phone && (
-                <p className="text-sm text-red-600">
-                  {driverForm.formState.errors.phone.message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="cnhNumber" className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Número da CNH *
-                </Label>
-                <Input
-                  id="cnhNumber"
-                  placeholder="00000000000"
-                  {...driverForm.register('cnhNumber')}
-                />
-                {driverForm.formState.errors.cnhNumber && (
-                  <p className="text-sm text-red-600">
-                    {driverForm.formState.errors.cnhNumber.message}
-                  </p>
-                )}
+                <Label htmlFor="name">Nome Completo *</Label>
+                <Input id="name" placeholder="Digite o nome completo" {...driverForm.register('name')} />
+                {driverForm.formState.errors.name && <p className="text-sm text-red-600">{driverForm.formState.errors.name.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input id="cpf" placeholder="00000000000" maxLength={11} {...driverForm.register('cpf')} />
+                  {driverForm.formState.errors.cpf && <p className="text-sm text-red-600">{driverForm.formState.errors.cpf.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="birth_date">Data de Nascimento *</Label>
+                  <Input id="birth_date" type="date" {...driverForm.register('birth_date')} />
+                  {driverForm.formState.errors.birth_date && <p className="text-sm text-red-600">{driverForm.formState.errors.birth_date.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gênero *</Label>
+                  <Select
+                    value={driverForm.watch('gender')}
+                    onValueChange={(value) => driverForm.setValue('gender', value)}
+                  >
+                    <SelectTrigger id="gender"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                      <SelectItem value="O">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {driverForm.formState.errors.gender && <p className="text-sm text-red-600">{driverForm.formState.errors.gender.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nationality">Nacionalidade *</Label>
+                  <Input id="nationality" placeholder="Brasileira" {...driverForm.register('nationality')} />
+                  {driverForm.formState.errors.nationality && <p className="text-sm text-red-600">{driverForm.formState.errors.nationality.message}</p>}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cnhCategory" className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Categoria CNH *
-                </Label>
-                <Select
-                  onValueChange={(value) => driverForm.setValue('cnhCategory', value)}
-                >
-                  <SelectTrigger id="cnhCategory">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="A">A</SelectItem>
-                    <SelectItem value="B">B</SelectItem>
-                    <SelectItem value="AB">AB</SelectItem>
-                    <SelectItem value="C">C</SelectItem>
-                    <SelectItem value="D">D</SelectItem>
-                    <SelectItem value="E">E</SelectItem>
-                  </SelectContent>
-                </Select>
-                {driverForm.formState.errors.cnhCategory && (
-                  <p className="text-sm text-red-600">
-                    {driverForm.formState.errors.cnhCategory.message}
-                  </p>
-                )}
+                <Label htmlFor="street">Rua/Avenida *</Label>
+                <Input id="street" placeholder="Nome da rua" {...driverForm.register('street')} />
+                {driverForm.formState.errors.street && <p className="text-sm text-red-600">{driverForm.formState.errors.street.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="neighborhood">Bairro *</Label>
+                  <Input id="neighborhood" placeholder="Bairro" {...driverForm.register('neighborhood')} />
+                  {driverForm.formState.errors.neighborhood && <p className="text-sm text-red-600">{driverForm.formState.errors.neighborhood.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="number">Número *</Label>
+                  <Input id="number" placeholder="123" {...driverForm.register('number')} />
+                  {driverForm.formState.errors.number && <p className="text-sm text-red-600">{driverForm.formState.errors.number.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">Cidade *</Label>
+                <Input id="city" placeholder="Cidade" {...driverForm.register('city')} />
+                {driverForm.formState.errors.city && <p className="text-sm text-red-600">{driverForm.formState.errors.city.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reference_point">Ponto de Referência</Label>
+                <Input id="reference_point" placeholder="Próximo ao..." {...driverForm.register('reference_point')} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone *</Label>
+                  <Input id="phone" placeholder="(00) 00000-0000" {...driverForm.register('phone')} />
+                  {driverForm.formState.errors.phone && <p className="text-sm text-red-600">{driverForm.formState.errors.phone.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input id="email" type="email" placeholder="email@exemplo.com" {...driverForm.register('email')} />
+                  {driverForm.formState.errors.email && <p className="text-sm text-red-600">{driverForm.formState.errors.email.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input id="whatsapp" placeholder="(00) 00000-0000" {...driverForm.register('whatsapp')} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="license_number">Número da CNH *</Label>
+                  <Input id="license_number" placeholder="00000000000" {...driverForm.register('license_number')} />
+                  {driverForm.formState.errors.license_number && <p className="text-sm text-red-600">{driverForm.formState.errors.license_number.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="license_category">Categoria CNH *</Label>
+                  <Select
+                    value={driverForm.watch('license_category')}
+                    onValueChange={(value) => driverForm.setValue('license_category', value)}
+                  >
+                    <SelectTrigger id="license_category">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LICENSE_CATEGORIES.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {driverForm.formState.errors.license_category && <p className="text-sm text-red-600">{driverForm.formState.errors.license_category.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="license_expiry_date">Validade da CNH *</Label>
+                <Input id="license_expiry_date" type="date" {...driverForm.register('license_expiry_date')} />
+                {driverForm.formState.errors.license_expiry_date && <p className="text-sm text-red-600">{driverForm.formState.errors.license_expiry_date.message}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="document">Documento (PDF)</Label>
+                  <Input id="document" type="file" accept=".pdf" {...driverForm.register('document')} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cnh_digital">CNH Digital (PDF)</Label>
+                  <Input id="cnh_digital" type="file" accept=".pdf" {...driverForm.register('cnh_digital')} />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="driverMessage" className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                Mensagem / Observações
-              </Label>
-              <Textarea
-                id="driverMessage"
-                placeholder="Informações adicionais (opcional)"
-                rows={3}
-                {...driverForm.register('message')}
-              />
+            <div className="space-y-2 pt-4">
+              <Label htmlFor="driverMessage">Mensagem / Observações</Label>
+              <Textarea id="driverMessage" placeholder="Informações adicionais (opcional)" rows={3} {...driverForm.register('message')} />
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDriverDialogOpen(false)}
-                className="flex-1"
-              >
+              <Button type="button" variant="outline" onClick={() => setIsDriverDialogOpen(false)} className="flex-1">
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={driverForm.formState.isSubmitting}
-              >
+              <Button type="submit" className="flex-1" disabled={driverForm.formState.isSubmitting}>
                 {driverForm.formState.isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -1624,8 +1698,7 @@ export default function SiteHomePage() {
                     setVehicleData(null);
 
                     try {
-                      const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-                      const response = await fetch(`${API_URL}/api/vehicles/by-plate/${searchPlate}/`);
+                      const response = await fetch(buildApiUrl(`api/vehicles/by-plate/${searchPlate}/`));
 
                       if (!response.ok) {
                         if (response.status === 404) {
@@ -1732,306 +1805,55 @@ export default function SiteHomePage() {
 
                 {!vehicleData.current_conductor && (
                   <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                    <p className="text-sm text-yellow-800">
-                      Este veículo não possui motorista vinculado no momento.
-                    </p>
+                    <p className="text-sm text-yellow-900">Este veículo não possui motorista vinculado no momento.</p>
                   </div>
                 )}
               </div>
             )}
           </div>
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsVehicleSearchDialogOpen(false);
-                setSearchPlate('');
-                setVehicleData(null);
-                setSearchError('');
-              }}
-              className="flex-1"
-            >
-              Fechar
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Complaint Dialog */}
-      <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-              Registrar Denúncia
-            </DialogTitle>
-            <DialogDescription>
-              Preencha os dados abaixo para registrar uma denúncia sobre um veículo.
-              Suas informações pessoais são opcionais.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={complaintForm.handleSubmit(onComplaintSubmit)} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehiclePlate" className="flex items-center gap-2">
-                <Car className="w-4 h-4" />
-                Placa do Veículo *
-              </Label>
-              <Input
-                id="vehiclePlate"
-                placeholder="ABC1234"
-                maxLength={10}
-                {...complaintForm.register('vehiclePlate')}
-                onChange={(e) => {
-                  complaintForm.setValue('vehiclePlate', e.target.value.toUpperCase());
-                  debouncedSearchPlates(e.target.value);
-                }}
-                className="uppercase"
-              />
-              {isLoadingPlates && (
-                <p className="text-xs text-muted-foreground">Buscando veículos...</p>
-              )}
-              {plateOptions.length > 0 && (
-                <div className="border rounded-md mt-1 max-h-32 overflow-y-auto">
-                  {plateOptions.map((option, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        complaintForm.setValue('vehiclePlate', option.plate);
-                        setPlateOptions([]);
-                      }}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {complaintForm.formState.errors.vehiclePlate && (
-                <p className="text-sm text-red-600">
-                  {complaintForm.formState.errors.vehiclePlate.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="complaintType" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Tipo de Denúncia *
-              </Label>
-              <Select
-                onValueChange={(value) => complaintForm.setValue('complaintType', value)}
-              >
-                <SelectTrigger id="complaintType">
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="excesso_velocidade">Excesso de Velocidade</SelectItem>
-                  <SelectItem value="direcao_perigosa">Direção Perigosa</SelectItem>
-                  <SelectItem value="uso_celular">Uso de Celular ao Dirigir</SelectItem>
-                  <SelectItem value="veiculo_mal_conservado">Veículo Mal Conservado</SelectItem>
-                  <SelectItem value="desrespeito_sinalizacao">Desrespeito à Sinalização</SelectItem>
-                  <SelectItem value="embriaguez">Suspeita de Embriaguez</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-              {complaintForm.formState.errors.complaintType && (
-                <p className="text-sm text-red-600">
-                  {complaintForm.formState.errors.complaintType.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description" className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                Descrição da Denúncia *
-              </Label>
-              <Textarea
-                id="description"
-                placeholder="Descreva detalhadamente o que aconteceu (mínimo 20 caracteres)..."
-                rows={4}
-                {...complaintForm.register('description')}
-              />
-              <p className="text-xs text-muted-foreground">
-                {complaintForm.watch('description')?.length || 0}/20 caracteres mínimos
-              </p>
-              {complaintForm.formState.errors.description && (
-                <p className="text-sm text-red-600">
-                  {complaintForm.formState.errors.description.message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="occurrenceDate" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Data da Ocorrência
-                </Label>
-                <Input
-                  id="occurrenceDate"
-                  type="date"
-                  max={new Date().toISOString().split('T')[0]}
-                  {...complaintForm.register('occurrenceDate')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="occurrenceLocation" className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Local da Ocorrência
-                </Label>
-                <Input
-                  id="occurrenceLocation"
-                  placeholder="Ex: Av. Principal, 1000"
-                  {...complaintForm.register('occurrenceLocation')}
-                />
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                Informações do denunciante (opcional - você pode fazer denúncia anônima)
-              </p>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="complainantName">Seu Nome</Label>
-                  <Input
-                    id="complainantName"
-                    placeholder="Nome completo (opcional)"
-                    {...complaintForm.register('complainantName')}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="complainantEmail">Seu Email</Label>
-                    <Input
-                      id="complainantEmail"
-                      type="email"
-                      placeholder="email@exemplo.com (opcional)"
-                      {...complaintForm.register('complainantEmail')}
-                    />
-                    {complaintForm.formState.errors.complainantEmail && (
-                      <p className="text-sm text-red-600">
-                        {complaintForm.formState.errors.complainantEmail.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="complainantPhone">Seu Telefone</Label>
-                    <Input
-                      id="complainantPhone"
-                      placeholder="(00) 00000-0000 (opcional)"
-                      {...complaintForm.register('complainantPhone')}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsComplaintDialogOpen(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-red-600 hover:bg-red-700"
-                disabled={complaintForm.formState.isSubmitting}
-              >
-                {complaintForm.formState.isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar Denúncia'
-                )}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* Footer - Moderno com Gradiente */}
-      <footer className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12 overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8">
-              <div className="text-center md:text-left">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                  {config.company_name}
-                </h3>
-                <p className="text-sm text-gray-400">
-                  Gestão Inteligente de Frotas e Veículos
-                </p>
-              </div>
-
-              {/* Social Media Links */}
-              {(config.facebook_url || config.instagram_url || config.linkedin_url) && (
-                <div className="flex gap-3">
-                  {config.facebook_url && (
-                    <a
-                      href={config.facebook_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-blue-600 hover:to-blue-500 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/50"
-                      aria-label="Facebook"
-                    >
-                      <Facebook className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </a>
-                  )}
-                  {config.instagram_url && (
-                    <a
-                      href={config.instagram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-pink-600 hover:to-purple-600 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-pink-500/50"
-                      aria-label="Instagram"
-                    >
-                      <Instagram className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </a>
-                  )}
-                  {config.linkedin_url && (
-                    <a
-                      href={config.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group w-11 h-11 bg-white/10 hover:bg-gradient-to-r hover:from-blue-700 hover:to-blue-600 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-700/50"
-                      aria-label="LinkedIn"
-                    >
-                      <Linkedin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="pt-6 border-t border-white/10 text-center">
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-10">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Sobre */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">{config.company_name}</h3>
               <p className="text-sm text-gray-400">
-                &copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.
+                {config.about_text}
               </p>
             </div>
+
+            {/* Links Rápidos */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Links Rápidos</h3>
+              <ul className="space-y-2">
+                <li><button onClick={() => scrollToSection('inicio')} className="text-sm text-gray-400 hover:text-white">Início</button></li>
+                <li><button onClick={() => scrollToSection('about')} className="text-sm text-gray-400 hover:text-white">Sobre</button></li>
+                <li><button onClick={() => scrollToSection('cadastro')} className="text-sm text-gray-400 hover:text-white">Cadastros</button></li>
+                <li><button onClick={() => scrollToSection('denuncias')} className="text-sm text-gray-400 hover:text-white">Denúncias</button></li>
+              </ul>
+            </div>
+
+            {/* Redes Sociais */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Siga-nos</h3>
+              <div className="flex gap-4">
+                {config.facebook_url && <a href={config.facebook_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><Facebook /></a>}
+                {config.instagram_url && <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><Instagram /></a>}
+                {config.linkedin_url && <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><Linkedin /></a>}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-gray-800 pt-6 text-center text-sm text-gray-500">
+            <p>&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
     </div>
   );
 }
+''

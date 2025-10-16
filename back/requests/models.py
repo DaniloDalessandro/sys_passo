@@ -11,17 +11,26 @@ class DriverRequest(models.Model):
     """
     Model para solicitações de cadastro de motoristas/condutores.
 
-    Este model armazena as solicitações enviadas pelo site público
-    e permite que administradores aprovem ou reprovem os cadastros.
+    Armazena os dados enviados pelo site público até que sejam analisados.
+    Os campos espelham o model ``Conductor`` para permitir aprovação direta.
     """
 
     CNH_CATEGORY_CHOICES = [
         ('A', 'Categoria A'),
         ('B', 'Categoria B'),
         ('AB', 'Categoria AB'),
+        ('AC', 'Categoria AC'),
+        ('AD', 'Categoria AD'),
+        ('AE', 'Categoria AE'),
         ('C', 'Categoria C'),
         ('D', 'Categoria D'),
         ('E', 'Categoria E'),
+    ]
+
+    GENDER_CHOICES = [
+        ('M', 'Masculino'),
+        ('F', 'Feminino'),
+        ('O', 'Outro'),
     ]
 
     STATUS_CHOICES = [
@@ -30,8 +39,8 @@ class DriverRequest(models.Model):
         ('reprovado', 'Reprovado'),
     ]
 
-    # Dados do solicitante
-    full_name = models.CharField(
+    # Dados pessoais
+    name = models.CharField(
         max_length=150,
         verbose_name='Nome Completo',
         help_text='Nome completo do condutor'
@@ -42,6 +51,64 @@ class DriverRequest(models.Model):
         help_text='CPF do condutor (somente números)',
         db_index=True
     )
+    birth_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Data de Nascimento',
+        help_text='Data de nascimento do condutor'
+    )
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        default='M',
+        verbose_name='Sexo',
+        help_text='Sexo do condutor'
+    )
+    nationality = models.CharField(
+        max_length=50,
+        default='Brasileira',
+        verbose_name='Nacionalidade',
+        help_text='Nacionalidade do condutor'
+    )
+
+    # Endereço
+    street = models.CharField(
+        max_length=200,
+        default='',
+        blank=True,
+        verbose_name='Rua/Avenida',
+        help_text='Rua ou avenida do endereço'
+    )
+    number = models.CharField(
+        max_length=20,
+        default='',
+        blank=True,
+        verbose_name='Número',
+        help_text='Número do endereço'
+    )
+    neighborhood = models.CharField(
+        max_length=100,
+        default='',
+        blank=True,
+        verbose_name='Bairro',
+        help_text='Bairro do endereço'
+    )
+    city = models.CharField(
+        max_length=100,
+        default='',
+        blank=True,
+        verbose_name='Cidade',
+        help_text='Cidade do endereço'
+    )
+    reference_point = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Ponto de Referência',
+        help_text='Referência adicional do endereço'
+    )
+
+    # Contato
     email = models.EmailField(
         verbose_name='E-mail',
         help_text='E-mail de contato do condutor'
@@ -51,22 +118,54 @@ class DriverRequest(models.Model):
         verbose_name='Telefone',
         help_text='Telefone de contato com DDD'
     )
-    cnh_number = models.CharField(
+    whatsapp = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name='WhatsApp',
+        help_text='WhatsApp do condutor (opcional)'
+    )
+
+    # CNH
+    license_number = models.CharField(
         max_length=20,
         verbose_name='Número da CNH',
         help_text='Número de registro da Carteira Nacional de Habilitação'
     )
-    cnh_category = models.CharField(
-        max_length=2,
+    license_category = models.CharField(
+        max_length=5,
         choices=CNH_CATEGORY_CHOICES,
         verbose_name='Categoria da CNH',
         help_text='Categoria da habilitação do condutor'
     )
+    license_expiry_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Validade da CNH',
+        help_text='Data de validade da CNH'
+    )
+
+    # Documentos
+    document = models.FileField(
+        upload_to='requests/driver/documents/',
+        blank=True,
+        null=True,
+        verbose_name='Documento do Condutor (PDF)',
+        help_text='Documento de identificação (opcional)'
+    )
+    cnh_digital = models.FileField(
+        upload_to='requests/driver/cnh/',
+        blank=True,
+        null=True,
+        verbose_name='CNH Digital (PDF)',
+        help_text='CNH digitalizada (opcional)'
+    )
+
     message = models.TextField(
         blank=True,
         null=True,
         verbose_name='Mensagem',
-        help_text='Mensagem ou observações adicionais do solicitante'
+        help_text='Observações adicionais do solicitante'
     )
 
     # Status e controle
@@ -104,7 +203,6 @@ class DriverRequest(models.Model):
         help_text='Justificativa para reprovação da solicitação'
     )
 
-    # Relacionamento com o condutor criado
     conductor = models.OneToOneField(
         Conductor,
         on_delete=models.SET_NULL,
@@ -132,26 +230,22 @@ class DriverRequest(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.full_name} - {self.cpf} ({self.get_status_display()})"
+        return f"{self.name} - {self.cpf} ({self.get_status_display()})"
 
     def clean(self):
-        """Validação adicional do model"""
-        from django.core.exceptions import ValidationError
-
-        # Validar que rejection_reason é obrigatório quando status é 'reprovado'
-        if self.status == 'reprovado' and not self.rejection_reason:
-            raise ValidationError({
-                'rejection_reason': 'O motivo da reprovação é obrigatório quando o status é "reprovado".'
-            })
-
-        # Normalizar CPF (remover pontos e traços)
+        """Normaliza valores sensíveis antes de salvar."""
+        super().clean()
         if self.cpf:
             self.cpf = ''.join(filter(str.isdigit, self.cpf))
+        if self.phone:
+            self.phone = self.phone.strip()
+        if self.whatsapp:
+            self.whatsapp = self.whatsapp.strip()
+        if self.license_number:
+            self.license_number = self.license_number.strip()
 
     def save(self, *args, **kwargs):
-        """Override do save para normalizar dados antes de salvar"""
-        # Executar validações
-        self.full_clean()
+        self.full_clean(exclude=None)
         super().save(*args, **kwargs)
 
 
@@ -221,7 +315,6 @@ class VehicleRequest(models.Model):
         help_text='Mensagem ou observações adicionais do solicitante'
     )
 
-    # Status e controle
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -256,7 +349,6 @@ class VehicleRequest(models.Model):
         help_text='Justificativa para reprovação da solicitação'
     )
 
-    # Relacionamento com o veículo criado
     vehicle = models.OneToOneField(
         Vehicle,
         on_delete=models.SET_NULL,
@@ -287,21 +379,17 @@ class VehicleRequest(models.Model):
         return f"{self.brand} {self.model} - {self.plate} ({self.get_status_display()})"
 
     def clean(self):
-        """Validação adicional do model"""
+        """Validação adicional do model."""
         from django.core.exceptions import ValidationError
 
-        # Validar que rejection_reason é obrigatório quando status é 'reprovado'
         if self.status == 'reprovado' and not self.rejection_reason:
             raise ValidationError({
                 'rejection_reason': 'O motivo da reprovação é obrigatório quando o status é "reprovado".'
             })
 
-        # Normalizar placa (uppercase, sem espaços)
         if self.plate:
             self.plate = self.plate.upper().strip().replace(' ', '')
 
     def save(self, *args, **kwargs):
-        """Override do save para normalizar dados antes de salvar"""
-        # Executar validações
-        self.full_clean()
+        self.full_clean(exclude=None)
         super().save(*args, **kwargs)
