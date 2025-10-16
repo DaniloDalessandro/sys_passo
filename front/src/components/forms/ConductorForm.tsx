@@ -18,17 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  User,
-  CreditCard,
-  FileText,
-  Phone,
-  MapPin,
-  UserCheck,
-  Camera,
-  Upload,
-  X,
-} from "lucide-react";
+import { User, CreditCard, FileText, Phone, MapPin, Camera, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useDuplicateWarnings } from "@/hooks/useDuplicateWarnings";
@@ -187,7 +177,13 @@ export default function ConductorForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    onSubmit({ ...formData, document: documentFile, cnh_digital: cnhFile, photo: photoFile });
+    onSubmit({
+      ...formData,
+      is_active: formData?.is_active ?? true,
+      document: documentFile,
+      cnh_digital: cnhFile,
+      photo: photoFile,
+    });
   };
 
   return (
@@ -322,12 +318,17 @@ export default function ConductorForm({
                   <Input id="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000" maxLength={15} className="h-9" />
                   {errors.phone && <span className="text-xs text-red-500">{errors.phone}</span>}
                 </div>
-                {formData.whatsapp && (
-                  <div className="grid gap-1.5 col-span-2">
-                    <Label htmlFor="whatsapp" className="text-xs font-medium text-gray-700">WhatsApp</Label>
-                    <Input id="whatsapp" value={formData.whatsapp} onChange={handleChange} placeholder="(00) 00000-0000" maxLength={15} className="h-9" />
-                  </div>
-                )}
+                <div className="grid gap-1.5 col-span-2">
+                  <Label htmlFor="whatsapp" className="text-xs font-medium text-gray-700">WhatsApp</Label>
+                  <Input
+                    id="whatsapp"
+                    value={formData.whatsapp || ""}
+                    onChange={handleChange}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                    className="h-9"
+                  />
+                </div>
               </div>
             </div>
 

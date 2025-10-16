@@ -148,7 +148,7 @@ export function ConductorDataTable({
             { value: "false", label: "Inativo" },
           ],
           filterValue: filters?.is_active || "",
-          onFilterChange: (value: any) => onFilterChange({ ...filters, is_active: value }),
+          onFilterChange: (value: any) => onFilterChange("is_active", value),
         },
         cell: ({ row }: any) => (row.getValue("is_active") ? "Ativo" : "Inativo"),
       },
@@ -177,6 +177,7 @@ export function ConductorDataTable({
         defaultVisibleColumns={DEFAULT_VISIBLE_COLUMNS}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
+        onFilterChange={onFilterChange}
       />
     </div>
   );

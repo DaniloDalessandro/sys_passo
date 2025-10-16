@@ -11,11 +11,11 @@ class DriverRequestAdmin(admin.ModelAdmin):
 
     list_display = [
         'id',
-        'full_name',
+        'name',
         'cpf',
         'email',
         'phone',
-        'cnh_category',
+        'license_category',
         'status_badge',
         'created_at',
         'reviewed_by',
@@ -23,17 +23,17 @@ class DriverRequestAdmin(admin.ModelAdmin):
 
     list_filter = [
         'status',
-        'cnh_category',
+        'license_category',
         'created_at',
         'reviewed_at',
     ]
 
     search_fields = [
-        'full_name',
+        'name',
         'cpf',
         'email',
         'phone',
-        'cnh_number',
+        'license_number',
     ]
 
     readonly_fields = [
@@ -47,7 +47,7 @@ class DriverRequestAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Informações do Solicitante', {
             'fields': (
-                'full_name',
+                'name',
                 'cpf',
                 'email',
                 'phone',
@@ -55,8 +55,8 @@ class DriverRequestAdmin(admin.ModelAdmin):
         }),
         ('Informações da CNH', {
             'fields': (
-                'cnh_number',
-                'cnh_category',
+                'license_number',
+                'license_category',
             )
         }),
         ('Mensagem', {

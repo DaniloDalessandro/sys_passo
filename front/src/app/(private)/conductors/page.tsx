@@ -111,6 +111,10 @@ export default function ConductorsPage() {
     window.open(url, '_blank');
   }
 
+  const handleFilterChange = (columnId: string, value: any) => {
+    setFilters(prev => ({ ...prev, [columnId]: value }))
+  }
+
   return (
     <div className="flex flex-col h-full p-4 pt-0 w-full overflow-hidden">
       <div className="flex flex-col gap-6 w-full overflow-hidden">
@@ -130,7 +134,7 @@ export default function ConductorsPage() {
             pagination={pagination}
             onPaginationChange={setPagination}
             filters={filters}
-            onFilterChange={setFilters}
+            onFilterChange={handleFilterChange}
             onAdd={handleNewConductor}
             onEdit={handleEdit}
             onDelete={handleDelete}

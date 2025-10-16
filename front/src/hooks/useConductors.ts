@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { authFetch } from "@/lib/api-client"
 
 // Interfaces permanecem as mesmas...
 export interface Vehicle {
@@ -101,7 +102,7 @@ export function useConductors() {
         }
       })
 
-      const response = await fetch(`${API_BASE_URL}/conductors/?${queryParams.toString()}`)
+      const response = await authFetch(`${API_BASE_URL}/conductors/?${queryParams.toString()}`)
 
       if (!response.ok) {
         throw new Error("Erro ao carregar condutores")
@@ -132,7 +133,7 @@ export function useConductors() {
     })
 
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/`, {
+      const response = await authFetch(`${API_BASE_URL}/conductors/`, {
         method: "POST",
         body: formData,
       })
@@ -152,23 +153,15 @@ export function useConductors() {
     setError(null)
     const formData = new FormData()
     Object.entries(conductorData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'birth_date' || key === 'license_expiry_date') {
-            if (value instanceof Date) {
-              formData.append(key, value.toISOString().split('T')[0])
-            }
-          } else if (key === 'is_active') {
-            formData.append(key, value.toString())
-          } else if ((key === 'document' || key === 'cnh_digital') && value instanceof File) {
-            formData.append(key, value)
-          } else if (typeof value === 'string') {
-            formData.append(key, value)
-          }
-        }
-      })
+      if (value instanceof Date) {
+        formData.append(key, value.toISOString().split('T')[0])
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, value as string | Blob)
+      }
+    })
 
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
+      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "PATCH",
         body: formData,
       })
@@ -187,7 +180,7 @@ export function useConductors() {
   const deleteConductor = async (id: number): Promise<void> => {
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/${id}/`, {
+      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`, {
         method: "DELETE",
       })
       if (!response.ok) {
@@ -204,7 +197,7 @@ export function useConductors() {
   const getConductor = async (id: number): Promise<Conductor> => {
     setError(null)
     try {
-      const response = await fetch(`${API_BASE_URL}/conductors/${id}/`)
+      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`)
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao carregar condutor")
@@ -227,7 +220,7 @@ export function useConductors() {
       if (excludeId) {
         params.append('exclude_id', excludeId.toString())
       }
-      const response = await fetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`)
+      const response = await authFetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`)
       if (!response.ok) {
         throw new Error("Erro ao verificar duplicatas")
       }

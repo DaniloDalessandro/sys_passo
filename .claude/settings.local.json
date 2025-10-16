@@ -14,7 +14,13 @@
       "Bash(python:*)",
       "Bash(venvScriptspython.exe insert_100_conductors.py:*)",
       "Bash(\"./venv/Scripts/python.exe\":*)",
-      "Read(//c/**)"
+      "Read(//c/**)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py check)",
+      "Bash(curl:*)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations requests)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations conductors --empty --name add_photo_field)",
+      "Bash(\"./venv/Scripts/python.exe\" manage.py migrate conductors)"
     ],
     "deny": [],
     "ask": []
