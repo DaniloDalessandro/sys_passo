@@ -29,6 +29,7 @@ export default function ConductorsPage() {
     fetchConductors,
     createConductor,
     updateConductor,
+    getConductor,
   } = useConductors()
 
   // Fetch data when pagination or filters change
@@ -70,9 +71,16 @@ export default function ConductorsPage() {
     }
   }
 
-  const handleEdit = (conductor: Conductor) => {
-    setEditingConductor(conductor)
-    setIsDialogOpen(true)
+  const handleEdit = async (conductor: Conductor) => {
+    try {
+      const fullConductor = await getConductor(conductor.id)
+      setEditingConductor(fullConductor)
+      setIsDialogOpen(true)
+    } catch (error) {
+      toast.error("Não foi possível carregar os dados do condutor.", {
+        description: error instanceof Error ? error.message : "Tente novamente.",
+      })
+    }
   }
 
   const handleDelete = (conductor: Conductor) => {
