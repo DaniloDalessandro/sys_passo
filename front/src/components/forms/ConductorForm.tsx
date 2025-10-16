@@ -276,10 +276,10 @@ export default function ConductorForm({
                   />
                   {errors.birth_date && <span className="text-xs text-red-500">{errors.birth_date}</span>}
                 </div>
-                <div className="grid gap-1.5">
+                <div className="grid gap-1.5 ">
                   <Label htmlFor="gender" className="text-xs font-medium text-gray-700">Gênero *</Label>
                   <Select onValueChange={(value) => handleSelectChange("gender", value)} value={formData.gender}>
-                    <SelectTrigger id="gender" className="h-9">
+                    <SelectTrigger id="gender" className="w-65 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -386,7 +386,7 @@ export default function ConductorForm({
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-medium text-gray-700">Categoria CNH *</Label>
                   <Select onValueChange={(value) => handleSelectChange("license_category", value)} value={formData.license_category}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="w-42 h-9">
                       <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                     <SelectContent>
