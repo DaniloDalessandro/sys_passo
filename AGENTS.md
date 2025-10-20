@@ -1,25 +1,33 @@
-# Repository Guidelines
+Repository Guidelines
+=====================
 
-## Project Structure & Module Organization
-- `front/` hosts the Next.js client written in TypeScript; UI routes live in `src/app`, shared UI in `src/components`, data hooks in `src/hooks`, and request helpers in `src/lib`.
-- `back/` contains the Django project; configuration stays in `core/`, while domain apps (`authentication`, `requests`, `vehicles`, etc.) hold models, views, and serializers. Keep each app’s tests in its `tests.py`.
-- `back/Lib` and `back/Scripts` come from a local virtualenv; treat them as generated artifacts and avoid manual edits.
+Project Structure & Module Organization
+---------------------------------------
+- `front/` hosts the Next.js client; routes live under `front/src/app`, shared UI in `front/src/components`, hooks in `front/src/hooks`, and HTTP helpers in `front/src/lib`.
+- `back/` contains the Django project; keep core settings in `back/core/`, and domain logic within each app (e.g., `back/authentication`, `back/requests`, `back/vehicles`) alongside their `tests.py`.
+- Treat `back/Lib` and `back/Scripts` as virtualenv artifacts—leave them untouched.
 
-## Build, Test, and Development Commands
-- From `front/`: `npm install` to sync dependencies, `npm run dev` for local development, `npm run build` for production or `npm run start` to serve it, and `npm run lint` to enforce ESLint rules.
-- From `back/`: `python -m venv .venv && .\.venv\Scripts\activate` (or reuse the checked-in `venv`) before `pip install -r requirements.txt`. Use `python manage.py migrate` for schema updates, `python manage.py runserver` for the API, and `python manage.py test` for the Django suite.
+Build, Test, and Development Commands
+-------------------------------------
+- Frontend: run `npm install` once per dependency change, `npm run dev` for local development, `npm run build` for production output, `npm run start` to serve the build, and `npm run lint` to enforce ESLint rules.
+- Backend: activate the virtualenv (`python -m venv .venv && .\.venv\Scripts\activate`), install dependencies with `pip install -r requirements.txt`, apply migrations via `python manage.py migrate`, launch the API using `python manage.py runserver`, and execute the suite through `python manage.py test`.
 
-## Coding Style & Naming Conventions
-- Follow the Next.js ESLint profile: 2-space indentation, double quotes, and TypeScript strictness. Name React components and files in `PascalCase`, hooks in `camelCase` starting with `use`, and group shared utilities under `src/lib`.
-- Python code should follow PEP 8 (4-space indents, `snake_case` functions, `UpperCamelCase` models). Keep new apps lowercased, register them in `core/settings.py`, and add comments only when logic is non-obvious.
+Coding Style & Naming Conventions
+---------------------------------
+- Next.js code uses 2-space indentation, double quotes, and strict TypeScript. Name components and files in PascalCase, hooks `camelCase` starting with `use`, and utilities live in `front/src/lib`.
+- Python code follows PEP 8: 4-space indents, `snake_case` functions, `UpperCamelCase` models, and apps remain lowercase. Add comments only when logic is non-obvious.
 
-## Testing Guidelines
-- Extend `django.test.TestCase` and mirror fixtures under each app’s `tests.py`; prefer descriptive method names like `test_creates_vehicle_with_valid_payload`.
-- Frontend coverage is lint-focused; add unit tests with React Testing Library under `front/src/__tests__` when feasible, and reserve Playwright (dependency installed at the repo root) for end-to-end flows. Capture manual checks in PRs if automation is missing.
+Testing Guidelines
+------------------
+- Frontend relies on linting; place optional unit tests with React Testing Library under `front/src/__tests__`.
+- Backend tests extend `django.test.TestCase` within each app’s `tests.py`. Use descriptive names such as `test_creates_vehicle_with_valid_payload`. Run all with `python manage.py test` before submitting changes.
 
-## Commit & Pull Request Guidelines
-- Commit history uses short imperative Portuguese summaries (`ajuste`, `ajuts`). Prefer a concise scope prefix, e.g., `ajuste(sitehome): corrige redirecionamento`, and expand on context in the body when needed.
-- For pull requests, include a brief summary, screenshots or GIFs for UI work, related issue links, migration notes, and steps for reviewers to reproduce. Ensure the commands above run clean before requesting review.
+Commit & Pull Request Guidelines
+--------------------------------
+- Commits use short imperative Portuguese summaries with a scope prefix, e.g., `ajuste(sitehome): corrige redirecionamento`.
+- Pull requests provide a brief summary, UI captures where relevant, references to issues, migration notes, and clear verification steps. Ensure lint, build, and test commands pass first.
 
-## Environment & Configuration
-- Backend secrets load from `back/.env`; replace the placeholder `DJANGO_SECRET_KEY` locally and never commit real credentials. Frontend uses `front/.env.local` with `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000`. Keep environment files ignored and align URLs when pointing to staging or production.
+Environment & Configuration
+---------------------------
+- Backend secrets load from `back/.env`; replace placeholders locally and never commit real credentials.
+- Frontend uses `front/.env.local` with `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000`. Align URLs for staging or production and keep env files ignored.
