@@ -52,6 +52,7 @@ interface ConductorFormProps {
   conductor?: Conductor;
   className?: string;
   showPhotoPreview?: boolean;
+  submitButtonText?: string;
 }
 
 export function ConductorForm({
@@ -59,6 +60,7 @@ export function ConductorForm({
   conductor,
   className,
   showPhotoPreview = false,
+  submitButtonText = "Salvar",
   ...props
 }: ConductorFormProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -133,32 +135,32 @@ export function ConductorForm({
           <p className="text-sm text-gray-500 mt-2">Foto (JPG/PNG)</p>
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Nome Completo</Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="md:col-span-2 lg:col-span-3">
+          <Label htmlFor="name" className="mb-2 block">Nome Completo</Label>
           <Input id="name" {...register("name")} />
           {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="cpf">CPF</Label>
+          <Label htmlFor="cpf" className="mb-2 block">CPF</Label>
           <Input id="cpf" {...register("cpf")} />
           {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf.message}</p>}
         </div>
         <div>
-          <Label htmlFor="birth_date">Data de Nascimento</Label>
+          <Label htmlFor="birth_date" className="mb-2 block">Data de Nascimento</Label>
           <Input id="birth_date" type="date" {...register("birth_date")} />
           {errors.birth_date && (
             <p className="text-red-500 text-sm">{errors.birth_date.message}</p>
           )}
         </div>
         <div>
-          <Label htmlFor="gender">Sexo</Label>
+          <Label htmlFor="gender" className="mb-2 block">Sexo</Label>
           <Controller
             name="gender"
             control={control}
             render={({ field }) => (
               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder="Selecione o sexo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,67 +174,67 @@ export function ConductorForm({
           {errors.gender && <p className="text-red-500 text-sm">{errors.gender.message}</p>}
         </div>
         <div>
-          <Label htmlFor="nationality">Nacionalidade</Label>
+          <Label htmlFor="nationality" className="mb-2 block">Nacionalidade</Label>
           <Input id="nationality" {...register("nationality")} />
           {errors.nationality && (
             <p className="text-red-500 text-sm">{errors.nationality.message}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="street">Rua/Avenida</Label>
+        <div className="lg:col-span-2">
+          <Label htmlFor="street" className="mb-2 block">Rua/Avenida</Label>
           <Input id="street" {...register("street")} />
           {errors.street && <p className="text-red-500 text-sm">{errors.street.message}</p>}
         </div>
         <div>
-          <Label htmlFor="number">Número</Label>
+          <Label htmlFor="number" className="mb-2 block">Número</Label>
           <Input id="number" {...register("number")} />
           {errors.number && <p className="text-red-500 text-sm">{errors.number.message}</p>}
         </div>
         <div>
-          <Label htmlFor="neighborhood">Bairro</Label>
+          <Label htmlFor="neighborhood" className="mb-2 block">Bairro</Label>
           <Input id="neighborhood" {...register("neighborhood")} />
           {errors.neighborhood && (
             <p className="text-red-500 text-sm">{errors.neighborhood.message}</p>
           )}
         </div>
         <div>
-          <Label htmlFor="city">Cidade</Label>
+          <Label htmlFor="city" className="mb-2 block">Cidade</Label>
           <Input id="city" {...register("city")} />
           {errors.city && <p className="text-red-500 text-sm">{errors.city.message}</p>}
         </div>
-        <div>
-          <Label htmlFor="reference_point">Ponto de Referência</Label>
+        <div className="lg:col-span-3">
+          <Label htmlFor="reference_point" className="mb-2 block">Ponto de Referência</Label>
           <Input id="reference_point" {...register("reference_point")} />
         </div>
         <div>
-          <Label htmlFor="phone">Telefone/Celular</Label>
+          <Label htmlFor="phone" className="mb-2 block">Telefone/Celular</Label>
           <Input id="phone" {...register("phone")} />
           {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
         </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
+        <div className="md:col-span-2 lg:col-span-1">
+          <Label htmlFor="email" className="mb-2 block">Email</Label>
           <Input id="email" type="email" {...register("email")} />
           {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
         </div>
         <div>
-          <Label htmlFor="whatsapp">WhatsApp</Label>
+          <Label htmlFor="whatsapp" className="mb-2 block">WhatsApp</Label>
           <Input id="whatsapp" {...register("whatsapp")} />
         </div>
         <div>
-          <Label htmlFor="license_number">Número da CNH</Label>
+          <Label htmlFor="license_number" className="mb-2 block">Número da CNH</Label>
           <Input id="license_number" {...register("license_number")} />
           {errors.license_number && (
             <p className="text-red-500 text-sm">{errors.license_number.message}</p>
           )}
         </div>
         <div>
-          <Label htmlFor="license_category">Categoria da CNH</Label>
+          <Label htmlFor="license_category" className="mb-2 block">Categoria da CNH</Label>
           <Controller
             name="license_category"
             control={control}
             render={({ field }) => (
               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,7 +252,7 @@ export function ConductorForm({
           )}
         </div>
         <div>
-          <Label htmlFor="license_expiry_date">Validade da CNH</Label>
+          <Label htmlFor="license_expiry_date" className="mb-2 block">Validade da CNH</Label>
           <Input
             id="license_expiry_date"
             type="date"
@@ -263,21 +265,21 @@ export function ConductorForm({
           )}
         </div>
         <div>
-          <Label htmlFor="document">Documento (PDF)</Label>
+          <Label htmlFor="document" className="mb-2 block">Documento (PDF)</Label>
           <Input id="document" type="file" {...register("document")} />
         </div>
         <div>
-          <Label htmlFor="cnh_digital">CNH Digital (PDF)</Label>
+          <Label htmlFor="cnh_digital" className="mb-2 block">CNH Digital (PDF)</Label>
           <Input id="cnh_digital" type="file" {...register("cnh_digital")} />
         </div>
         {!showPhotoPreview && (
           <div>
-            <Label htmlFor="photo">Foto (JPG/PNG)</Label>
+            <Label htmlFor="photo" className="mb-2 block">Foto (JPG/PNG)</Label>
             <Input id="photo" type="file" accept="image/*" {...register("photo")} />
           </div>
         )}
       </div>
-      <Button type="submit">Salvar</Button>
+      <Button type="submit">{submitButtonText}</Button>
     </form>
   );
 }

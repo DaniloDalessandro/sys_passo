@@ -1229,7 +1229,7 @@ export default function SiteHomePage() {
 
       {/* Driver Registration Dialog */}
       <Dialog open={isDriverDialogOpen} onOpenChange={setIsDriverDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <User className="w-6 h-6 text-blue-600" />
@@ -1243,6 +1243,7 @@ export default function SiteHomePage() {
             <ConductorForm
               onSubmit={onDriverSubmit}
               showPhotoPreview={true}
+              submitButtonText="Enviar Solicitação"
             />
           </div>
         </DialogContent>
