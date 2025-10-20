@@ -21,7 +21,7 @@ import { Camera } from "lucide-react";
 
 const conductorSchema = z.object({
   name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
-  cpf: z.string().length(14, "O CPF deve ter 11 dígitos."),
+  cpf: z.string().min(11, "O CPF deve ter 11 dígitos.").max(14, "O CPF deve ter no máximo 14 caracteres."),
   birth_date: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: "Data de nascimento inválida.",
   }),

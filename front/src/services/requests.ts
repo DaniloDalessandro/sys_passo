@@ -3,14 +3,31 @@ import { buildApiUrl } from "@/lib/api-client"
 // Types
 export interface DriverRequest {
   id: number;
-  full_name: string;
+  name: string;
   cpf: string;
+  birth_date?: string;
+  gender?: string;
+  gender_display?: string;
+  nationality?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  reference_point?: string;
+  address?: string;
   email: string;
   phone: string;
-  cnh_number: string;
-  cnh_category: string;
+  whatsapp?: string;
+  license_number: string;
+  license_category: string;
+  license_category_display?: string;
+  license_expiry_date?: string;
+  document?: string;
+  cnh_digital?: string;
+  photo?: string;
   message?: string;
   status: 'em_analise' | 'aprovado' | 'reprovado';
+  status_display?: string;
   created_at: string;
   reviewed_at?: string;
   reviewed_by?: {

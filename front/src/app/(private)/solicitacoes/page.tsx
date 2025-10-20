@@ -286,24 +286,20 @@ export default function SolicitacoesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>CPF</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>CNH</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-center w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.isArray(driverRequests) && driverRequests.map((request) => (
               <TableRow key={request.id}>
-                <TableCell className="font-medium">{request.full_name}</TableCell>
-                <TableCell>{formatCPF(request.cpf)}</TableCell>
-                <TableCell className="text-sm">{request.email}</TableCell>
+                <TableCell className="font-medium">{request.name}</TableCell>
                 <TableCell>{formatPhone(request.phone)}</TableCell>
                 <TableCell>
-                  {request.cnh_number} - {formatCNHCategory(request.cnh_category)}
+                  {request.license_number} - {formatCNHCategory(request.license_category)}
                 </TableCell>
                 <TableCell>
                   <RequestStatusBadge status={request.status} />
@@ -311,12 +307,14 @@ export default function SolicitacoesPage() {
                 <TableCell className="text-sm text-muted-foreground">
                   {getRelativeTime(request.created_at)}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                <TableCell>
+                  <div className="flex items-center justify-center gap-1">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => setDetailsDialog({ open: true, type: 'driver', data: request })}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(`/solicitacoes/motoristas/${request.id}`, '_blank')}
+                      title="Ver detalhes"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -324,27 +322,29 @@ export default function SolicitacoesPage() {
                       <>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          size="icon"
+                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                           onClick={() => setApproveDialog({
                             open: true,
                             type: 'driver',
                             id: request.id,
-                            name: request.full_name,
+                            name: request.name,
                           })}
+                          title="Aprovar"
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          size="icon"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => setRejectDialog({
                             open: true,
                             type: 'driver',
                             id: request.id,
-                            name: request.full_name,
+                            name: request.name,
                           })}
+                          title="Recusar"
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>
@@ -487,7 +487,7 @@ export default function SolicitacoesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Nome Completo</Label>
-                  <p className="text-sm mt-1">{data.full_name}</p>
+                  <p className="text-sm mt-1">{data.name}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">CPF</Label>
@@ -506,14 +506,21 @@ export default function SolicitacoesPage() {
                 </div>
               </div>
 
+              {data.address && (
+                <div>
+                  <Label className="text-sm font-medium">Endereço</Label>
+                  <p className="text-sm mt-1">{data.address}</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Número da CNH</Label>
-                  <p className="text-sm mt-1">{data.cnh_number}</p>
+                  <p className="text-sm mt-1">{data.license_number}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Categoria</Label>
-                  <p className="text-sm mt-1">{formatCNHCategory(data.cnh_category)}</p>
+                  <p className="text-sm mt-1">{formatCNHCategory(data.license_category)}</p>
                 </div>
               </div>
 

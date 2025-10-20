@@ -380,17 +380,37 @@ export default function SiteHomePage() {
   const onDriverSubmit = async (data: any) => {
     const formData = new FormData();
 
-    // Append form data fields
-    Object.keys(data).forEach(key => {
+    // Campos obrigatórios
+    const requiredFields = ['name', 'cpf', 'birth_date', 'gender', 'nationality',
+                           'street', 'number', 'neighborhood', 'city',
+                           'phone', 'email', 'license_number', 'license_category', 'license_expiry_date'];
+
+    // Campos opcionais
+    const optionalFields = ['reference_point', 'whatsapp', 'document', 'cnh_digital', 'photo'];
+
+    // Append campos obrigatórios
+    requiredFields.forEach(key => {
       const value = data[key as keyof typeof data];
-      if (value instanceof File) {
-        formData.append(key, value);
-      } else if (value instanceof FileList && value.length > 0) {
+      if (value instanceof FileList && value.length > 0) {
         formData.append(key, value[0]);
       } else if (value !== undefined && value !== null && value !== '') {
         formData.append(key, String(value));
       }
     });
+
+    // Append campos opcionais apenas se tiverem valor
+    optionalFields.forEach(key => {
+      const value = data[key as keyof typeof data];
+      if (value instanceof FileList && value.length > 0) {
+        formData.append(key, value[0]);
+      } else if (value && value !== '') {
+        formData.append(key, String(value));
+      }
+    });
+
+    // Log para debug
+    console.log('Dados do formulário:', data);
+    console.log('FormData sendo enviado:', Array.from(formData.entries()));
 
     try {
       const response = await fetch(buildApiUrl('api/requests/drivers/'), {
@@ -401,6 +421,7 @@ export default function SiteHomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Erro do backend:', errorData);
         const errorMessage = Object.values(errorData).flat().join(' ') || 'Erro ao enviar solicitação.';
         throw new Error(errorMessage);
       }
