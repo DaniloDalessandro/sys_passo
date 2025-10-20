@@ -76,6 +76,7 @@ class DriverRequestCreateSerializer(serializers.ModelSerializer):
             'license_expiry_date',
             'document',
             'cnh_digital',
+            'photo',
             'message',
         ]
         extra_kwargs = {
@@ -83,6 +84,7 @@ class DriverRequestCreateSerializer(serializers.ModelSerializer):
             'whatsapp': {'required': False, 'allow_null': True, 'allow_blank': True},
             'document': {'required': False, 'allow_null': True},
             'cnh_digital': {'required': False, 'allow_null': True},
+            'photo': {'required': False, 'allow_null': True},
             'message': {'required': False, 'allow_null': True},
         }
 
@@ -225,6 +227,7 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
             'license_expiry_date',
             'document',
             'cnh_digital',
+            'photo',
             'message',
             'status',
             'status_display',

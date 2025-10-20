@@ -60,6 +60,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { LICENSE_CATEGORIES } from '@/constants/license-categories';
+import { ConductorForm } from '@/components/conductors/conductor-form';
 
 // Types for site configuration
 interface SiteConfig {
@@ -136,37 +137,6 @@ const calculateAge = (birthDate: Date): number => {
 };
 
 // Zod validation schemas
-const driverSchema = z.object({
-    name: z.string().min(3, 'Nome completo é obrigatório'),
-    cpf: z.string()
-      .min(11, 'CPF deve ter 11 dígitos')
-      .regex(/^\d{11}$/, 'CPF deve conter apenas números')
-      .refine((cpf) => validateCPF(cpf), 'CPF inválido'),
-    birth_date: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date', 'Data de nascimento inválida'),
-    gender: z.string().min(1, 'Gênero é obrigatório'),
-    nationality: z.string().min(3, 'Nacionalidade é obrigatória'),
-    street: z.string().min(3, 'Rua é obrigatória'),
-    number: z.string().min(1, 'Número é obrigatório'),
-    neighborhood: z.string().min(3, 'Bairro é obrigatório'),
-    city: z.string().min(3, 'Cidade é obrigatória'),
-    reference_point: z.string().optional(),
-    phone: z.string().min(10, 'Telefone inválido'),
-    email: z.string().email('Email inválido'),
-    whatsapp: z.string().optional(),
-    license_number: z.string().min(5, 'Número da CNH é obrigatório'),
-    license_category: z.string().min(1, 'Categoria da CNH é obrigatória'),
-    license_expiry_date: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date', 'Data de validade da CNH inválida'),
-    document: z.any().optional(),
-    cnh_digital: z.any().optional(),
-    message: z.string().optional(),
-  }).refine((data) => {
-    const age = calculateAge(new Date(data.birth_date));
-    return age >= 18;
-  }, {
-    message: 'Motorista deve ter pelo menos 18 anos',
-    path: ['birth_date']
-  });
-
 const vehicleSchema = z.object({
   plate: z.string()
     .min(7, 'Placa deve ter 7 caracteres')
@@ -201,7 +171,6 @@ const complaintSchema = z.object({
   complainantPhone: z.string().optional(),
 });
 
-type DriverFormData = z.infer<typeof driverSchema>;
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 type ComplaintFormData = z.infer<typeof complaintSchema>;
 
@@ -285,30 +254,6 @@ export default function SiteHomePage() {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
   const [searchError, setSearchError] = useState('');
-
-  // Driver form
-  const driverForm = useForm<DriverFormData>({
-    resolver: zodResolver(driverSchema),
-    defaultValues: {
-        name: '',
-        cpf: '',
-        birth_date: '',
-        gender: 'M',
-        nationality: 'Brasileira',
-        street: '',
-        number: '',
-        neighborhood: '',
-        city: '',
-        reference_point: '',
-        phone: '',
-        email: '',
-        whatsapp: '',
-        license_number: '',
-        license_category: 'B',
-        license_expiry_date: '',
-        message: '',
-    },
-  });
 
   // Vehicle form
   const vehicleForm = useForm<VehicleFormData>({
@@ -432,45 +377,20 @@ export default function SiteHomePage() {
   };
 
   // Driver form submission
-  const onDriverSubmit = async (data: DriverFormData) => {
+  const onDriverSubmit = async (data: any) => {
     const formData = new FormData();
 
-    // Map and append form data
-    const fieldMapping: { [key in keyof DriverFormData]?: string } = {
-      name: 'name',
-      cpf: 'cpf',
-      birth_date: 'birth_date',
-      gender: 'gender',
-      nationality: 'nationality',
-      street: 'street',
-      number: 'number',
-      neighborhood: 'neighborhood',
-      city: 'city',
-      reference_point: 'reference_point',
-      phone: 'phone',
-      email: 'email',
-      whatsapp: 'whatsapp',
-      license_number: 'license_number',
-      license_category: 'license_category',
-      license_expiry_date: 'license_expiry_date',
-      message: 'message',
-    };
-
-    for (const key in data) {
-        const typedKey = key as keyof DriverFormData;
-        const backendKey = fieldMapping[typedKey];
-        if (backendKey && data[typedKey] !== undefined && data[typedKey] !== null) {
-            formData.append(backendKey, data[typedKey] as string);
-        }
-    }
-
-    // Append files if they exist
-    if (data.document && data.document[0]) {
-      formData.append('document', data.document[0]);
-    }
-    if (data.cnh_digital && data.cnh_digital[0]) {
-      formData.append('cnh_digital', data.cnh_digital[0]);
-    }
+    // Append form data fields
+    Object.keys(data).forEach(key => {
+      const value = data[key as keyof typeof data];
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value instanceof FileList && value.length > 0) {
+        formData.append(key, value[0]);
+      } else if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, String(value));
+      }
+    });
 
     try {
       const response = await fetch(buildApiUrl('api/requests/drivers/'), {
@@ -489,7 +409,6 @@ export default function SiteHomePage() {
         description: 'Sua solicitação de cadastro de motorista será analisada em breve.',
       });
 
-      driverForm.reset();
       setIsDriverDialogOpen(false);
     } catch (error) {
       console.error('Error submitting driver request:', error);
@@ -1320,164 +1239,12 @@ export default function SiteHomePage() {
               Preencha os dados abaixo para solicitar o cadastro de um novo motorista.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={driverForm.handleSubmit(onDriverSubmit)} className="space-y-4 mt-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo *</Label>
-                <Input id="name" placeholder="Digite o nome completo" {...driverForm.register('name')} />
-                {driverForm.formState.errors.name && <p className="text-sm text-red-600">{driverForm.formState.errors.name.message}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF *</Label>
-                  <Input id="cpf" placeholder="00000000000" maxLength={11} {...driverForm.register('cpf')} />
-                  {driverForm.formState.errors.cpf && <p className="text-sm text-red-600">{driverForm.formState.errors.cpf.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="birth_date">Data de Nascimento *</Label>
-                  <Input id="birth_date" type="date" {...driverForm.register('birth_date')} />
-                  {driverForm.formState.errors.birth_date && <p className="text-sm text-red-600">{driverForm.formState.errors.birth_date.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gênero *</Label>
-                  <Select
-                    value={driverForm.watch('gender')}
-                    onValueChange={(value) => driverForm.setValue('gender', value)}
-                  >
-                    <SelectTrigger id="gender"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M">Masculino</SelectItem>
-                      <SelectItem value="F">Feminino</SelectItem>
-                      <SelectItem value="O">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {driverForm.formState.errors.gender && <p className="text-sm text-red-600">{driverForm.formState.errors.gender.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nationality">Nacionalidade *</Label>
-                  <Input id="nationality" placeholder="Brasileira" {...driverForm.register('nationality')} />
-                  {driverForm.formState.errors.nationality && <p className="text-sm text-red-600">{driverForm.formState.errors.nationality.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="street">Rua/Avenida *</Label>
-                <Input id="street" placeholder="Nome da rua" {...driverForm.register('street')} />
-                {driverForm.formState.errors.street && <p className="text-sm text-red-600">{driverForm.formState.errors.street.message}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="neighborhood">Bairro *</Label>
-                  <Input id="neighborhood" placeholder="Bairro" {...driverForm.register('neighborhood')} />
-                  {driverForm.formState.errors.neighborhood && <p className="text-sm text-red-600">{driverForm.formState.errors.neighborhood.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="number">Número *</Label>
-                  <Input id="number" placeholder="123" {...driverForm.register('number')} />
-                  {driverForm.formState.errors.number && <p className="text-sm text-red-600">{driverForm.formState.errors.number.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade *</Label>
-                <Input id="city" placeholder="Cidade" {...driverForm.register('city')} />
-                {driverForm.formState.errors.city && <p className="text-sm text-red-600">{driverForm.formState.errors.city.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="reference_point">Ponto de Referência</Label>
-                <Input id="reference_point" placeholder="Próximo ao..." {...driverForm.register('reference_point')} />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone *</Label>
-                  <Input id="phone" placeholder="(00) 00000-0000" {...driverForm.register('phone')} />
-                  {driverForm.formState.errors.phone && <p className="text-sm text-red-600">{driverForm.formState.errors.phone.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input id="email" type="email" placeholder="email@exemplo.com" {...driverForm.register('email')} />
-                  {driverForm.formState.errors.email && <p className="text-sm text-red-600">{driverForm.formState.errors.email.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input id="whatsapp" placeholder="(00) 00000-0000" {...driverForm.register('whatsapp')} />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="license_number">Número da CNH *</Label>
-                  <Input id="license_number" placeholder="00000000000" {...driverForm.register('license_number')} />
-                  {driverForm.formState.errors.license_number && <p className="text-sm text-red-600">{driverForm.formState.errors.license_number.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="license_category">Categoria CNH *</Label>
-                  <Select
-                    value={driverForm.watch('license_category')}
-                    onValueChange={(value) => driverForm.setValue('license_category', value)}
-                  >
-                    <SelectTrigger id="license_category">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LICENSE_CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {driverForm.formState.errors.license_category && <p className="text-sm text-red-600">{driverForm.formState.errors.license_category.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="license_expiry_date">Validade da CNH *</Label>
-                <Input id="license_expiry_date" type="date" {...driverForm.register('license_expiry_date')} />
-                {driverForm.formState.errors.license_expiry_date && <p className="text-sm text-red-600">{driverForm.formState.errors.license_expiry_date.message}</p>}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="document">Documento (PDF)</Label>
-                  <Input id="document" type="file" accept=".pdf" {...driverForm.register('document')} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cnh_digital">CNH Digital (PDF)</Label>
-                  <Input id="cnh_digital" type="file" accept=".pdf" {...driverForm.register('cnh_digital')} />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-4">
-              <Label htmlFor="driverMessage">Mensagem / Observações</Label>
-              <Textarea id="driverMessage" placeholder="Informações adicionais (opcional)" rows={3} {...driverForm.register('message')} />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDriverDialogOpen(false)} className="flex-1">
-                Cancelar
-              </Button>
-              <Button type="submit" className="flex-1" disabled={driverForm.formState.isSubmitting}>
-                {driverForm.formState.isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar Solicitação'
-                )}
-              </Button>
-            </div>
-          </form>
+          <div className="mt-4">
+            <ConductorForm
+              onSubmit={onDriverSubmit}
+              showPhotoPreview={true}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

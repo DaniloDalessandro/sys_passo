@@ -124,7 +124,7 @@ class ConductorCreateSerializer(ConductorBaseSerializer):
             'name', 'cpf', 'birth_date', 'gender', 'nationality',
             'street', 'number', 'neighborhood', 'city', 'reference_point', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'document', 'cnh_digital', 'is_active'
+            'document', 'cnh_digital', 'photo', 'is_active'
         ]
         extra_kwargs = {
             'email': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este E-mail já existe.")]},
@@ -163,7 +163,7 @@ class ConductorUpdateSerializer(ConductorBaseSerializer):
             'name', 'birth_date', 'gender', 'nationality',
             'street', 'number', 'neighborhood', 'city', 'reference_point', 'phone', 'email', 'whatsapp',
             'license_number', 'license_category', 'license_expiry_date',
-            'document', 'cnh_digital', 'is_active'
+            'document', 'cnh_digital', 'photo', 'is_active'
         ]
         extra_kwargs = {
             'email': {'validators': [UniqueValidator(queryset=Conductor.objects.all(), message="Condutor com este E-mail já existe.")]},

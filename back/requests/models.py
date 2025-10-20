@@ -160,6 +160,13 @@ class DriverRequest(models.Model):
         verbose_name='CNH Digital (PDF)',
         help_text='CNH digitalizada (opcional)'
     )
+    photo = models.ImageField(
+        upload_to='requests/driver/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto (JPG/PNG)',
+        help_text='Foto do motorista (opcional)'
+    )
 
     message = models.TextField(
         blank=True,
