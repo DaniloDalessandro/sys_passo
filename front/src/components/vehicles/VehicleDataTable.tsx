@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DataTable } from "@/components/ui/data-table";
+import { DataTable, PaginationState } from "@/components/ui/data-table";
 import { Vehicle } from "@/hooks/useVehicles";
 
 interface VehicleDataTableProps {
   vehicles: Vehicle[];
+  totalCount: number;
+  pagination: PaginationState;
+  onPaginationChange: (pagination: PaginationState) => void;
+  filters: Record<string, any>;
+  onFilterChange: (filters: Record<string, any>) => void;
   onAdd: () => void;
   onEdit: (vehicle: Vehicle) => void;
   onDelete: (vehicle: Vehicle) => void;
@@ -15,23 +20,56 @@ interface VehicleDataTableProps {
   isLoading?: boolean;
 }
 
+const STORAGE_KEY = "vehicle-table-column-visibility";
+
+const DEFAULT_VISIBLE_COLUMNS = [
+  "placa",
+  "marca",
+  "modelo",
+  "ano",
+  "categoria",
+  "status"
+];
+
 export function VehicleDataTable({
   vehicles,
+  totalCount,
+  pagination,
+  onPaginationChange,
+  filters,
+  onFilterChange,
   onAdd,
   onEdit,
   onDelete,
   onViewDetails,
   isLoading = false,
 }: VehicleDataTableProps) {
-  const [statusFilter, setStatusFilter] = useState<string>("");
 
-  const isMaintenanceDue = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7 && diffDays > 0;
-  };
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    }
+
+    const allColumns = [
+      "placa", "marca", "modelo", "ano", "cor", "chassi", "renavam",
+      "categoria", "combustivel", "capacidade", "status",
+      "created_at", "updated_at"
+    ];
+
+    const initialVisibility: Record<string, boolean> = {};
+    allColumns.forEach(col => {
+      initialVisibility[col] = DEFAULT_VISIBLE_COLUMNS.includes(col);
+    });
+
+    return initialVisibility;
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(columnVisibility));
+    }
+  }, [columnVisibility]);
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -44,67 +82,31 @@ export function VehicleDataTable({
     }
   };
 
-  const filteredVehicles = useMemo(() => {
-    if (statusFilter === "Todos" || !statusFilter) {
-      return vehicles;
-    }
-    return vehicles.filter((vehicle) => {
-      const statusLabel = getStatusLabel(vehicle.status);
-      return statusLabel === statusFilter;
-    });
-  }, [vehicles, statusFilter]);
-
   const columns = useMemo(
     () => [
-      {
-        accessorKey: "plate",
-        header: "Placa",
-      },
-      {
-        accessorKey: "brand",
-        header: "Marca",
-      },
-      {
-        accessorKey: "model",
-        header: "Modelo",
-      },
-      {
-        accessorKey: "year",
-        header: "Ano",
-      },
-      {
-        accessorKey: "kmRodados",
-        header: "KM Rodados",
-        cell: ({ row }: any) => {
-            const vehicle = row.original as Vehicle;
-            return `${vehicle.kmRodados.toLocaleString("pt-BR")} km`;
-        }
-      },
-      {
-        accessorKey: "proximaManutencao",
-        header: "Próxima Manutenção",
-        cell: ({ row }: any) => {
-          const vehicle = row.original as Vehicle;
-          if (!vehicle.proximaManutencao) return '-';
-          const formattedDate = format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
-            locale: ptBR,
-          });
-          if (isMaintenanceDue(vehicle.proximaManutencao)) return `${formattedDate} (Próxima)`;
-          return formattedDate;
-        },
-      },
+      { accessorKey: "placa", header: "Placa", meta: { showFilterIcon: true } },
+      { accessorKey: "marca", header: "Marca", meta: { showFilterIcon: true } },
+      { accessorKey: "modelo", header: "Modelo", meta: { showFilterIcon: true } },
+      { accessorKey: "ano", header: "Ano", meta: { showFilterIcon: true } },
+      { accessorKey: "cor", header: "Cor", meta: { showFilterIcon: true } },
+      { accessorKey: "chassi", header: "Chassi", meta: { showFilterIcon: true } },
+      { accessorKey: "renavam", header: "RENAVAM", meta: { showFilterIcon: true } },
+      { accessorKey: "categoria", header: "Categoria", meta: { showFilterIcon: true } },
+      { accessorKey: "combustivel", header: "Combustível", meta: { showFilterIcon: true } },
+      { accessorKey: "capacidade", header: "Capacidade", meta: { showFilterIcon: true } },
       {
         accessorKey: "status",
         header: "Status",
         meta: {
+          showFilterIcon: true,
           filterType: "select",
           filterOptions: [
-            { value: "Todos", label: "Todos" },
-            { value: "Ativo", label: "Ativo" },
-            { value: "Inativo", label: "Inativo" },
+            { value: "all", label: "Todos" },
+            { value: "ativo", label: "Ativo" },
+            { value: "inativo", label: "Inativo" },
           ],
-          filterValue: statusFilter,
-          onFilterChange: setStatusFilter,
+          filterValue: filters?.status || "ativo",
+          onFilterChange: (value: any) => onFilterChange("status", value === "all" ? "" : value),
         },
         cell: ({ row }: any) => {
           const status = row.getValue("status") as string;
@@ -114,50 +116,39 @@ export function VehicleDataTable({
       {
         accessorKey: "created_at",
         header: "Criado em",
-        cell: ({ row }: any) => {
-          const date = row.getValue("created_at") as string;
-          return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
-        },
+        cell: ({ row }: any) => format(new Date(row.getValue("created_at")), "dd/MM/yyyy HH:mm", { locale: ptBR }),
       },
       {
         accessorKey: "updated_at",
         header: "Atualizado em",
-        cell: ({ row }: any) => {
-          const date = row.getValue("updated_at") as string;
-          return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
-        },
+        cell: ({ row }: any) => format(new Date(row.getValue("updated_at")), "dd/MM/yyyy HH:mm", { locale: ptBR }),
       },
     ],
-    [statusFilter]
+    [filters, onFilterChange]
   );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2">Carregando veículos...</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col w-full overflow-hidden">
       <DataTable
         columns={columns}
-        data={filteredVehicles}
+        data={vehicles}
         title="Lista de Veículos"
-        pageSize={10}
-        pageIndex={0}
-        totalCount={filteredVehicles.length}
+        totalCount={totalCount}
+        pageSize={pagination.pageSize}
+        pageIndex={pagination.pageIndex}
+        initialFilters={[
+          { id: 'status', value: filters?.status || 'ativo' }
+        ]}
+        onPageChange={(pageIndex) => onPaginationChange({ ...pagination, pageIndex })}
         onAdd={onAdd}
         onEdit={onEdit}
         onDelete={onDelete}
         onViewDetails={onViewDetails}
-        onPageChange={() => {}}
-        onPageSizeChange={() => {}}
-        onFilterChange={() => {}}
-        onSortingChange={() => {}}
-        readOnly={false}
+        isLoading={isLoading}
+        defaultVisibleColumns={DEFAULT_VISIBLE_COLUMNS}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
+        onFilterChange={onFilterChange}
       />
     </div>
   );

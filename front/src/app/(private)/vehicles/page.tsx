@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   VehicleDataTable,
   VehicleStats,
@@ -17,14 +17,39 @@ export default function VehiclesPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
 
+  // State for server-side pagination and filtering
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [filters, setFilters] = useState<Record<string, any>>({ status: 'ativo' });
+
   const {
     vehicles,
+    totalCount,
     isLoading,
+    fetchVehicles,
     createVehicle,
     updateVehicle,
     deleteVehicle,
-    fetchVehicles,
+    getVehicle,
   } = useVehicles()
+
+  // Fetch data when pagination or filters change
+  useEffect(() => {
+    const fetchParams = {
+      page: pagination.pageIndex + 1, // API is 1-based, table is 0-based
+      pageSize: pagination.pageSize,
+      filters: filters,
+    };
+    fetchVehicles(fetchParams);
+  }, [pagination, filters, fetchVehicles]);
+
+  const handleRefreshData = useCallback(() => {
+    const fetchParams = {
+      page: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      filters: filters,
+    };
+    fetchVehicles(fetchParams);
+  }, [pagination, filters, fetchVehicles]);
 
   const handleSubmit = async (data: VehicleFormData) => {
     setIsSubmitting(true)
@@ -38,8 +63,7 @@ export default function VehiclesPage() {
       }
       setIsDialogOpen(false)
       setEditingVehicle(null)
-      // Refresh the vehicles list to ensure data is up to date
-      await fetchVehicles()
+      handleRefreshData() // Refresh data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar veículo")
     } finally {
@@ -47,15 +71,23 @@ export default function VehiclesPage() {
     }
   }
 
-  const handleEdit = (vehicle: Vehicle) => {
-    setEditingVehicle(vehicle)
-    setIsDialogOpen(true)
+  const handleEdit = async (vehicle: Vehicle) => {
+    try {
+      const fullVehicle = await getVehicle(vehicle.id)
+      setEditingVehicle(fullVehicle)
+      setIsDialogOpen(true)
+    } catch (error) {
+      toast.error("Não foi possível carregar os dados do veículo.", {
+        description: error instanceof Error ? error.message : "Tente novamente.",
+      })
+    }
   }
 
   const handleDelete = async (vehicle: Vehicle) => {
     try {
       await deleteVehicle(vehicle.id)
       toast.success("Veículo excluído com sucesso!")
+      handleRefreshData() // Refresh data
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir veículo")
     }
@@ -67,15 +99,21 @@ export default function VehiclesPage() {
   }
 
   const handleViewDetails = (vehicle: Vehicle) => {
-    // Open in new tab
+    if (!vehicle || !vehicle.id) {
+      toast.error('Erro: ID do veículo não encontrado');
+      return;
+    }
     const url = `/vehicles/${vehicle.id}/details`;
     window.open(url, '_blank');
   }
 
+  const handleFilterChange = (columnId: string, value: any) => {
+    setFilters(prev => ({ ...prev, [columnId]: value }))
+  }
+
   return (
-    <div className="flex flex-col h-full p-4 pt-0">
-      <div className="flex flex-col gap-6">
-        {/* Header */}
+    <div className="flex flex-col h-full p-4 pt-0 w-full overflow-hidden">
+      <div className="flex flex-col gap-6 w-full overflow-hidden">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Veículos</h1>
@@ -83,13 +121,16 @@ export default function VehiclesPage() {
           </div>
         </div>
 
-        {/* Statistics Cards */}
         <VehicleStats vehicles={vehicles} />
 
-        {/* Data Table with Fixed Height and Scroll */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 w-full overflow-hidden">
           <VehicleDataTable
             vehicles={vehicles}
+            totalCount={totalCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            filters={filters}
+            onFilterChange={handleFilterChange}
             onAdd={handleNewVehicle}
             onEdit={handleEdit}
             onDelete={handleDelete}
@@ -98,7 +139,6 @@ export default function VehiclesPage() {
           />
         </div>
 
-        {/* Dialog for Create/Edit */}
         <VehicleDialog
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
@@ -107,14 +147,12 @@ export default function VehiclesPage() {
           isLoading={isSubmitting}
         />
 
-        {/* Dialog for View Details */}
         <VehicleDetailDialog
           vehicle={selectedVehicle}
           open={isDetailDialogOpen && selectedVehicle !== null}
           onOpenChange={(open) => {
             setIsDetailDialogOpen(open);
             if (!open) {
-              // Clear selected vehicle when dialog closes
               setSelectedVehicle(null);
             }
           }}

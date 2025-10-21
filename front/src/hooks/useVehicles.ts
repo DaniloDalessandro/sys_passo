@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+"use client"
+
+import { useState, useCallback } from "react"
+import { authFetch } from "@/lib/api-client"
 
 export interface Vehicle {
   id: number;
@@ -32,7 +35,7 @@ export interface Vehicle {
   kmRodados?: number;
   proximaManutencao?: string;
   ultimaManutencao?: string;
-  condutores?: any[];
+  conductors?: any[];
   photo_1?: string | null;
   photo_2?: string | null;
   photo_3?: string | null;
@@ -60,143 +63,168 @@ export interface VehicleFormData {
   photo_5?: File | null;
 }
 
-const mockVehicles: Vehicle[] = [
-  {
-    id: 1,
-    plate: "ABC-1234",
-    placa: "ABC-1234",
-    model: "Sprinter",
-    modelo: "Sprinter",
-    brand: "Mercedes-Benz",
-    marca: "Mercedes-Benz",
-    year: 2020,
-    ano: 2020,
-    color: "Branco",
-    cor: "Branco",
-    chassis_number: "9BW123456789ABC01",
-    chassi: "9BW123456789ABC01",
-    renavam: "12345678901",
-    fuel_type: "Diesel",
-    combustivel: "Diesel",
-    passenger_capacity: 16,
-    capacidade: 16,
-    category: "Van",
-    categoria: "Van",
-    is_active: true,
-    status: "ativo",
-    kmRodados: 45000,
-    proximaManutencao: "2024-10-15",
-    ultimaManutencao: "2024-08-15",
-    created_at: "2024-01-15T10:30:00Z",
-    updated_at: "2024-09-18T15:45:00Z",
-    created_by: 1,
-    updated_by: 1,
-  },
-  {
-    id: 2,
-    plate: "DEF-5678",
-    placa: "DEF-5678",
-    model: "Constellation",
-    modelo: "Constellation",
-    brand: "Volkswagen",
-    marca: "Volkswagen",
-    year: 2019,
-    ano: 2019,
-    color: "Azul",
-    cor: "Azul",
-    chassis_number: "9BW123456789ABC02",
-    chassi: "9BW123456789ABC02",
-    renavam: "12345678902",
-    fuel_type: "Diesel",
-    combustivel: "Diesel",
-    passenger_capacity: 5,
-    capacidade: 5,
-    category: "Caminhão",
-    categoria: "Caminhão",
-    is_active: false,
-    status: "inativo",
-    kmRodados: 98000,
-    proximaManutencao: "2024-09-20",
-    ultimaManutencao: "2024-07-20",
-    created_at: "2024-02-10T14:20:00Z",
-    updated_at: "2024-09-15T09:30:00Z",
-    created_by: 1,
-    updated_by: 2,
-  },
-  {
-    id: 3,
-    plate: "GHI-9012",
-    placa: "GHI-9012",
-    model: "Daily",
-    modelo: "Daily",
-    brand: "Iveco",
-    marca: "Iveco",
-    year: 2021,
-    ano: 2021,
-    color: "Prata",
-    cor: "Prata",
-    chassis_number: "9BW123456789ABC03",
-    chassi: "9BW123456789ABC03",
-    renavam: "12345678903",
-    fuel_type: "Diesel",
-    combustivel: "Diesel",
-    passenger_capacity: 12,
-    capacidade: 12,
-    category: "Van",
-    categoria: "Van",
-    is_active: true,
-    status: "ativo",
-    kmRodados: 32000,
-    proximaManutencao: "2024-11-30",
-    ultimaManutencao: "2024-08-30",
-    created_at: "2024-03-05T11:15:00Z",
-    updated_at: "2024-09-10T16:45:00Z",
-    created_by: 1,
-    updated_by: 1,
-  }
-];
+const API_BASE_URL = "http://localhost:8000/api"
 
-export const useVehicles = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface FetchParams {
+  page?: number
+  pageSize?: number
+  filters?: Record<string, any>
+}
 
-  const fetchVehicles = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setVehicles(mockVehicles);
-      setIsLoading(false);
-    }, 1000);
-  };
+export function useVehicles() {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
+  const fetchVehicles = useCallback(async (params: FetchParams = {}) => {
+    setIsLoading(true)
+    setError(null)
 
-  const getVehicle = async (id: number): Promise<Vehicle> => {
-    setIsLoading(true);
-    setError(null);
+    const { page = 1, pageSize = 10, filters = {} } = params
 
     try {
-      const vehicle = mockVehicles.find(v => v.id === id);
-      if (!vehicle) {
-        throw new Error('Veículo não encontrado');
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        page_size: pageSize.toString(),
+      })
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+
+      const url = `${API_BASE_URL}/vehicles/?${queryParams.toString()}`
+      console.log('URL da requisição:', url)
+      const response = await authFetch(url)
+
+      if (!response.ok) {
+        throw new Error("Erro ao carregar veículos")
       }
-      return vehicle;
+
+      const data = await response.json()
+      console.log('Resposta da API:', {
+        count: data.count,
+        resultsLength: data.results?.length,
+        firstResult: data.results?.[0]
+      })
+      setVehicles(data.results || [])
+      setTotalCount(data.count || 0)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar veículo';
-      setError(errorMessage);
-      throw new Error(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      setVehicles([])
+      setTotalCount(0)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }, [])
+
+  const createVehicle = async (vehicleData: VehicleFormData): Promise<Vehicle> => {
+    setError(null)
+    const formData = new FormData()
+
+    Object.entries(vehicleData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        if (value instanceof File) {
+          formData.append(key, value)
+        } else {
+          formData.append(key, value.toString())
+        }
+      }
+    })
+
+    try {
+      const response = await authFetch(`${API_BASE_URL}/vehicles/`, {
+        method: "POST",
+        body: formData,
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || "Erro ao criar veículo")
+      }
+      return await response.json()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+  const updateVehicle = async (id: number, vehicleData: Partial<VehicleFormData>): Promise<Vehicle> => {
+    setError(null)
+    const formData = new FormData()
+
+    Object.entries(vehicleData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        if (value instanceof File) {
+          formData.append(key, value)
+        } else {
+          formData.append(key, value.toString())
+        }
+      }
+    })
+
+    try {
+      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`, {
+        method: "PATCH",
+        body: formData,
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || "Erro ao atualizar veículo")
+      }
+      return await response.json()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+  const deleteVehicle = async (id: number): Promise<void> => {
+    setError(null)
+    try {
+      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`, {
+        method: "DELETE",
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || "Erro ao excluir veículo")
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
+
+  const getVehicle = async (id: number): Promise<Vehicle> => {
+    setError(null)
+    try {
+      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || "Erro ao carregar veículo")
+      }
+      return await response.json()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    }
+  }
 
   return {
     vehicles,
-    getVehicle,
+    totalCount,
     isLoading,
     error,
     fetchVehicles,
-  };
-};
+    createVehicle,
+    updateVehicle,
+    deleteVehicle,
+    getVehicle,
+  }
+}
