@@ -49,7 +49,16 @@ export interface VehicleRequest {
   model: string;
   year: number;
   color: string;
+  chassis_number?: string;
+  renavam?: string;
   fuel_type: string;
+  category?: string;
+  passenger_capacity?: number;
+  photo_1?: string;
+  photo_2?: string;
+  photo_3?: string;
+  photo_4?: string;
+  photo_5?: string;
   message?: string;
   status: 'em_analise' | 'aprovado' | 'reprovado';
   created_at: string;

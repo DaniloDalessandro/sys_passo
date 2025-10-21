@@ -396,7 +396,7 @@ export default function SolicitacoesPage() {
               <TableHead>Combustível</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="text-center w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -413,12 +413,14 @@ export default function SolicitacoesPage() {
                 <TableCell className="text-sm text-muted-foreground">
                   {getRelativeTime(request.created_at)}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                <TableCell>
+                  <div className="flex items-center justify-center gap-1">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      onClick={() => setDetailsDialog({ open: true, type: 'vehicle', data: request })}
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(`/solicitacoes/veiculos/${request.id}`, '_blank')}
+                      title="Ver detalhes"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -426,27 +428,29 @@ export default function SolicitacoesPage() {
                       <>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          size="icon"
+                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
                           onClick={() => setApproveDialog({
                             open: true,
                             type: 'vehicle',
                             id: request.id,
                             name: `${request.brand} ${request.model} - ${formatPlate(request.plate)}`,
                           })}
+                          title="Aprovar"
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          size="icon"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => setRejectDialog({
                             open: true,
                             type: 'vehicle',
                             id: request.id,
                             name: `${request.brand} ${request.model} - ${formatPlate(request.plate)}`,
                           })}
+                          title="Recusar"
                         >
                           <XCircle className="h-4 w-4" />
                         </Button>

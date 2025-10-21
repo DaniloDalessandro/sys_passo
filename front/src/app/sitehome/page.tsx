@@ -61,6 +61,7 @@ import {
 } from '@/components/ui/select';
 import { LICENSE_CATEGORIES } from '@/constants/license-categories';
 import { ConductorForm } from '@/components/conductors/conductor-form';
+import { VehicleForm } from '@/components/vehicles/vehicle-form';
 
 // Types for site configuration
 interface SiteConfig {
@@ -137,24 +138,6 @@ const calculateAge = (birthDate: Date): number => {
 };
 
 // Zod validation schemas
-const vehicleSchema = z.object({
-  plate: z.string()
-    .min(7, 'Placa deve ter 7 caracteres')
-    .max(7, 'Placa deve ter 7 caracteres')
-    .toUpperCase(),
-  brand: z.string().min(2, 'Marca é obrigatória'),
-  model: z.string().min(2, 'Modelo é obrigatório'),
-  year: z.string()
-    .regex(/^\d{4}$/, 'Ano deve ter 4 dígitos')
-    .refine((val) => {
-      const year = parseInt(val);
-      return year >= 1900 && year <= new Date().getFullYear() + 1;
-    }, 'Ano inválido'),
-  color: z.string().min(3, 'Cor é obrigatória'),
-  fuelType: z.string().min(1, 'Tipo de combustível é obrigatório'),
-  message: z.string().optional(),
-});
-
 const complaintSchema = z.object({
   vehiclePlate: z.string()
     .min(7, 'Placa deve ter pelo menos 7 caracteres')
@@ -171,7 +154,6 @@ const complaintSchema = z.object({
   complainantPhone: z.string().optional(),
 });
 
-type VehicleFormData = z.infer<typeof vehicleSchema>;
 type ComplaintFormData = z.infer<typeof complaintSchema>;
 
 // Animated Counter Component
@@ -254,20 +236,6 @@ export default function SiteHomePage() {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
   const [searchError, setSearchError] = useState('');
-
-  // Vehicle form
-  const vehicleForm = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleSchema),
-    defaultValues: {
-      plate: '',
-      brand: '',
-      model: '',
-      year: '',
-      color: '',
-      fuelType: '',
-      message: '',
-    },
-  });
 
   // Complaint form
   const complaintForm = useForm<ComplaintFormData>({
@@ -440,48 +408,81 @@ export default function SiteHomePage() {
   };
 
   // Vehicle form submission
-  const onVehicleSubmit = async (data: VehicleFormData) => {
+  const onVehicleSubmit = async (data: any) => {
+    const formData = new FormData();
+
+    // Mapeamento de campos português -> inglês
+    const fieldMapping: Record<string, string> = {
+      placa: 'plate',
+      marca: 'brand',
+      modelo: 'model',
+      ano: 'year',
+      cor: 'color',
+      chassi: 'chassis_number',
+      renavam: 'renavam',
+      combustivel: 'fuel_type',
+      categoria: 'category',
+      capacidade: 'passenger_capacity',
+    };
+
+    // Mapeamento de valores de combustível português -> inglês
+    const fuelTypeMapping: Record<string, string> = {
+      'Diesel': 'diesel',
+      'Gasolina': 'gasoline',
+      'Etanol': 'ethanol',
+      'Flex': 'flex',
+      'GNV': 'hybrid',
+    };
+
+    // Adicionar campos básicos
+    Object.entries(fieldMapping).forEach(([ptKey, enKey]) => {
+      let value = data[ptKey];
+
+      if (value !== undefined && value !== null && value !== '') {
+        // Converter placa para maiúsculas
+        if (ptKey === 'placa') {
+          value = value.toUpperCase();
+        }
+
+        // Converter combustível para inglês
+        if (ptKey === 'combustivel' && fuelTypeMapping[value]) {
+          value = fuelTypeMapping[value];
+        }
+
+        formData.append(enKey, value.toString());
+      }
+    });
+
+    // Fotos (opcionais)
+    ['photo_1', 'photo_2', 'photo_3', 'photo_4', 'photo_5'].forEach(photoKey => {
+      const photo = data[photoKey];
+      if (photo && photo instanceof File) {
+        formData.append(photoKey, photo);
+      }
+    });
+
+    console.log('Enviando dados:', Array.from(formData.entries()));
+
     try {
       const response = await fetch(buildApiUrl('api/requests/vehicles/'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          plate: data.plate.toUpperCase(),
-          brand: data.brand,
-          model: data.model,
-          year: parseInt(data.year),
-          color: data.color,
-          fuel_type: data.fuelType,
-          message: data.message || '',
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-
-        // Tratar erros específicos
-        if (response.status === 400) {
-          // Erros de validação
-          const errorMessage = errorData.detail ||
-                             errorData.plate?.[0] ||
-                             'Erro na validação dos dados. Verifique as informações.';
-          throw new Error(errorMessage);
-        }
-
-        throw new Error('Erro ao enviar solicitação. Tente novamente.');
+        console.error('Erro do servidor:', errorData);
+        const errorMessage = errorData.detail || errorData.plate?.[0] || 'Erro ao enviar solicitação.';
+        throw new Error(errorMessage);
       }
 
       toast.success('Solicitação enviada com sucesso!', {
         description: 'Sua solicitação de cadastro de veículo será analisada em breve.',
       });
 
-      vehicleForm.reset();
       setIsVehicleDialogOpen(false);
     } catch (error) {
       console.error('Error submitting vehicle request:', error);
-
       toast.error('Erro ao enviar solicitação', {
         description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
       });
@@ -1272,7 +1273,7 @@ export default function SiteHomePage() {
 
       {/* Vehicle Registration Dialog */}
       <Dialog open={isVehicleDialogOpen} onOpenChange={setIsVehicleDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <Car className="w-6 h-6 text-blue-600" />
@@ -1282,164 +1283,13 @@ export default function SiteHomePage() {
               Preencha os dados abaixo para solicitar o cadastro de um novo veículo.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={vehicleForm.handleSubmit(onVehicleSubmit)} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="plate" className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                Placa do Veículo *
-              </Label>
-              <Input
-                id="plate"
-                placeholder="ABC1D23"
-                maxLength={7}
-                {...vehicleForm.register('plate')}
-                className="uppercase"
-              />
-              {vehicleForm.formState.errors.plate && (
-                <p className="text-sm text-red-600">
-                  {vehicleForm.formState.errors.plate.message}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="brand" className="flex items-center gap-2">
-                  <Car className="w-4 h-4" />
-                  Marca *
-                </Label>
-                <Input
-                  id="brand"
-                  placeholder="Ex: Volkswagen"
-                  {...vehicleForm.register('brand')}
-                />
-                {vehicleForm.formState.errors.brand && (
-                  <p className="text-sm text-red-600">
-                    {vehicleForm.formState.errors.brand.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="model" className="flex items-center gap-2">
-                  <Car className="w-4 h-4" />
-                  Modelo *
-                </Label>
-                <Input
-                  id="model"
-                  placeholder="Ex: Gol"
-                  {...vehicleForm.register('model')}
-                />
-                {vehicleForm.formState.errors.model && (
-                  <p className="text-sm text-red-600">
-                    {vehicleForm.formState.errors.model.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="year" className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Ano *
-                </Label>
-                <Input
-                  id="year"
-                  placeholder="2024"
-                  maxLength={4}
-                  {...vehicleForm.register('year')}
-                />
-                {vehicleForm.formState.errors.year && (
-                  <p className="text-sm text-red-600">
-                    {vehicleForm.formState.errors.year.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="color" className="flex items-center gap-2">
-                  <Palette className="w-4 h-4" />
-                  Cor *
-                </Label>
-                <Input
-                  id="color"
-                  placeholder="Ex: Branco"
-                  {...vehicleForm.register('color')}
-                />
-                {vehicleForm.formState.errors.color && (
-                  <p className="text-sm text-red-600">
-                    {vehicleForm.formState.errors.color.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fuelType" className="flex items-center gap-2">
-                <Fuel className="w-4 h-4" />
-                Tipo de Combustível *
-              </Label>
-              <Select
-                onValueChange={(value) => vehicleForm.setValue('fuelType', value)}
-              >
-                <SelectTrigger id="fuelType">
-                  <SelectValue placeholder="Selecione o tipo de combustível" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="gasoline">Gasolina</SelectItem>
-                  <SelectItem value="ethanol">Etanol</SelectItem>
-                  <SelectItem value="flex">Flex</SelectItem>
-                  <SelectItem value="diesel">Diesel</SelectItem>
-                  <SelectItem value="electric">Elétrico</SelectItem>
-                  <SelectItem value="hybrid">Híbrido</SelectItem>
-                </SelectContent>
-              </Select>
-              {vehicleForm.formState.errors.fuelType && (
-                <p className="text-sm text-red-600">
-                  {vehicleForm.formState.errors.fuelType.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vehicleMessage" className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                Mensagem / Observações
-              </Label>
-              <Textarea
-                id="vehicleMessage"
-                placeholder="Informações adicionais (opcional)"
-                rows={3}
-                {...vehicleForm.register('message')}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsVehicleDialogOpen(false)}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={vehicleForm.formState.isSubmitting}
-              >
-                {vehicleForm.formState.isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar Solicitação'
-                )}
-              </Button>
-            </div>
-          </form>
+          <div className="mt-4">
+            <VehicleForm
+              onSubmit={onVehicleSubmit}
+              showPhotoPreview={true}
+              submitButtonText="Enviar Solicitação"
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

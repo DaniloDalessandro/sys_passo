@@ -291,7 +291,16 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
             'model',
             'year',
             'color',
+            'chassis_number',
+            'renavam',
             'fuel_type',
+            'category',
+            'passenger_capacity',
+            'photo_1',
+            'photo_2',
+            'photo_3',
+            'photo_4',
+            'photo_5',
             'message',
         ]
 
@@ -358,6 +367,7 @@ class VehicleRequestListSerializer(serializers.ModelSerializer):
     vehicle = VehicleNestedSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     fuel_type_display = serializers.CharField(source='get_fuel_type_display', read_only=True)
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
 
     class Meta:
         model = VehicleRequest
@@ -368,8 +378,18 @@ class VehicleRequestListSerializer(serializers.ModelSerializer):
             'model',
             'year',
             'color',
+            'chassis_number',
+            'renavam',
             'fuel_type',
             'fuel_type_display',
+            'category',
+            'category_display',
+            'passenger_capacity',
+            'photo_1',
+            'photo_2',
+            'photo_3',
+            'photo_4',
+            'photo_5',
             'message',
             'status',
             'status_display',

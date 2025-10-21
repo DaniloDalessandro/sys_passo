@@ -273,13 +273,21 @@ class VehicleRequest(models.Model):
         ('hybrid', 'Híbrido'),
     ]
 
+    CATEGORY_CHOICES = [
+        ('Van', 'Van'),
+        ('Caminhão', 'Caminhão'),
+        ('Ônibus', 'Ônibus'),
+        ('Carreta', 'Carreta'),
+        ('Carro', 'Carro'),
+    ]
+
     STATUS_CHOICES = [
         ('em_analise', 'Em Análise'),
         ('aprovado', 'Aprovado'),
         ('reprovado', 'Reprovado'),
     ]
 
-    # Dados do veículo
+    # Dados básicos do veículo
     plate = models.CharField(
         max_length=10,
         verbose_name='Placa',
@@ -309,12 +317,80 @@ class VehicleRequest(models.Model):
         verbose_name='Cor',
         help_text='Cor do veículo'
     )
+
+    # Dados técnicos
+    chassis_number = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        verbose_name='Chassi',
+        help_text='Número do chassi do veículo'
+    )
+    renavam = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        verbose_name='RENAVAM',
+        help_text='Número do RENAVAM'
+    )
     fuel_type = models.CharField(
         max_length=20,
         choices=FUEL_TYPE_CHOICES,
         verbose_name='Tipo de Combustível',
         help_text='Tipo de combustível utilizado pelo veículo'
     )
+
+    # Categoria e capacidade
+    category = models.CharField(
+        max_length=50,
+        choices=CATEGORY_CHOICES,
+        default='Van',
+        verbose_name='Categoria',
+        help_text='Categoria do veículo'
+    )
+    passenger_capacity = models.PositiveIntegerField(
+        default=5,
+        verbose_name='Capacidade de Passageiros',
+        help_text='Número de passageiros que o veículo comporta'
+    )
+
+    # Fotos do veículo
+    photo_1 = models.ImageField(
+        upload_to='requests/vehicle/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto 1',
+        help_text='Foto do veículo (opcional)'
+    )
+    photo_2 = models.ImageField(
+        upload_to='requests/vehicle/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto 2',
+        help_text='Foto do veículo (opcional)'
+    )
+    photo_3 = models.ImageField(
+        upload_to='requests/vehicle/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto 3',
+        help_text='Foto do veículo (opcional)'
+    )
+    photo_4 = models.ImageField(
+        upload_to='requests/vehicle/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto 4',
+        help_text='Foto do veículo (opcional)'
+    )
+    photo_5 = models.ImageField(
+        upload_to='requests/vehicle/photos/',
+        blank=True,
+        null=True,
+        verbose_name='Foto 5',
+        help_text='Foto do veículo (opcional)'
+    )
+
     message = models.TextField(
         blank=True,
         null=True,
