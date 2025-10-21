@@ -31,7 +31,8 @@
       "Bash(venv/Scripts/python.exe manage.py migrate:*)",
       "Bash(npm install:*)",
       "Bash(venv/Scripts/python.exe manage.py runserver:*)",
-      "Bash(timeout 5 bash:*)"
+      "Bash(timeout 5 bash:*)",
+      "Bash(timeout 3 bash:*)"
     ],
     "deny": [],
     "ask": []
