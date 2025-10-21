@@ -14,12 +14,11 @@ export function VehicleStats({ vehicles }: VehicleStatsProps) {
   const stats = useMemo(() => {
     const total = vehicles.length
     const active = vehicles.filter(v => v.status === 'ativo').length
-    const maintenance = vehicles.filter(v => v.status === 'manutencao').length
     const inactive = vehicles.filter(v => v.status === 'inativo').length
 
     // Veículos que precisam de manutenção em até 7 dias
     const needingMaintenance = vehicles.filter(v => {
-      if (v.status === 'manutencao') return false
+      if (!v.proximaManutencao) return false
       const date = new Date(v.proximaManutencao)
       const now = new Date()
       const diffTime = date.getTime() - now.getTime()
@@ -30,7 +29,6 @@ export function VehicleStats({ vehicles }: VehicleStatsProps) {
     return {
       total,
       active,
-      maintenance,
       inactive,
       needingMaintenance
     }
@@ -39,7 +37,7 @@ export function VehicleStats({ vehicles }: VehicleStatsProps) {
   return (
     <div className="space-y-6">
       {/* Estatísticas Principais */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Total de Veículos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
@@ -87,20 +85,6 @@ export function VehicleStats({ vehicles }: VehicleStatsProps) {
             <div className="text-xl font-bold text-orange-600">{stats.needingMaintenance}</div>
             <p className="text-xs text-muted-foreground">
               Próximos 7 dias
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Em Manutenção */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs font-medium">Em Manutenção</CardTitle>
-            <Wrench className="h-3 w-3 text-red-500" />
-          </CardHeader>
-          <CardContent className="pb-2">
-            <div className="text-xl font-bold text-red-600">{stats.maintenance}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round((stats.maintenance / stats.total) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>

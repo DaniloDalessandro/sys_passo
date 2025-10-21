@@ -46,7 +46,6 @@ export function VehicleDetailDialog({
   const getStatusBadgeVariant = (status: string) => {
     const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
       'ativo': 'default',
-      'manutencao': 'destructive',
       'inativo': 'secondary'
     };
     return variants[status] || 'outline';
@@ -55,7 +54,6 @@ export function VehicleDetailDialog({
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       'ativo': 'Ativo',
-      'manutencao': 'Em Manutenção',
       'inativo': 'Inativo'
     };
     return labels[status] || status;
@@ -96,23 +94,25 @@ export function VehicleDetailDialog({
             )}
           </div>
 
-          {(vehicle.status === 'manutencao' || isMaintenanceDue(vehicle.proximaManutencao)) && (
-            <Alert variant={vehicle.status === 'manutencao' ? "destructive" : "default"}>
+          {vehicle.proximaManutencao && isMaintenanceDue(vehicle.proximaManutencao) && (
+            <Alert variant="default">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                {vehicle.status === 'manutencao'
-                  ? "Este veículo está em manutenção!"
-                  : "A manutenção deste veículo está próxima!"}
+                A manutenção deste veículo está próxima!
               </AlertDescription>
             </Alert>
           )}
         </DialogHeader>
 
         <Tabs defaultValue="dados" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dados" className="flex items-center gap-2">
               <Car className="h-4 w-4" />
               Dados do Veículo
+            </TabsTrigger>
+            <TabsTrigger value="fotos" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Fotos
             </TabsTrigger>
             <TabsTrigger value="manutencao" className="flex items-center gap-2">
               <Wrench className="h-4 w-4" />
@@ -189,14 +189,66 @@ export function VehicleDetailDialog({
                 </div>
               </div>
             </div>
+          </TabsContent>
 
-            <div className="border-t pt-6">
-              <h3 className="font-semibold text-lg mb-4">Proprietário</h3>
-              <div>
-                <strong className="text-gray-600 text-sm">Proprietário:</strong>
-                <div className="text-gray-900">{vehicle.proprietario}</div>
-              </div>
+          <TabsContent value="fotos" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {vehicle.photo_1 && (
+                <div className="space-y-2">
+                  <strong className="text-gray-600 text-sm">Foto 1:</strong>
+                  <img
+                    src={vehicle.photo_1}
+                    alt="Foto 1 do veículo"
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+              {vehicle.photo_2 && (
+                <div className="space-y-2">
+                  <strong className="text-gray-600 text-sm">Foto 2:</strong>
+                  <img
+                    src={vehicle.photo_2}
+                    alt="Foto 2 do veículo"
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+              {vehicle.photo_3 && (
+                <div className="space-y-2">
+                  <strong className="text-gray-600 text-sm">Foto 3:</strong>
+                  <img
+                    src={vehicle.photo_3}
+                    alt="Foto 3 do veículo"
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+              {vehicle.photo_4 && (
+                <div className="space-y-2">
+                  <strong className="text-gray-600 text-sm">Foto 4:</strong>
+                  <img
+                    src={vehicle.photo_4}
+                    alt="Foto 4 do veículo"
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+              {vehicle.photo_5 && (
+                <div className="space-y-2">
+                  <strong className="text-gray-600 text-sm">Foto 5:</strong>
+                  <img
+                    src={vehicle.photo_5}
+                    alt="Foto 5 do veículo"
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
             </div>
+            {!vehicle.photo_1 && !vehicle.photo_2 && !vehicle.photo_3 && !vehicle.photo_4 && !vehicle.photo_5 && (
+              <div className="text-center text-gray-500 py-8">
+                Nenhuma foto cadastrada para este veículo.
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="manutencao" className="space-y-6 mt-6">
@@ -218,15 +270,10 @@ export function VehicleDetailDialog({
               <div>
                 <strong className="text-gray-600 text-sm">Próxima Manutenção:</strong>
                 <div className="text-gray-900">
-                  {format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
+                  {vehicle.proximaManutencao && format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
                     locale: ptBR,
                   })}
-                  {vehicle.status === 'manutencao' && (
-                    <Badge variant="destructive" className="ml-2">
-                      Em andamento
-                    </Badge>
-                  )}
-                  {vehicle.status !== 'manutencao' && isMaintenanceDue(vehicle.proximaManutencao) && (
+                  {vehicle.proximaManutencao && isMaintenanceDue(vehicle.proximaManutencao) && (
                     <Badge variant="outline" className="ml-2 text-orange-600 border-orange-600">
                       Próxima
                     </Badge>

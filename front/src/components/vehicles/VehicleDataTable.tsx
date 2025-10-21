@@ -37,8 +37,6 @@ export function VehicleDataTable({
     switch (status) {
       case "ativo":
         return "Ativo";
-      case "manutencao":
-        return "Manutenção";
       case "inativo":
         return "Inativo";
       default:
@@ -87,10 +85,10 @@ export function VehicleDataTable({
         header: "Próxima Manutenção",
         cell: ({ row }: any) => {
           const vehicle = row.original as Vehicle;
+          if (!vehicle.proximaManutencao) return '-';
           const formattedDate = format(new Date(vehicle.proximaManutencao), "dd/MM/yyyy", {
             locale: ptBR,
           });
-          if (vehicle.status === 'manutencao') return `${formattedDate} (Em andamento)`;
           if (isMaintenanceDue(vehicle.proximaManutencao)) return `${formattedDate} (Próxima)`;
           return formattedDate;
         },
@@ -104,7 +102,6 @@ export function VehicleDataTable({
             { value: "Todos", label: "Todos" },
             { value: "Ativo", label: "Ativo" },
             { value: "Inativo", label: "Inativo" },
-            { value: "Manutenção", label: "Manutenção" },
           ],
           filterValue: statusFilter,
           onFilterChange: setStatusFilter,

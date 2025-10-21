@@ -18,6 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useConductors } from "@/hooks/useConductors";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { MultiPhotoUpload } from "@/components/ui/multi-photo-upload";
 
 interface VehicleFormProps {
   open: boolean;
@@ -34,6 +37,8 @@ export default function VehicleForm({
   onSubmit,
   isSubmitting = false,
 }: VehicleFormProps) {
+  const { conductors, fetchConductors, isLoading: loadingConductors, error: conductorsError } = useConductors();
+
   const [formData, setFormData] = useState<any>({
     placa: "",
     marca: "",
@@ -45,14 +50,18 @@ export default function VehicleForm({
     categoria: "",
     combustivel: "",
     capacidade: "",
-    proprietario: "",
     status: "ativo",
+    conductors: [],
   });
+
+  const [photos, setPhotos] = useState<(File | null)[]>([null, null, null, null, null]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
+      fetchConductors({ pageSize: 1000 });
+
       if (initialData) {
         setFormData({
           placa: initialData.placa || "",
@@ -65,8 +74,8 @@ export default function VehicleForm({
           categoria: initialData.categoria || "",
           combustivel: initialData.combustivel || "",
           capacidade: initialData.capacidade || "",
-          proprietario: initialData.proprietario || "",
           status: initialData.status || "ativo",
+          conductors: initialData.conductors?.map((c: any) => c.id.toString()) || [],
         });
       } else {
         setFormData({
@@ -80,13 +89,19 @@ export default function VehicleForm({
           categoria: "",
           combustivel: "",
           capacidade: "",
-          proprietario: "",
           status: "ativo",
+          conductors: [],
         });
       }
+      setPhotos([null, null, null, null, null]);
       setErrors({});
     }
   }, [open, initialData]);
+
+  // Debug: log conductors when they change
+  useEffect(() => {
+    console.log('Condutores carregados:', conductors);
+  }, [conductors]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -114,6 +129,10 @@ export default function VehicleForm({
     if (errors[field]) {
       setErrors({ ...errors, [field]: "" });
     }
+  };
+
+  const handleConductorsChange = (values: string[]) => {
+    setFormData({ ...formData, conductors: values });
   };
 
   const validateForm = () => {
@@ -159,10 +178,6 @@ export default function VehicleForm({
       newErrors.capacidade = "Capacidade é obrigatória";
     }
 
-    if (!formData.proprietario.trim()) {
-      newErrors.proprietario = "Proprietário é obrigatório";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -174,7 +189,16 @@ export default function VehicleForm({
       return;
     }
 
-    onSubmit(formData);
+    const submitData = {
+      ...formData,
+      photo_1: photos[0],
+      photo_2: photos[1],
+      photo_3: photos[2],
+      photo_4: photos[3],
+      photo_5: photos[4],
+    };
+
+    onSubmit(submitData);
   };
 
   return (
@@ -312,7 +336,6 @@ export default function VehicleForm({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="manutencao">Em Manutenção</SelectItem>
                       <SelectItem value="inativo">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
@@ -349,20 +372,53 @@ export default function VehicleForm({
               </div>
             </div>
 
-            {/* Proprietário */}
+            {/* Condutores */}
             <div className="space-y-4">
-              <h3 className="text-md font-semibold text-gray-700 border-b pb-2">Proprietário</h3>
+              <h3 className="text-md font-semibold text-gray-700 border-b pb-2">Condutores Autorizados</h3>
 
               <div className="grid gap-2">
-                <Label htmlFor="proprietario">Proprietário *</Label>
-                <Input
-                  id="proprietario"
-                  value={formData.proprietario}
-                  onChange={handleChange}
-                  placeholder="Empresa XYZ Ltda"
-                />
-                {errors.proprietario && <span className="text-sm text-red-500">{errors.proprietario}</span>}
+                <Label>Condutores</Label>
+                {loadingConductors ? (
+                  <div className="text-sm text-gray-500 p-2 border rounded flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    Carregando condutores...
+                  </div>
+                ) : conductorsError ? (
+                  <div className="text-sm text-red-500 p-2 border border-red-200 rounded bg-red-50">
+                    Erro ao carregar condutores: {conductorsError}
+                  </div>
+                ) : conductors.length === 0 ? (
+                  <div className="text-sm text-gray-500 p-2 border rounded">
+                    Nenhum condutor cadastrado
+                  </div>
+                ) : (
+                  <MultiSelect
+                    options={conductors.map((c) => ({
+                      label: `${c.name} - ${c.cpf}`,
+                      value: c.id.toString(),
+                    }))}
+                    selected={formData.conductors}
+                    onChange={handleConductorsChange}
+                    placeholder="Selecione os condutores autorizados"
+                  />
+                )}
+                {!loadingConductors && !conductorsError && (
+                  <p className="text-xs text-gray-500">
+                    {conductors.length} condutor(es) disponível(is)
+                  </p>
+                )}
               </div>
+            </div>
+
+            {/* Fotos */}
+            <div className="space-y-4">
+              <h3 className="text-md font-semibold text-gray-700 border-b pb-2">Fotos do Veículo</h3>
+              <MultiPhotoUpload
+                photos={photos}
+                onChange={setPhotos}
+                maxPhotos={5}
+                label=""
+              />
             </div>
           </div>
 
