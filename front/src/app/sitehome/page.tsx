@@ -36,6 +36,7 @@ import {
   ChevronDown,
   ChevronUp,
   Upload,
+  Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -226,6 +227,7 @@ export default function SiteHomePage() {
   const [isDriverDialogOpen, setIsDriverDialogOpen] = useState(false);
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
+  const [isCheckComplaintDialogOpen, setIsCheckComplaintDialogOpen] = useState(false);
   const [isVehicleSearchDialogOpen, setIsVehicleSearchDialogOpen] = useState(false);
   const [plateOptions, setPlateOptions] = useState<Array<{plate: string, label: string}>>([]);
   const [isLoadingPlates, setIsLoadingPlates] = useState(false);
@@ -236,6 +238,12 @@ export default function SiteHomePage() {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [checkProtocol, setCheckProtocol] = useState('');
+  const [complaintData, setComplaintData] = useState<any>(null);
+  const [isCheckingComplaint, setIsCheckingComplaint] = useState(false);
+  const [checkComplaintError, setCheckComplaintError] = useState('');
 
   // Complaint form
   const complaintForm = useForm<ComplaintFormData>({
@@ -517,31 +525,79 @@ export default function SiteHomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle photo upload
+  const handlePhotoFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const imageFiles = fileArray.filter(file => file.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error('Por favor, selecione apenas arquivos de imagem');
+      return;
+    }
+
+    const totalPhotos = selectedPhotos.length + imageFiles.length;
+    if (totalPhotos > 5) {
+      toast.error('Máximo de 5 fotos permitidas');
+      return;
+    }
+
+    setSelectedPhotos(prev => [...prev, ...imageFiles.slice(0, 5 - prev.length)]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files) {
+      handlePhotoFiles(e.dataTransfer.files);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Complaint form submission
   const onComplaintSubmit = async (data: ComplaintFormData) => {
     try {
+      // Criar FormData para enviar com fotos
+      const formData = new FormData();
+      formData.append('vehicle_plate', data.vehiclePlate.toUpperCase());
+      formData.append('complaint_type', data.complaintType);
+      formData.append('description', data.description);
+
+      if (data.occurrenceDate) formData.append('occurrence_date', data.occurrenceDate);
+      if (data.occurrenceLocation) formData.append('occurrence_location', data.occurrenceLocation);
+      if (data.complainantName) formData.append('complainant_name', data.complainantName);
+      if (data.complainantEmail) formData.append('complainant_email', data.complainantEmail);
+      if (data.complainantPhone) formData.append('complainant_phone', data.complainantPhone);
+
+      // Adicionar fotos
+      selectedPhotos.forEach((photo) => {
+        formData.append('photos', photo);
+      });
+
       const response = await fetch(buildApiUrl('api/complaints/'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          vehicle_plate: data.vehiclePlate.toUpperCase(),
-          complaint_type: data.complaintType,
-          description: data.description,
-          occurrence_date: data.occurrenceDate || null,
-          occurrence_location: data.occurrenceLocation || null,
-          complainant_name: data.complainantName || null,
-          complainant_email: data.complainantEmail || null,
-          complainant_phone: data.complainantPhone || null,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
 
         if (response.status === 400) {
-          const errorMessage = errorData.detail ||
+          const errorMessage = errorData.error ||
+                             errorData.detail ||
                              errorData.vehicle_plate?.[0] ||
                              errorData.description?.[0] ||
                              'Erro na validação dos dados. Verifique as informações.';
@@ -556,6 +612,7 @@ export default function SiteHomePage() {
       });
 
       complaintForm.reset();
+      setSelectedPhotos([]);
       setIsComplaintDialogOpen(false);
     } catch (error) {
       console.error('Error submitting complaint:', error);
@@ -563,6 +620,41 @@ export default function SiteHomePage() {
       toast.error('Erro ao enviar denúncia', {
         description: error instanceof Error ? error.message : 'Por favor, tente novamente mais tarde.',
       });
+    }
+  };
+
+  const handleCheckComplaint = async () => {
+    if (!checkProtocol.trim()) {
+      setCheckComplaintError('Por favor, informe o número do protocolo.');
+      return;
+    }
+
+    setIsCheckingComplaint(true);
+    setCheckComplaintError('');
+    setComplaintData(null);
+
+    try {
+      const response = await fetch(
+        buildApiUrl(`api/complaints/check-by-protocol/?protocol=${encodeURIComponent(checkProtocol)}`),
+        {
+          method: 'GET',
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao consultar denúncia');
+      }
+
+      const data = await response.json();
+      setComplaintData(data);
+      setCheckComplaintError('');
+    } catch (error) {
+      console.error('Error checking complaint:', error);
+      setCheckComplaintError(error instanceof Error ? error.message : 'Erro ao consultar denúncia');
+      setComplaintData(null);
+    } finally {
+      setIsCheckingComplaint(false);
     }
   };
 
@@ -1158,13 +1250,21 @@ export default function SiteHomePage() {
               </div>
             </div>
 
-            <div className="text-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={() => setIsComplaintDialogOpen(true)}
                 className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:shadow-xl hover:scale-105"
               >
                 <AlertTriangle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                 Fazer Denúncia
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </button>
+              <button
+                onClick={() => setIsCheckComplaintDialogOpen(true)}
+                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-4 rounded-full font-semibold transition-all duration-300 hover:shadow-xl hover:scale-105"
+              >
+                <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                Consultar Denúncia
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
             </div>
@@ -1289,6 +1389,459 @@ export default function SiteHomePage() {
               showPhotoPreview={true}
               submitButtonText="Enviar Solicitação"
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Complaint Dialog */}
+      <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              Fazer Denúncia
+            </DialogTitle>
+            <DialogDescription>
+              Preencha os dados abaixo para registrar sua denúncia. Todas as denúncias são analisadas pela equipe responsável.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={complaintForm.handleSubmit(onComplaintSubmit)} className="space-y-6">
+            {/* Placa do Veículo */}
+            <div className="space-y-2">
+              <Label htmlFor="vehiclePlate" className="flex items-center gap-2 text-sm font-medium">
+                <CreditCard className="w-4 h-4" />
+                Placa do Veículo *
+              </Label>
+              <Input
+                id="vehiclePlate"
+                placeholder="ABC1D23"
+                maxLength={10}
+                className="uppercase"
+                {...complaintForm.register('vehiclePlate')}
+              />
+              {complaintForm.formState.errors.vehiclePlate && (
+                <p className="text-sm text-red-600">
+                  {complaintForm.formState.errors.vehiclePlate.message}
+                </p>
+              )}
+            </div>
+
+            {/* Tipo de Denúncia */}
+            <div className="space-y-2">
+              <Label htmlFor="complaintType" className="flex items-center gap-2 text-sm font-medium">
+                <AlertTriangle className="w-4 h-4" />
+                Tipo de Denúncia *
+              </Label>
+              <Select
+                value={complaintForm.watch('complaintType')}
+                onValueChange={(value) => complaintForm.setValue('complaintType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de denúncia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="excesso_velocidade">Excesso de Velocidade</SelectItem>
+                  <SelectItem value="direcao_perigosa">Direção Perigosa</SelectItem>
+                  <SelectItem value="uso_celular">Uso de Celular ao Dirigir</SelectItem>
+                  <SelectItem value="veiculo_mal_conservado">Veículo Mal Conservado</SelectItem>
+                  <SelectItem value="desrespeito_sinalizacao">Desrespeito à Sinalização</SelectItem>
+                  <SelectItem value="embriaguez">Suspeita de Embriaguez</SelectItem>
+                  <SelectItem value="estacionamento_irregular">Estacionamento Irregular</SelectItem>
+                  <SelectItem value="poluicao_sonora">Poluição Sonora</SelectItem>
+                  <SelectItem value="poluicao_ambiental">Poluição Ambiental</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+              {complaintForm.formState.errors.complaintType && (
+                <p className="text-sm text-red-600">
+                  {complaintForm.formState.errors.complaintType.message}
+                </p>
+              )}
+            </div>
+
+            {/* Descrição */}
+            <div className="space-y-2">
+              <Label htmlFor="description" className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="w-4 h-4" />
+                Descrição da Denúncia *
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Descreva detalhadamente o que aconteceu (mínimo 20 caracteres)"
+                rows={5}
+                maxLength={1000}
+                {...complaintForm.register('description')}
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>
+                  {complaintForm.formState.errors.description?.message}
+                </span>
+                <span>
+                  {complaintForm.watch('description')?.length || 0}/1000
+                </span>
+              </div>
+            </div>
+
+            {/* Data e Local da Ocorrência */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="occurrenceDate" className="flex items-center gap-2 text-sm font-medium">
+                  <Calendar className="w-4 h-4" />
+                  Data da Ocorrência
+                </Label>
+                <Input
+                  id="occurrenceDate"
+                  type="date"
+                  max={new Date().toISOString().split('T')[0]}
+                  {...complaintForm.register('occurrenceDate')}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="occurrenceLocation" className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="w-4 h-4" />
+                  Local da Ocorrência
+                </Label>
+                <Input
+                  id="occurrenceLocation"
+                  placeholder="Endereço ou local"
+                  {...complaintForm.register('occurrenceLocation')}
+                />
+              </div>
+            </div>
+
+            {/* Informações do Denunciante (Opcionais) */}
+            <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-600" />
+                <h4 className="text-sm font-semibold text-blue-900">
+                  Suas Informações (Opcional)
+                </h4>
+              </div>
+              <p className="text-xs text-blue-700">
+                Se preferir, você pode se identificar. Caso contrário, a denúncia será anônima.
+              </p>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="complainantName" className="text-sm">Nome Completo</Label>
+                  <Input
+                    id="complainantName"
+                    placeholder="Seu nome (opcional)"
+                    {...complaintForm.register('complainantName')}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="complainantEmail" className="text-sm">Email</Label>
+                    <Input
+                      id="complainantEmail"
+                      type="email"
+                      placeholder="seu@email.com (opcional)"
+                      {...complaintForm.register('complainantEmail')}
+                    />
+                    {complaintForm.formState.errors.complainantEmail && (
+                      <p className="text-sm text-red-600">
+                        {complaintForm.formState.errors.complainantEmail.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="complainantPhone" className="text-sm">Telefone</Label>
+                    <Input
+                      id="complainantPhone"
+                      placeholder="(00) 00000-0000 (opcional)"
+                      {...complaintForm.register('complainantPhone')}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fotos com Drag and Drop */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Camera className="w-4 h-4" />
+                Fotos (opcional - máximo 5)
+              </Label>
+
+              {/* Upload Area */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
+                  isDragging
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-300 hover:border-orange-400'
+                } ${selectedPhotos.length >= 5 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => e.target.files && handlePhotoFiles(e.target.files)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={selectedPhotos.length >= 5}
+                />
+                <div className="flex flex-col items-center justify-center gap-2 text-center">
+                  <Upload className="w-8 h-8 text-orange-500" />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Arraste fotos aqui ou clique para selecionar
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Máximo de 5 fotos • PNG, JPG até 10MB cada
+                    </p>
+                  </div>
+                  {selectedPhotos.length > 0 && (
+                    <p className="text-xs font-medium text-orange-600 mt-1">
+                      {selectedPhotos.length} de 5 foto{selectedPhotos.length !== 1 ? 's' : ''} selecionada{selectedPhotos.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Photos Preview */}
+              {selectedPhotos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {selectedPhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-muted rounded-lg overflow-hidden border-2 border-transparent group-hover:border-orange-400 transition-all">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        title="Remover foto"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="truncate">{photo.name}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Warning */}
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-xs text-yellow-900">
+                <strong>Atenção:</strong> Denúncias falsas podem ser enquadradas como crime de denunciação caluniosa (Art. 339 do Código Penal).
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsComplaintDialogOpen(false);
+                  complaintForm.reset();
+                  setSelectedPhotos([]);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+                disabled={complaintForm.formState.isSubmitting}
+              >
+                {complaintForm.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Enviar Denúncia
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Check Complaint Dialog */}
+      <Dialog open={isCheckComplaintDialogOpen} onOpenChange={(open) => {
+        setIsCheckComplaintDialogOpen(open);
+        if (!open) {
+          setCheckProtocol('');
+          setComplaintData(null);
+          setCheckComplaintError('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <FileText className="w-6 h-6 text-blue-600" />
+              Consultar Denúncia
+            </DialogTitle>
+            <DialogDescription>
+              Digite o número do protocolo para consultar o status da sua denúncia.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Protocol Input */}
+            <div className="space-y-2">
+              <Label htmlFor="checkProtocol" className="flex items-center gap-2 text-sm font-medium">
+                <Hash className="w-4 h-4" />
+                Número do Protocolo
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="checkProtocol"
+                  placeholder="Ex: 20250001"
+                  value={checkProtocol}
+                  onChange={(e) => setCheckProtocol(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCheckComplaint();
+                    }
+                  }}
+                  className="uppercase"
+                />
+                <Button
+                  onClick={handleCheckComplaint}
+                  disabled={isCheckingComplaint}
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                >
+                  {isCheckingComplaint ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Consultar'
+                  )}
+                </Button>
+              </div>
+              {checkComplaintError && (
+                <p className="text-sm text-red-600">{checkComplaintError}</p>
+              )}
+            </div>
+
+            {/* Complaint Data Display */}
+            {complaintData && (
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-lg text-gray-900">Informações da Denúncia</h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Protocolo</Label>
+                    <p className="text-sm font-mono font-bold">{complaintData.protocol}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Status</Label>
+                    <p className="text-sm font-semibold">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        complaintData.status === 'proposto' ? 'bg-yellow-100 text-yellow-800' :
+                        complaintData.status === 'em_analise' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {complaintData.status_display}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Tipo de Denúncia</Label>
+                    <p className="text-sm">{complaintData.complaint_type_display}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Placa do Veículo</Label>
+                    <p className="text-sm font-mono font-bold">{complaintData.vehicle_plate}</p>
+                  </div>
+
+                  {complaintData.occurrence_date && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Data da Ocorrência</Label>
+                      <p className="text-sm">
+                        {new Date(complaintData.occurrence_date).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                  )}
+
+                  {complaintData.occurrence_location && (
+                    <div className="space-y-1">
+                      <Label className="text-xs text-gray-500">Local da Ocorrência</Label>
+                      <p className="text-sm">{complaintData.occurrence_location}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Data de Registro</Label>
+                    <p className="text-sm">
+                      {new Date(complaintData.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Última Atualização</Label>
+                    <p className="text-sm">
+                      {new Date(complaintData.updated_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+
+                {complaintData.vehicle && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <Label className="text-xs text-gray-500 mb-2 block">Informações do Veículo</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500 text-xs">Marca:</span>
+                        <p className="font-medium">{complaintData.vehicle.brand}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-xs">Modelo:</span>
+                        <p className="font-medium">{complaintData.vehicle.model}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-xs">Ano:</span>
+                        <p className="font-medium">{complaintData.vehicle.year}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 text-xs">Cor:</span>
+                        <p className="font-medium">{complaintData.vehicle.color}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="p-3 bg-blue-50 rounded-md">
+                    <p className="text-xs text-blue-900">
+                      <strong>Status:</strong> {
+                        complaintData.status === 'proposto' ? 'Sua denúncia foi recebida e aguarda análise.' :
+                        complaintData.status === 'em_analise' ? 'Sua denúncia está sendo analisada pela equipe responsável.' :
+                        'Sua denúncia foi analisada e concluída.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!complaintData && !checkComplaintError && !isCheckingComplaint && (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">Digite o número do protocolo para consultar</p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

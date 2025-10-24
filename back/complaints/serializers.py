@@ -1,7 +1,16 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Complaint
+from .models import Complaint, ComplaintPhoto
 from vehicles.models import Vehicle
+
+
+class ComplaintPhotoSerializer(serializers.ModelSerializer):
+    """Serializer para fotos das denúncias."""
+
+    class Meta:
+        model = ComplaintPhoto
+        fields = ['id', 'photo', 'uploaded_at', 'order']
+        read_only_fields = ['id', 'uploaded_at']
 
 
 class ComplaintCreateSerializer(serializers.ModelSerializer):
@@ -122,6 +131,7 @@ class ComplaintListSerializer(serializers.ModelSerializer):
     """
 
     vehicle = VehicleMinimalSerializer(read_only=True)
+    photos = ComplaintPhotoSerializer(many=True, read_only=True)
     reviewed_by_username = serializers.CharField(
         source='reviewed_by.username',
         read_only=True,
@@ -140,15 +150,12 @@ class ComplaintListSerializer(serializers.ModelSerializer):
         source='get_status_display',
         read_only=True
     )
-    priority_display = serializers.CharField(
-        source='get_priority_display',
-        read_only=True
-    )
 
     class Meta:
         model = Complaint
         fields = [
             'id',
+            'protocol',
             'vehicle',
             'vehicle_plate',
             'complaint_type',
@@ -162,8 +169,6 @@ class ComplaintListSerializer(serializers.ModelSerializer):
             'is_anonymous',
             'status',
             'status_display',
-            'priority',
-            'priority_display',
             'created_at',
             'updated_at',
             'reviewed_by',
@@ -172,13 +177,16 @@ class ComplaintListSerializer(serializers.ModelSerializer):
             'reviewed_at',
             'admin_notes',
             'resolution_notes',
+            'photos',
         ]
         read_only_fields = [
             'id',
+            'protocol',
             'vehicle',
             'is_anonymous',
             'created_at',
             'updated_at',
+            'photos',
         ]
 
 
@@ -191,6 +199,7 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
     """
 
     vehicle = VehicleMinimalSerializer(read_only=True)
+    photos = ComplaintPhotoSerializer(many=True, read_only=True)
     reviewed_by_info = serializers.SerializerMethodField()
     complaint_type_display = serializers.CharField(
         source='get_complaint_type_display',
@@ -200,14 +209,34 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
         source='get_status_display',
         read_only=True
     )
-    priority_display = serializers.CharField(
-        source='get_priority_display',
-        read_only=True
-    )
 
     class Meta:
         model = Complaint
-        fields = '__all__'
+        fields = [
+            'id',
+            'protocol',
+            'vehicle',
+            'vehicle_plate',
+            'complaint_type',
+            'complaint_type_display',
+            'description',
+            'occurrence_date',
+            'occurrence_location',
+            'complainant_name',
+            'complainant_email',
+            'complainant_phone',
+            'is_anonymous',
+            'status',
+            'status_display',
+            'created_at',
+            'updated_at',
+            'reviewed_by',
+            'reviewed_by_info',
+            'reviewed_at',
+            'admin_notes',
+            'resolution_notes',
+            'photos',
+        ]
 
     def get_reviewed_by_info(self, obj):
         """
@@ -234,14 +263,13 @@ class ComplaintUpdateSerializer(serializers.ModelSerializer):
     Serializer para atualizar status e informações administrativas da denúncia.
 
     Usado por administradores para gerenciar denúncias, incluindo alteração
-    de status, prioridade, e adição de notas internas e de resolução.
+    de status e adição de notas internas e de resolução.
     """
 
     class Meta:
         model = Complaint
         fields = [
             'status',
-            'priority',
             'admin_notes',
             'resolution_notes',
         ]
@@ -262,26 +290,6 @@ class ComplaintUpdateSerializer(serializers.ModelSerializer):
         valid_statuses = dict(Complaint.STATUS_CHOICES).keys()
         if value not in valid_statuses:
             raise serializers.ValidationError(f'Status inválido. Valores permitidos: {", ".join(valid_statuses)}')
-        return value
-
-    def validate_priority(self, value):
-        """
-        Validar prioridade.
-
-        Args:
-            value: Nova prioridade
-
-        Returns:
-            str: Prioridade validada
-
-        Raises:
-            ValidationError: Se a prioridade for inválida
-        """
-        valid_priorities = dict(Complaint.PRIORITY_CHOICES).keys()
-        if value not in valid_priorities:
-            raise serializers.ValidationError(
-                f'Prioridade inválida. Valores permitidos: {", ".join(valid_priorities)}'
-            )
         return value
 
     def update(self, instance, validated_data):
@@ -326,24 +334,4 @@ class ComplaintStatusUpdateSerializer(serializers.Serializer):
         valid_statuses = dict(Complaint.STATUS_CHOICES).keys()
         if value not in valid_statuses:
             raise serializers.ValidationError('Status inválido.')
-        return value
-
-
-class ComplaintPriorityUpdateSerializer(serializers.Serializer):
-    """
-    Serializer para atualização rápida apenas de prioridade.
-
-    Usado para endpoints específicos de mudança de prioridade.
-    """
-
-    priority = serializers.ChoiceField(
-        choices=Complaint.PRIORITY_CHOICES,
-        help_text='Nova prioridade da denúncia'
-    )
-
-    def validate_priority(self, value):
-        """Validar que a prioridade é válida"""
-        valid_priorities = dict(Complaint.PRIORITY_CHOICES).keys()
-        if value not in valid_priorities:
-            raise serializers.ValidationError('Prioridade inválida.')
         return value

@@ -6,14 +6,14 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Complaint
+from .models import Complaint, ComplaintPhoto
 from .serializers import (
     ComplaintCreateSerializer,
     ComplaintListSerializer,
     ComplaintDetailSerializer,
     ComplaintUpdateSerializer,
     ComplaintStatusUpdateSerializer,
-    ComplaintPriorityUpdateSerializer,
+    ComplaintPhotoSerializer,
 )
 from vehicles.models import Vehicle
 
@@ -34,14 +34,13 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     - PATCH /api/complaints/{id}/ - Atualizar denúncia (autenticado)
     - DELETE /api/complaints/{id}/ - Deletar denúncia (autenticado)
     - POST /api/complaints/{id}/change_status/ - Alterar status (autenticado)
-    - POST /api/complaints/{id}/change_priority/ - Alterar prioridade (autenticado)
     """
 
     queryset = Complaint.objects.select_related('vehicle', 'reviewed_by').all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'priority', 'complaint_type', 'is_anonymous']
+    filterset_fields = ['status', 'complaint_type', 'is_anonymous']
     search_fields = ['vehicle_plate', 'description', 'complainant_name', 'occurrence_location']
-    ordering_fields = ['created_at', 'updated_at', 'priority', 'status']
+    ordering_fields = ['created_at', 'updated_at', 'status']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
@@ -119,19 +118,42 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         Endpoint público - não requer autenticação.
         Automaticamente tenta associar veículo pela placa.
+        Suporta upload de até 5 fotos.
 
         Returns:
             Response: Dados da denúncia criada
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        complaint = serializer.save()
+
+        # Processar fotos se houver (máximo 5)
+        photos = request.FILES.getlist('photos')
+        if photos:
+            if len(photos) > 5:
+                return Response(
+                    {'error': 'Máximo de 5 fotos permitidas por denúncia.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Salvar cada foto
+            for index, photo in enumerate(photos):
+                ComplaintPhoto.objects.create(
+                    complaint=complaint,
+                    photo=photo,
+                    order=index
+                )
+
         headers = self.get_success_headers(serializer.data)
+
+        # Recarregar complaint com fotos
+        complaint.refresh_from_db()
+        detail_serializer = ComplaintDetailSerializer(complaint)
 
         return Response(
             {
                 'message': 'Denúncia registrada com sucesso. Em breve nossa equipe irá analisá-la.',
-                'complaint': serializer.data
+                'complaint': detail_serializer.data
             },
             status=status.HTTP_201_CREATED,
             headers=headers
@@ -168,34 +190,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         detail_serializer = ComplaintDetailSerializer(complaint)
         return Response(detail_serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def change_priority(self, request, pk=None):
-        """
-        Altera a prioridade de uma denúncia.
-
-        Endpoint para mudança rápida de prioridade.
-
-        Args:
-            request: Request com nova prioridade
-            pk: ID da denúncia
-
-        Returns:
-            Response: Dados atualizados da denúncia
-        """
-        complaint = self.get_object()
-        serializer = ComplaintPriorityUpdateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        new_priority = serializer.validated_data['priority']
-
-        # Atualizar prioridade
-        complaint.priority = new_priority
-        complaint.save()
-
-        # Retornar denúncia atualizada
-        detail_serializer = ComplaintDetailSerializer(complaint)
-        return Response(detail_serializer.data)
-
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def statistics(self, request):
         """
@@ -203,7 +197,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         Fornece um resumo quantitativo das denúncias agrupadas por:
         - Status
-        - Prioridade
         - Tipo de denúncia
 
         Returns:
@@ -217,13 +210,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
             Complaint.objects.values('status')
             .annotate(count=Count('id'))
             .values_list('status', 'count')
-        )
-
-        # Denúncias por prioridade
-        by_priority = dict(
-            Complaint.objects.values('priority')
-            .annotate(count=Count('id'))
-            .values_list('priority', 'count')
         )
 
         # Denúncias por tipo
@@ -245,7 +231,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         return Response({
             'total': total,
             'by_status': by_status,
-            'by_priority': by_priority,
             'by_type': by_type,
             'anonymous_count': anonymous_count,
             'identified_count': identified_count,
@@ -344,3 +329,63 @@ def complaint_types(request):
     ]
 
     return Response(types)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def check_complaint_by_protocol(request):
+    """
+    Consulta uma denúncia pelo número de protocolo.
+
+    Endpoint público para permitir que denunciantes consultem o status
+    de suas denúncias usando o protocolo fornecido.
+
+    Query Params:
+        protocol: Número do protocolo (formato: YYYYNNNN)
+
+    Returns:
+        Response: Informações básicas da denúncia (sem dados sensíveis)
+    """
+    protocol = request.query_params.get('protocol', '').strip()
+
+    if not protocol:
+        return Response(
+            {'error': 'O número do protocolo é obrigatório.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Normalizar protocolo (remover espaços, uppercase)
+    protocol = protocol.upper().replace(' ', '').replace('-', '')
+
+    try:
+        complaint = Complaint.objects.select_related('vehicle').get(protocol=protocol)
+    except Complaint.DoesNotExist:
+        return Response(
+            {'error': 'Denúncia não encontrada. Verifique o número do protocolo.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Retornar apenas informações básicas (sem dados sensíveis do denunciante)
+    data = {
+        'protocol': complaint.protocol,
+        'status': complaint.status,
+        'status_display': complaint.get_status_display(),
+        'complaint_type': complaint.complaint_type,
+        'complaint_type_display': complaint.get_complaint_type_display(),
+        'vehicle_plate': complaint.vehicle_plate,
+        'occurrence_date': complaint.occurrence_date,
+        'occurrence_location': complaint.occurrence_location,
+        'created_at': complaint.created_at,
+        'updated_at': complaint.updated_at,
+    }
+
+    # Adicionar informações do veículo se disponível
+    if complaint.vehicle:
+        data['vehicle'] = {
+            'brand': complaint.vehicle.brand,
+            'model': complaint.vehicle.model,
+            'year': complaint.vehicle.year,
+            'color': complaint.vehicle.color,
+        }
+
+    return Response(data)

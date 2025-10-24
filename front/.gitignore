@@ -1,0 +1,42 @@
+# Build output
+.next/
+out/
+dist/
+.turbo/
+.swc/
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Testing
+coverage/
+
+# TypeScript artifacts
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files
+.env*
+!.env.example
+!.env.*.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+debug.log
+
+# Deployment
+.vercel
+
+# Tooling
+.mcp.json
+components.json
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini

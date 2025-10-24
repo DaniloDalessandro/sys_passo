@@ -13,4 +13,5 @@ urlpatterns = [
     # Endpoints auxiliares
     path('vehicles/autocomplete/', views.vehicle_autocomplete, name='vehicle-autocomplete'),
     path('types/', views.complaint_types, name='complaint-types'),
+    path('check-by-protocol/', views.check_complaint_by_protocol, name='check-by-protocol'),
 ]

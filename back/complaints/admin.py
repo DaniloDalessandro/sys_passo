@@ -19,7 +19,6 @@ class ComplaintAdmin(admin.ModelAdmin):
         'vehicle_plate_link',
         'complaint_type_badge',
         'status_badge',
-        'priority_badge',
         'is_anonymous',
         'created_at_formatted',
         'reviewed_by',
@@ -27,7 +26,6 @@ class ComplaintAdmin(admin.ModelAdmin):
 
     list_filter = [
         'status',
-        'priority',
         'complaint_type',
         'is_anonymous',
         'created_at',
@@ -73,7 +71,6 @@ class ComplaintAdmin(admin.ModelAdmin):
         ('Gestão', {
             'fields': (
                 'status',
-                'priority',
                 'admin_notes',
                 'resolution_notes',
             ),
@@ -95,12 +92,9 @@ class ComplaintAdmin(admin.ModelAdmin):
     list_per_page = 25
 
     actions = [
-        'mark_as_pending',
+        'mark_as_proposed',
         'mark_as_in_analysis',
-        'mark_as_resolved',
-        'mark_as_archived',
-        'set_priority_high',
-        'set_priority_urgent',
+        'mark_as_concluded',
     ]
 
     def vehicle_plate_link(self, obj):
@@ -168,10 +162,9 @@ class ComplaintAdmin(admin.ModelAdmin):
             str: HTML com badge colorido
         """
         colors = {
-            'pendente': '#ffc107',      # amarelo
+            'proposto': '#ffc107',      # amarelo
             'em_analise': '#17a2b8',    # azul
-            'resolvida': '#28a745',     # verde
-            'arquivada': '#6c757d',     # cinza
+            'concluido': '#28a745',     # verde
         }
         color = colors.get(obj.status, '#6c757d')
         return format_html(
@@ -182,32 +175,6 @@ class ComplaintAdmin(admin.ModelAdmin):
 
     status_badge.short_description = 'Status'
     status_badge.admin_order_field = 'status'
-
-    def priority_badge(self, obj):
-        """
-        Exibe a prioridade como badge colorido.
-
-        Args:
-            obj: Instância do Complaint
-
-        Returns:
-            str: HTML com badge colorido
-        """
-        colors = {
-            'baixa': '#28a745',      # verde
-            'media': '#ffc107',      # amarelo
-            'alta': '#fd7e14',       # laranja
-            'urgente': '#dc3545',    # vermelho
-        }
-        color = colors.get(obj.priority, '#6c757d')
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">{}</span>',
-            color,
-            obj.get_priority_display()
-        )
-
-    priority_badge.short_description = 'Prioridade'
-    priority_badge.admin_order_field = 'priority'
 
     def created_at_formatted(self, obj):
         """
@@ -225,12 +192,12 @@ class ComplaintAdmin(admin.ModelAdmin):
     created_at_formatted.admin_order_field = 'created_at'
 
     # Ações em lote
-    def mark_as_pending(self, request, queryset):
-        """Marca denúncias selecionadas como pendentes"""
-        updated = queryset.update(status='pendente')
-        self.message_user(request, f'{updated} denúncia(s) marcada(s) como pendente.')
+    def mark_as_proposed(self, request, queryset):
+        """Marca denúncias selecionadas como propostas"""
+        updated = queryset.update(status='proposto')
+        self.message_user(request, f'{updated} denúncia(s) marcada(s) como proposto.')
 
-    mark_as_pending.short_description = 'Marcar como Pendente'
+    mark_as_proposed.short_description = 'Marcar como Proposto'
 
     def mark_as_in_analysis(self, request, queryset):
         """Marca denúncias selecionadas como em análise"""
@@ -244,38 +211,17 @@ class ComplaintAdmin(admin.ModelAdmin):
 
     mark_as_in_analysis.short_description = 'Marcar como Em Análise'
 
-    def mark_as_resolved(self, request, queryset):
-        """Marca denúncias selecionadas como resolvidas"""
+    def mark_as_concluded(self, request, queryset):
+        """Marca denúncias selecionadas como concluídas"""
         from django.utils import timezone
         updated = queryset.update(
-            status='resolvida',
+            status='concluido',
             reviewed_by=request.user,
             reviewed_at=timezone.now()
         )
-        self.message_user(request, f'{updated} denúncia(s) marcada(s) como resolvida.')
+        self.message_user(request, f'{updated} denúncia(s) marcada(s) como concluída.')
 
-    mark_as_resolved.short_description = 'Marcar como Resolvida'
-
-    def mark_as_archived(self, request, queryset):
-        """Marca denúncias selecionadas como arquivadas"""
-        updated = queryset.update(status='arquivada')
-        self.message_user(request, f'{updated} denúncia(s) arquivada(s).')
-
-    mark_as_archived.short_description = 'Arquivar'
-
-    def set_priority_high(self, request, queryset):
-        """Define prioridade alta para denúncias selecionadas"""
-        updated = queryset.update(priority='alta')
-        self.message_user(request, f'{updated} denúncia(s) com prioridade definida como ALTA.')
-
-    set_priority_high.short_description = 'Definir Prioridade: ALTA'
-
-    def set_priority_urgent(self, request, queryset):
-        """Define prioridade urgente para denúncias selecionadas"""
-        updated = queryset.update(priority='urgente')
-        self.message_user(request, f'{updated} denúncia(s) com prioridade definida como URGENTE.')
-
-    set_priority_urgent.short_description = 'Definir Prioridade: URGENTE'
+    mark_as_concluded.short_description = 'Marcar como Concluído'
 
     def save_model(self, request, obj, form, change):
         """

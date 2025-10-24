@@ -13,17 +13,9 @@ class Complaint(models.Model):
     """
 
     STATUS_CHOICES = [
-        ('pendente', 'Pendente'),
+        ('proposto', 'Proposto'),
         ('em_analise', 'Em Análise'),
-        ('resolvida', 'Resolvida'),
-        ('arquivada', 'Arquivada'),
-    ]
-
-    PRIORITY_CHOICES = [
-        ('baixa', 'Baixa'),
-        ('media', 'Média'),
-        ('alta', 'Alta'),
-        ('urgente', 'Urgente'),
+        ('concluido', 'Concluído'),
     ]
 
     TYPE_CHOICES = [
@@ -40,6 +32,16 @@ class Complaint(models.Model):
     ]
 
     # Dados da denúncia
+    protocol = models.CharField(
+        max_length=8,
+        unique=True,
+        editable=False,
+        null=True,
+        blank=True,
+        verbose_name='Protocolo',
+        help_text='Protocolo gerado automaticamente (formato: YYYYNNNN)',
+        db_index=True
+    )
     vehicle = models.ForeignKey(
         Vehicle,
         on_delete=models.SET_NULL,
@@ -110,17 +112,9 @@ class Complaint(models.Model):
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='pendente',
+        default='proposto',
         verbose_name='Status',
         help_text='Status atual da denúncia',
-        db_index=True
-    )
-    priority = models.CharField(
-        max_length=20,
-        choices=PRIORITY_CHOICES,
-        default='media',
-        verbose_name='Prioridade',
-        help_text='Nível de prioridade da denúncia',
         db_index=True
     )
 
@@ -173,19 +167,56 @@ class Complaint(models.Model):
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['vehicle_plate']),
             models.Index(fields=['complaint_type']),
-            models.Index(fields=['priority', 'status']),
         ]
 
     def __str__(self):
         return f"Denúncia #{self.id} - {self.vehicle_plate} - {self.get_complaint_type_display()}"
 
+    def _generate_protocol(self):
+        """
+        Gera protocolo automaticamente no formato YYYYNNNN.
+
+        Returns:
+            str: Protocolo único no formato ano + 4 dígitos sequenciais
+        """
+        from django.utils import timezone
+        from django.db.models import Max
+
+        current_year = timezone.now().year
+        year_prefix = str(current_year)
+
+        # Buscar o último protocolo do ano atual
+        last_complaint = Complaint.objects.filter(
+            protocol__startswith=year_prefix
+        ).aggregate(Max('protocol'))
+
+        last_protocol = last_complaint['protocol__max']
+
+        if last_protocol:
+            # Extrair o número sequencial do último protocolo
+            last_number = int(last_protocol[4:])  # Pega os 4 últimos dígitos
+            new_number = last_number + 1
+        else:
+            # Primeiro protocolo do ano
+            new_number = 1
+
+        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
+        protocol = f"{year_prefix}{new_number:04d}"
+
+        return protocol
+
     def save(self, *args, **kwargs):
         """
         Override do método save para:
-        1. Tentar associar veículo automaticamente pela placa
-        2. Normalizar placa para uppercase
-        3. Determinar se é denúncia anônima
+        1. Gerar protocolo automaticamente se não existir
+        2. Tentar associar veículo automaticamente pela placa
+        3. Normalizar placa para uppercase
+        4. Determinar se é denúncia anônima
         """
+        # Gerar protocolo se não existir
+        if not self.protocol:
+            self.protocol = self._generate_protocol()
+
         # Tentar associar veículo automaticamente pela placa
         if not self.vehicle and self.vehicle_plate:
             try:
@@ -220,3 +251,42 @@ class Complaint(models.Model):
                 raise ValidationError({
                     'vehicle_plate': 'Placa inválida. Deve conter pelo menos 7 caracteres.'
                 })
+
+
+class ComplaintPhoto(models.Model):
+    """
+    Model para armazenar fotos anexadas às denúncias.
+
+    Cada denúncia pode ter até 5 fotos associadas.
+    """
+
+    complaint = models.ForeignKey(
+        Complaint,
+        on_delete=models.CASCADE,
+        related_name='photos',
+        verbose_name='Denúncia',
+        help_text='Denúncia a qual esta foto pertence'
+    )
+    photo = models.ImageField(
+        upload_to='complaints/photos/%Y/%m/%d/',
+        verbose_name='Foto',
+        help_text='Foto da denúncia (máximo 5 fotos por denúncia)'
+    )
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data do Upload',
+        help_text='Data e hora em que a foto foi enviada'
+    )
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Ordem',
+        help_text='Ordem de exibição da foto'
+    )
+
+    class Meta:
+        ordering = ['order', 'uploaded_at']
+        verbose_name = 'Foto da Denúncia'
+        verbose_name_plural = 'Fotos das Denúncias'
+
+    def __str__(self):
+        return f"Foto #{self.order + 1} - Denúncia #{self.complaint.id}"
