@@ -8,7 +8,7 @@ import { AlertTriangle, User, CreditCard, Car, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Conductor, Vehicle } from "@/hooks/useConductors";
-import { useAuthContext } from "@/context/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function ConductorDetailsPage() {
   const params = useParams();

@@ -1,13 +1,42 @@
-# Workspace
-node_modules/
+# ============================================================================
+# ROOT .gitignore - Sys Passo Project
+# ============================================================================
+# This file covers common patterns for the entire monorepo.
+# Specific ignores for backend (Django) and frontend (Next.js) are in their
+# respective subdirectories.
+# ============================================================================
+
+# ============================================================================
+# WORKSPACE & DEVELOPMENT TOOLS
+# ============================================================================
+
+# Claude Code workspace files
 .claude/
 AGENTS.md
 
-# Python artifacts
+# MCP (Model Context Protocol) configuration
+.mcp.json
+
+# ============================================================================
+# DEPENDENCIES
+# ============================================================================
+
+# Node.js dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Python dependencies
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# ============================================================================
+# BUILD OUTPUTS
+# ============================================================================
+
+# Python build artifacts
 .Python
 /build/
 /develop-eggs/
@@ -27,47 +56,276 @@ __pycache__/
 .installed.cfg
 *.egg
 MANIFEST
-.mypy_cache/
-.pytest_cache/
-.tox/
-.nox/
-.coverage
-coverage/
-htmlcov/
-.pyre/
-.pytype/
-.ruff_cache/
 
-# Virtual environments
+# Next.js build outputs
+.next/
+out/
+.turbo/
+.swc/
+
+# ============================================================================
+# VIRTUAL ENVIRONMENTS
+# ============================================================================
+
 .venv/
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
+.virtualenv/
 
-# Logs
+# Virtualenv (Windows layout)
+/Lib/
+/Scripts/
+
+# ============================================================================
+# ENVIRONMENT & CONFIGURATION
+# ============================================================================
+
+# Environment files (NEVER commit these!)
+*.env
+*.env.*
+.env.local
+.env.*.local
+
+# Allow example environment files
+!.env.example
+!.env.development.example
+!.env.production.example
+!.env.test.example
+!.env.*.example
+
+# ============================================================================
+# DATABASES
+# ============================================================================
+
+# SQLite databases
+*.sqlite3
+*.sqlite
+*.db
+db.sqlite3
+db.sqlite3-journal
+
+# Database backups
+*.sql
+*.dump
+
+# ============================================================================
+# LOGS & TEMPORARY FILES
+# ============================================================================
+
+# Log files
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 lerna-debug.log*
+debug.log
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Environment files
-*.env
-*.env.*
-!.env.example
-!.env.development.example
-!.env.production.example
-!.env.test.example
-
-# Editors
-.vscode/
-.idea/
+# Temporary files
+*.tmp
+*.temp
+*.bak
 *.swp
 *.swo
+*~
+.cache/
+tmp/
 
-# OS
+# ============================================================================
+# TESTING & COVERAGE
+# ============================================================================
+
+# Test coverage
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+
+# Testing frameworks
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+.tox/
+.nox/
+.hypothesis/
+.ruff_cache/
+pytestdebug.log
+
+# ============================================================================
+# MEDIA & STATIC FILES (Development)
+# ============================================================================
+
+# Django media files (uploaded by users)
+media/
+# Note: In production, media files should be served from cloud storage
+
+# Django static files
+staticfiles/
+static_cdn/
+static_root/
+
+# ============================================================================
+# CELERY (if used)
+# ============================================================================
+
+celerybeat-schedule
+celerybeat.pid
+
+# ============================================================================
+# IDE & EDITORS
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# ============================================================================
+# OPERATING SYSTEMS
+# ============================================================================
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================================================
+# SECURITY & SENSITIVE DATA
+# ============================================================================
+
+# Private keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Certificates
+*.crt
+*.cer
+
+# Credentials
+credentials.json
+secrets.json
+service-account.json
+
+# ============================================================================
+# DEPLOYMENT & CI/CD
+# ============================================================================
+
+# Vercel
+.vercel
+
+# Docker
+*.dockerignore
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# ============================================================================
+# DOCUMENTATION BUILD
+# ============================================================================
+
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# MkDocs
+site/
+
+# ============================================================================
+# SCRIPTS & TEMPORARY UTILITIES
+# ============================================================================
+
+# Temporary scripts created for data manipulation
+insert_*.py
+check_*.py
+update_*.py
+test_*.py
+debug_*.py
+
+# Except if they're in a dedicated scripts folder
+!scripts/insert_*.py
+!scripts/check_*.py
+!scripts/update_*.py
+!scripts/test_*.py
+!scripts/debug_*.py
+
+# ============================================================================
+# PROJECT-SPECIFIC
+# ============================================================================
+
+# Large files that shouldn't be in version control
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar.gz
+*.rar
+
+# Backup files
+*.backup
+backup/
+backups/
+
+# ============================================================================
+# END OF ROOT .gitignore
+# ============================================================================
+# Remember to check back/.gitignore and front/.gitignore for specific rules
+# ============================================================================

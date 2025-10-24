@@ -11,7 +11,7 @@ import {
   ClipboardList,
   AlertTriangle,
 } from "lucide-react"
-import { useAuthContext } from "@/context/AuthContext"
+import { useAuthContext } from "@/contexts/AuthContext"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {

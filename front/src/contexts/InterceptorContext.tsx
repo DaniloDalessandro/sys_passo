@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAuthContext } from "@/context/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 // Flag global para evitar múltiplas tentativas de refresh simultâneas
 let isRefreshing = false;

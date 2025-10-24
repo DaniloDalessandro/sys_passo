@@ -4,12 +4,12 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo, u
 import { jwtDecode } from "jwt-decode"
 import { buildApiUrl } from "@/lib/api-client"
 
-interface UserProfile {
+export interface UserProfile {
   is_email_verified: boolean
   email_verified_at: string | null
 }
 
-interface UserData {
+export interface UserData {
   id: string
   email: string
   username: string
@@ -21,7 +21,7 @@ interface UserData {
   profile?: UserProfile
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: UserData | null
   accessToken: string | null
   isAuthenticated: boolean

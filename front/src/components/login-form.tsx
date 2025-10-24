@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useAuthContext } from "@/context/AuthContext"
+import { useAuthContext } from "@/contexts/AuthContext"
 import { buildApiUrl } from "@/lib/api-client"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {

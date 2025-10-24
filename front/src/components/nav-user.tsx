@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 import { useRouter } from "next/navigation"
-import { useAuthContext } from "@/context/AuthContext"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 import {
   Avatar,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext"; // ✅ importe aqui
+import { AuthProvider } from "@/contexts/AuthContext";
 import { InterceptorProvider } from "@/contexts/InterceptorContext";
 import { NavigationProgressBar } from "@/components/ui/navigation-progress-bar";
 import { Toaster } from "@/components/ui/sonner";
