@@ -1,38 +1,25 @@
 "use client"
 
-import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Car, AlertTriangle, CheckCircle, Wrench } from "lucide-react"
-import { Vehicle } from "@/hooks/useVehicles"
+import { Car, Calendar, Zap } from "lucide-react"
+import { VehicleStats as VehicleStatsType } from "@/hooks/useVehicles"
 
 interface VehicleStatsProps {
-  vehicles: Vehicle[]
+  stats: VehicleStatsType | null
 }
 
-export function VehicleStats({ vehicles }: VehicleStatsProps) {
-  const stats = useMemo(() => {
-    const total = vehicles.length
-    const active = vehicles.filter(v => v.status === 'ativo').length
-    const inactive = vehicles.filter(v => v.status === 'inativo').length
-
-    // Veículos que precisam de manutenção em até 7 dias
-    const needingMaintenance = vehicles.filter(v => {
-      if (!v.proximaManutencao) return false
-      const date = new Date(v.proximaManutencao)
-      const now = new Date()
-      const diffTime = date.getTime() - now.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      return diffDays <= 7 && diffDays > 0
-    }).length
-
-    return {
-      total,
-      active,
-      inactive,
-      needingMaintenance
-    }
-  }, [vehicles])
+export function VehicleStats({ stats }: VehicleStatsProps) {
+  // Se as estatísticas ainda não foram carregadas, mostra valores zerados
+  const displayStats = stats || {
+    total_vehicles: 0,
+    active_vehicles: 0,
+    inactive_vehicles: 0,
+    old_vehicles: 0,
+    electric_vehicles: 0,
+    categories_stats: {},
+    fuel_type_stats: {}
+  }
 
   return (
     <div className="space-y-6">
@@ -45,46 +32,46 @@ export function VehicleStats({ vehicles }: VehicleStatsProps) {
             <Car className="h-3 w-3 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold">{stats.total}</div>
+            <div className="text-xl font-bold">{displayStats.total_vehicles}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
               <Badge variant="outline" className="text-green-600 border-green-600 text-xs px-1 py-0">
-                {stats.active} ativos
+                {displayStats.active_vehicles} ativos
               </Badge>
-              {stats.inactive > 0 && (
+              {displayStats.inactive_vehicles > 0 && (
                 <Badge variant="outline" className="text-gray-600 text-xs px-1 py-0">
-                  {stats.inactive} inativos
+                  {displayStats.inactive_vehicles} inativos
                 </Badge>
               )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Veículos Ativos */}
+        {/* Veículos com mais de 10 anos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs font-medium">Em Operação</CardTitle>
-            <CheckCircle className="h-3 w-3 text-green-500" />
+            <CardTitle className="text-xs font-medium">Veículos +10 anos</CardTitle>
+            <Calendar className="h-3 w-3 text-orange-500" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold text-green-600">
-              {stats.active}
+            <div className="text-xl font-bold text-orange-600">
+              {displayStats.old_vehicles}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}% do total
+              {displayStats.active_vehicles > 0 ? Math.round((displayStats.old_vehicles / displayStats.active_vehicles) * 100) : 0}% da frota ativa
             </p>
           </CardContent>
         </Card>
 
-        {/* Manutenção Próxima */}
+        {/* Frota Eletrificada */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs font-medium">Manutenção Próxima</CardTitle>
-            <AlertTriangle className="h-3 w-3 text-orange-500" />
+            <CardTitle className="text-xs font-medium">Frota Eletrificada</CardTitle>
+            <Zap className="h-3 w-3 text-green-500" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold text-orange-600">{stats.needingMaintenance}</div>
+            <div className="text-xl font-bold text-green-600">{displayStats.electric_vehicles}</div>
             <p className="text-xs text-muted-foreground">
-              Próximos 7 dias
+              Elétricos e híbridos
             </p>
           </CardContent>
         </Card>

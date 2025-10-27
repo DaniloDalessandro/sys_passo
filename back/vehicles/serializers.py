@@ -13,6 +13,10 @@ class VehicleSerializer(serializers.ModelSerializer):
     categoria = serializers.CharField(source='category', required=False)
     capacidade = serializers.IntegerField(source='passenger_capacity', required=False)
 
+    # Campos de autoria
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    updated_by_username = serializers.CharField(source='updated_by.username', read_only=True)
+
     class Meta:
         model = Vehicle
         fields = '__all__'
@@ -44,4 +48,9 @@ class VehicleSerializer(serializers.ModelSerializer):
         representation['combustivel'] = instance.fuel_type
         representation['categoria'] = instance.category
         representation['capacidade'] = instance.passenger_capacity
+
+        # Campos de autoria
+        representation['created_by_username'] = instance.created_by.username if instance.created_by else None
+        representation['updated_by_username'] = instance.updated_by.username if instance.updated_by else None
+
         return representation

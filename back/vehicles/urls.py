@@ -8,5 +8,6 @@ router = DefaultRouter()
 router.register(r'', views.VehicleViewSet, basename='vehicle')
 
 urlpatterns = [
+    path('stats/', views.vehicle_stats, name='vehicle-stats'),
     path('', include(router.urls)),
 ]

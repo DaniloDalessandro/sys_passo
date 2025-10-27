@@ -24,13 +24,20 @@ export default function VehiclesPage() {
   const {
     vehicles,
     totalCount,
+    stats,
     isLoading,
     fetchVehicles,
+    fetchStats,
     createVehicle,
     updateVehicle,
     deleteVehicle,
     getVehicle,
   } = useVehicles()
+
+  // Fetch stats when component mounts
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Fetch data when pagination or filters change
   useEffect(() => {
@@ -49,7 +56,8 @@ export default function VehiclesPage() {
       filters: filters,
     };
     fetchVehicles(fetchParams);
-  }, [pagination, filters, fetchVehicles]);
+    fetchStats(); // Atualiza estatísticas também
+  }, [pagination, filters, fetchVehicles, fetchStats]);
 
   const handleSubmit = async (data: VehicleFormData) => {
     setIsSubmitting(true)
@@ -121,7 +129,7 @@ export default function VehiclesPage() {
           </div>
         </div>
 
-        <VehicleStats vehicles={vehicles} />
+        <VehicleStats stats={stats} />
 
         <div className="flex-1 min-h-0 w-full overflow-hidden">
           <VehicleDataTable

@@ -54,7 +54,7 @@ export function VehicleDataTable({
     const allColumns = [
       "placa", "marca", "modelo", "ano", "cor", "chassi", "renavam",
       "categoria", "combustivel", "capacidade", "status",
-      "created_at", "updated_at"
+      "created_at", "updated_at", "created_by_username", "updated_by_username"
     ];
 
     const initialVisibility: Record<string, boolean> = {};
@@ -122,6 +122,16 @@ export function VehicleDataTable({
         accessorKey: "updated_at",
         header: "Atualizado em",
         cell: ({ row }: any) => format(new Date(row.getValue("updated_at")), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+      },
+      {
+        accessorKey: "created_by_username",
+        header: "Criado por",
+        cell: ({ row }: any) => row.getValue("created_by_username") || "-",
+      },
+      {
+        accessorKey: "updated_by_username",
+        header: "Atualizado por",
+        cell: ({ row }: any) => row.getValue("updated_by_username") || "-",
       },
     ],
     [filters, onFilterChange]

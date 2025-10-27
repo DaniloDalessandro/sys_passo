@@ -71,9 +71,20 @@ interface FetchParams {
   filters?: Record<string, any>
 }
 
+export interface VehicleStats {
+  total_vehicles: number
+  active_vehicles: number
+  inactive_vehicles: number
+  old_vehicles: number
+  electric_vehicles: number
+  categories_stats: Record<string, number>
+  fuel_type_stats: Record<string, number>
+}
+
 export function useVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [totalCount, setTotalCount] = useState(0)
+  const [stats, setStats] = useState<VehicleStats | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -216,12 +227,30 @@ export function useVehicles() {
     }
   }
 
+  const fetchStats = useCallback(async () => {
+    setError(null)
+    try {
+      const response = await authFetch(`${API_BASE_URL}/vehicles/stats/`)
+      if (!response.ok) {
+        throw new Error("Erro ao carregar estatísticas")
+      }
+      const data = await response.json()
+      setStats(data)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      console.error("Error fetching stats:", err)
+    }
+  }, [])
+
   return {
     vehicles,
     totalCount,
+    stats,
     isLoading,
     error,
     fetchVehicles,
+    fetchStats,
     createVehicle,
     updateVehicle,
     deleteVehicle,
