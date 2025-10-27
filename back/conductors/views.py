@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.serializers import ValidationError as DRFValidationError
 from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import rest_framework as django_filters
+from django_filters import FilterSet, CharFilter, BooleanFilter, DateFilter
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.db import IntegrityError
@@ -14,13 +16,83 @@ from django.core.exceptions import ValidationError
 from .models import Conductor
 from .serializers import (
     ConductorSerializer,
-    ConductorCreateSerializer, 
+    ConductorCreateSerializer,
     ConductorUpdateSerializer,
     ConductorListSerializer
 )
 from authentication.utils import get_client_ip, get_user_agent, log_user_activity
 
 logger = logging.getLogger(__name__)
+
+
+class ConductorFilter(FilterSet):
+    """Custom filter for Conductor model with case-insensitive partial matching"""
+    name = CharFilter(field_name='name', lookup_expr='icontains')
+    cpf = CharFilter(field_name='cpf', lookup_expr='icontains')
+    email = CharFilter(field_name='email', lookup_expr='icontains')
+    phone = CharFilter(field_name='phone', lookup_expr='icontains')
+    whatsapp = CharFilter(field_name='whatsapp', lookup_expr='icontains')
+    license_number = CharFilter(field_name='license_number', lookup_expr='icontains')
+    license_category = CharFilter(field_name='license_category', lookup_expr='icontains')
+    nationality = CharFilter(field_name='nationality', lookup_expr='icontains')
+    birth_date = DateFilter(field_name='birth_date', lookup_expr='exact')
+    license_expiry_date = DateFilter(field_name='license_expiry_date', lookup_expr='exact')
+    is_active = BooleanFilter(field_name='is_active')
+
+    # Custom filters that need special handling
+    address = CharFilter(method='filter_address')
+    gender_display = CharFilter(method='filter_gender_display')
+
+    def filter_address(self, queryset, name, value):
+        """Filter by combined address fields"""
+        if not value:
+            return queryset
+        return queryset.filter(
+            Q(street__icontains=value) |
+            Q(number__icontains=value) |
+            Q(neighborhood__icontains=value) |
+            Q(city__icontains=value)
+        )
+
+    def filter_gender_display(self, queryset, name, value):
+        """Filter by gender display value (Masculino, Feminino, Outro)"""
+        if not value:
+            return queryset
+
+        value_lower = value.lower()
+        # Map display values to database values
+        gender_mapping = {
+            'masculino': 'M',
+            'feminino': 'F',
+            'outro': 'O',
+            'm': 'M',
+            'f': 'F',
+            'o': 'O'
+        }
+
+        # Try exact match first
+        if value_lower in gender_mapping:
+            return queryset.filter(gender=gender_mapping[value_lower])
+
+        # Try partial match on display values
+        conditions = Q()
+        for display_text, db_value in gender_mapping.items():
+            if value_lower in display_text:
+                conditions |= Q(gender=db_value)
+
+        if conditions:
+            return queryset.filter(conditions)
+
+        return queryset
+
+    class Meta:
+        model = Conductor
+        fields = [
+            'name', 'cpf', 'email', 'phone', 'whatsapp',
+            'license_number', 'license_category', 'address',
+            'nationality', 'gender_display', 'birth_date',
+            'license_expiry_date', 'is_active'
+        ]
 
 
 class ConductorListCreateView(ListCreateAPIView):
@@ -32,7 +104,7 @@ class ConductorListCreateView(ListCreateAPIView):
     )
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['is_active', 'license_category']
+    filterset_class = ConductorFilter
     search_fields = ['name', 'cpf', 'email', 'license_number']
     ordering_fields = ['name', 'created_at', 'license_expiry_date']
     ordering = ['name']

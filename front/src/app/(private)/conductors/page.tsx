@@ -9,6 +9,7 @@ import {
   ConductorDialog,
   DeactivateConductorDialog,
 } from "@/components/conductors"
+import { SortingState } from "@tanstack/react-table"
 
 export default function ConductorsPage() {
   // State for dialogs and editing
@@ -21,6 +22,7 @@ export default function ConductorsPage() {
   // State for server-side pagination and filtering
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [filters, setFilters] = useState<Record<string, any>>({ is_active: 'true' });
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const {
     conductors,
@@ -41,23 +43,27 @@ export default function ConductorsPage() {
 
   // Fetch data when pagination or filters change
   useEffect(() => {
+    const ordering = sorting.map(s => (s.desc ? "-" : "") + s.id).join(",");
     const fetchParams = {
       page: pagination.pageIndex + 1, // API is 1-based, table is 0-based
       pageSize: pagination.pageSize,
       filters: filters,
+      ordering: ordering,
     };
     fetchConductors(fetchParams);
-  }, [pagination, filters, fetchConductors]);
+  }, [pagination, filters, sorting, fetchConductors]);
 
   const handleRefreshData = useCallback(() => {
+    const ordering = sorting.map(s => (s.desc ? "-" : "") + s.id).join(",");
     const fetchParams = {
       page: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
       filters: filters,
+      ordering: ordering,
     };
     fetchConductors(fetchParams);
     fetchStats(); // Atualiza estatísticas também
-  }, [pagination, filters, fetchConductors, fetchStats]);
+  }, [pagination, filters, sorting, fetchConductors, fetchStats]);
 
   const handleSubmit = async (data: ConductorFormData) => {
     setIsSubmitting(true)
@@ -151,6 +157,8 @@ export default function ConductorsPage() {
             onPaginationChange={setPagination}
             filters={filters}
             onFilterChange={handleFilterChange}
+            sorting={sorting}
+            onSortingChange={setSorting}
             onAdd={handleNewConductor}
             onEdit={handleEdit}
             onDelete={handleDelete}

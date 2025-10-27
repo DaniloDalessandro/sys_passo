@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTable, PaginationState } from "@/components/ui/data-table";
 import { Conductor } from "@/hooks/useConductors";
+import { SortingState } from "@tanstack/react-table";
 
 interface ConductorDataTableProps {
   conductors: Conductor[];
@@ -13,6 +14,8 @@ interface ConductorDataTableProps {
   onPaginationChange: (pagination: PaginationState) => void;
   filters: Record<string, any>;
   onFilterChange: (filters: Record<string, any>) => void;
+  sorting: SortingState;
+  onSortingChange: (sorting: SortingState) => void;
   onAdd: () => void;
   onEdit: (conductor: Conductor) => void;
   onDelete: (conductor: Conductor) => void;
@@ -38,6 +41,8 @@ export function ConductorDataTable({
   onPaginationChange,
   filters,
   onFilterChange,
+  sorting,
+  onSortingChange,
   onAdd,
   onEdit,
   onDelete,
@@ -179,6 +184,8 @@ export function ConductorDataTable({
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         onFilterChange={onFilterChange}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
       />
     </div>
   );
