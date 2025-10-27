@@ -1,41 +1,26 @@
 "use client"
 
-import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Users, AlertTriangle, CheckCircle, Clock } from "lucide-react"
-import type { Conductor } from "@/hooks/useConductors"
+import type { ConductorStats as ConductorStatsType } from "@/hooks/useConductors"
 
 interface ConductorStatsProps {
-  conductors: Conductor[]
+  stats: ConductorStatsType | null
 }
 
-export function ConductorStats({ conductors }: ConductorStatsProps) {
-  const stats = useMemo(() => {
-    const total = conductors.length
-    const active = conductors.filter(c => c.is_active).length
-    const inactive = total - active
-    const expired = conductors.filter(c => c.is_license_expired).length
+export function ConductorStats({ stats }: ConductorStatsProps) {
+  // Se as estatísticas ainda não foram carregadas, mostra valores zerados
+  const displayStats = stats || {
+    total_conductors: 0,
+    active_conductors: 0,
+    inactive_conductors: 0,
+    expiring_soon: 0,
+    expired_licenses: 0,
+    categories_stats: {}
+  }
 
-    // CNHs que vencem em até 30 dias
-    const expiringSoon = conductors.filter(c => {
-      if (c.is_license_expired) return false
-      const date = new Date(c.license_expiry_date)
-      const now = new Date()
-      const diffTime = date.getTime() - now.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      return diffDays <= 30 && diffDays > 0
-    }).length
-
-
-    return {
-      total,
-      active,
-      inactive,
-      expired,
-      expiringSoon
-    }
-  }, [conductors])
+  const validLicenses = displayStats.total_conductors - displayStats.expired_licenses
 
   return (
     <div className="space-y-6">
@@ -48,14 +33,14 @@ export function ConductorStats({ conductors }: ConductorStatsProps) {
             <Users className="h-3 w-3 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold">{stats.total}</div>
+            <div className="text-xl font-bold">{displayStats.total_conductors}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
               <Badge variant="outline" className="text-green-600 border-green-600 text-xs px-1 py-0">
-                {stats.active} ativos
+                {displayStats.active_conductors} ativos
               </Badge>
-              {stats.inactive > 0 && (
+              {displayStats.inactive_conductors > 0 && (
                 <Badge variant="outline" className="text-gray-600 text-xs px-1 py-0">
-                  {stats.inactive} inativos
+                  {displayStats.inactive_conductors} inativos
                 </Badge>
               )}
             </div>
@@ -70,10 +55,10 @@ export function ConductorStats({ conductors }: ConductorStatsProps) {
           </CardHeader>
           <CardContent className="pb-2">
             <div className="text-xl font-bold text-green-600">
-              {stats.total - stats.expired}
+              {validLicenses}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round(((stats.total - stats.expired) / stats.total) * 100) : 0}% do total
+              {displayStats.total_conductors > 0 ? Math.round((validLicenses / displayStats.total_conductors) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -85,7 +70,7 @@ export function ConductorStats({ conductors }: ConductorStatsProps) {
             <Clock className="h-3 w-3 text-orange-500" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold text-orange-600">{stats.expiringSoon}</div>
+            <div className="text-xl font-bold text-orange-600">{displayStats.expiring_soon}</div>
             <p className="text-xs text-muted-foreground">
               Requerem atenção
             </p>
@@ -99,9 +84,9 @@ export function ConductorStats({ conductors }: ConductorStatsProps) {
             <AlertTriangle className="h-3 w-3 text-red-500" />
           </CardHeader>
           <CardContent className="pb-2">
-            <div className="text-xl font-bold text-red-600">{stats.expired}</div>
+            <div className="text-xl font-bold text-red-600">{displayStats.expired_licenses}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? Math.round((stats.expired / stats.total) * 100) : 0}% do total
+              {displayStats.total_conductors > 0 ? Math.round((displayStats.expired_licenses / displayStats.total_conductors) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>

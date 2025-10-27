@@ -25,12 +25,19 @@ export default function ConductorsPage() {
   const {
     conductors,
     totalCount,
+    stats,
     isLoading,
     fetchConductors,
+    fetchStats,
     createConductor,
     updateConductor,
     getConductor,
   } = useConductors()
+
+  // Fetch stats when component mounts
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Fetch data when pagination or filters change
   useEffect(() => {
@@ -49,7 +56,8 @@ export default function ConductorsPage() {
       filters: filters,
     };
     fetchConductors(fetchParams);
-  }, [pagination, filters, fetchConductors]);
+    fetchStats(); // Atualiza estatísticas também
+  }, [pagination, filters, fetchConductors, fetchStats]);
 
   const handleSubmit = async (data: ConductorFormData) => {
     setIsSubmitting(true)
@@ -133,7 +141,7 @@ export default function ConductorsPage() {
           </div>
         </div>
 
-        <ConductorStats conductors={conductors} />
+        <ConductorStats stats={stats} />
 
         <div className="flex-1 min-h-0 w-full overflow-hidden">
           <ConductorDataTable

@@ -77,9 +77,20 @@ interface FetchParams {
   filters?: Record<string, any>
 }
 
+// Interface para estatísticas de condutores
+export interface ConductorStats {
+  total_conductors: number
+  active_conductors: number
+  inactive_conductors: number
+  expiring_soon: number
+  expired_licenses: number
+  categories_stats: Record<string, number>
+}
+
 export function useConductors() {
   const [conductors, setConductors] = useState<Conductor[]>([])
   const [totalCount, setTotalCount] = useState(0)
+  const [stats, setStats] = useState<ConductorStats | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -239,12 +250,30 @@ export function useConductors() {
     }
   }
 
+  const fetchStats = useCallback(async () => {
+    setError(null)
+    try {
+      const response = await authFetch(`${API_BASE_URL}/conductors/stats/`)
+      if (!response.ok) {
+        throw new Error("Erro ao carregar estatísticas")
+      }
+      const data = await response.json()
+      setStats(data)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
+      setError(errorMessage)
+      console.error("Error fetching stats:", err)
+    }
+  }, [])
+
   return {
     conductors,
     totalCount,
+    stats,
     isLoading,
     error,
     fetchConductors,
+    fetchStats,
     createConductor,
     updateConductor,
     deleteConductor,

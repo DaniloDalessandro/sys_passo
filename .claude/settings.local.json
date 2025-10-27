@@ -40,7 +40,8 @@
       "Bash(\"./venv/Scripts/python.exe\" manage.py makemigrations complaints --name update_status_choices)",
       "Bash(venv/Scripts/python.exe:*)",
       "Bash(timeout 10 bash -c 'sleep 3 && curl -s -X GET \"\"http://127.0.0.1:8000/api/complaints/check-by-protocol/?protocol=20250005\"\"')",
-      "Bash(node update_imports.js:*)"
+      "Bash(node update_imports.js:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []
