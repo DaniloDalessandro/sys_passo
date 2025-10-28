@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DataTable, PaginationState } from "@/components/ui/data-table";
 import { Vehicle } from "@/hooks/useVehicles";
+import { SortingState } from "@tanstack/react-table";
 
 interface VehicleDataTableProps {
   vehicles: Vehicle[];
@@ -13,6 +14,8 @@ interface VehicleDataTableProps {
   onPaginationChange: (pagination: PaginationState) => void;
   filters: Record<string, any>;
   onFilterChange: (filters: Record<string, any>) => void;
+  sorting: SortingState;
+  onSortingChange: (sorting: SortingState) => void;
   onAdd: () => void;
   onEdit: (vehicle: Vehicle) => void;
   onDelete: (vehicle: Vehicle) => void;
@@ -38,6 +41,8 @@ export function VehicleDataTable({
   onPaginationChange,
   filters,
   onFilterChange,
+  sorting,
+  onSortingChange,
   onAdd,
   onEdit,
   onDelete,
@@ -70,6 +75,19 @@ export function VehicleDataTable({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(columnVisibility));
     }
   }, [columnVisibility]);
+
+  const handleFilterChange = (columnId: string, value: any) => {
+    const newFilters = { ...filters };
+
+    // Se o valor é vazio, remove a chave do objeto
+    if (value === '' || value === null || value === undefined) {
+      delete newFilters[columnId];
+    } else {
+      newFilters[columnId] = value;
+    }
+
+    onFilterChange(newFilters);
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -106,7 +124,7 @@ export function VehicleDataTable({
             { value: "inativo", label: "Inativo" },
           ],
           filterValue: filters?.status || "ativo",
-          onFilterChange: (value: any) => onFilterChange("status", value === "all" ? "" : value),
+          onFilterChange: (value: any) => handleFilterChange("status", value === "all" ? "" : value),
         },
         cell: ({ row }: any) => {
           const status = row.getValue("status") as string;
@@ -134,7 +152,7 @@ export function VehicleDataTable({
         cell: ({ row }: any) => row.getValue("updated_by_username") || "-",
       },
     ],
-    [filters, onFilterChange]
+    [filters]
   );
 
   return (
@@ -158,7 +176,9 @@ export function VehicleDataTable({
         defaultVisibleColumns={DEFAULT_VISIBLE_COLUMNS}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
-        onFilterChange={onFilterChange}
+        onFilterChange={handleFilterChange}
+        sorting={sorting}
+        onSortingChange={onSortingChange}
       />
     </div>
   );

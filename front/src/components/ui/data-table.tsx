@@ -431,14 +431,22 @@ export function DataTable<TData extends { id?: any }>({
                 <Badge
                   key={filter.id}
                   variant="outline"
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 pr-1"
                 >
                   <span className="font-medium">{column?.columnDef.header}:</span>{" "}
                   <span>{filter.value}</span>
-                  <X
-                    className="h-3 w-3 cursor-pointer ml-1"
-                    onClick={() => clearFilter(filter.id)}
-                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      clearFilter(filter.id);
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </Badge>
               );
             })}
@@ -454,18 +462,24 @@ export function DataTable<TData extends { id?: any }>({
                   <Badge
                     key={column.id}
                     variant="outline"
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 pr-1"
                   >
                     <span className="font-medium">{column.columnDef.header}:</span>{" "}
                     <span>{filterValue}</span>
-                    <X
-                      className="h-3 w-3 cursor-pointer ml-1"
-                      onClick={() => {
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 ml-1 hover:bg-transparent"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (column.columnDef.meta?.onFilterChange) {
                           column.columnDef.meta.onFilterChange("");
                         }
                       }}
-                    />
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </Badge>
                 );
               }

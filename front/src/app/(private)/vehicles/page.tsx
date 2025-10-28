@@ -9,6 +9,7 @@ import {
 } from "@/components/vehicles"
 import { useVehicles, VehicleFormData, Vehicle } from "@/hooks/useVehicles"
 import { toast } from "sonner"
+import { SortingState } from "@tanstack/react-table"
 
 export default function VehiclesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -20,6 +21,7 @@ export default function VehiclesPage() {
   // State for server-side pagination and filtering
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [filters, setFilters] = useState<Record<string, any>>({ status: 'ativo' });
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const {
     vehicles,
@@ -41,23 +43,27 @@ export default function VehiclesPage() {
 
   // Fetch data when pagination or filters change
   useEffect(() => {
+    const ordering = sorting.map(s => (s.desc ? "-" : "") + s.id).join(",");
     const fetchParams = {
       page: pagination.pageIndex + 1, // API is 1-based, table is 0-based
       pageSize: pagination.pageSize,
       filters: filters,
+      ordering: ordering,
     };
     fetchVehicles(fetchParams);
-  }, [pagination, filters, fetchVehicles]);
+  }, [pagination, filters, sorting, fetchVehicles]);
 
   const handleRefreshData = useCallback(() => {
+    const ordering = sorting.map(s => (s.desc ? "-" : "") + s.id).join(",");
     const fetchParams = {
       page: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
       filters: filters,
+      ordering: ordering,
     };
     fetchVehicles(fetchParams);
     fetchStats(); // Atualiza estatísticas também
-  }, [pagination, filters, fetchVehicles, fetchStats]);
+  }, [pagination, filters, sorting, fetchVehicles, fetchStats]);
 
   const handleSubmit = async (data: VehicleFormData) => {
     setIsSubmitting(true)
@@ -115,8 +121,8 @@ export default function VehiclesPage() {
     window.open(url, '_blank');
   }
 
-  const handleFilterChange = (columnId: string, value: any) => {
-    setFilters(prev => ({ ...prev, [columnId]: value }))
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
   }
 
   return (
@@ -139,6 +145,8 @@ export default function VehiclesPage() {
             onPaginationChange={setPagination}
             filters={filters}
             onFilterChange={handleFilterChange}
+            sorting={sorting}
+            onSortingChange={setSorting}
             onAdd={handleNewVehicle}
             onEdit={handleEdit}
             onDelete={handleDelete}

@@ -133,8 +133,8 @@ export default function ConductorsPage() {
     window.open(url, '_blank');
   }
 
-  const handleFilterChange = (columnId: string, value: any) => {
-    setFilters(prev => ({ ...prev, [columnId]: value }))
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
   }
 
   return (

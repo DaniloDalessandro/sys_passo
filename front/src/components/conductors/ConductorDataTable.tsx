@@ -80,6 +80,19 @@ export function ConductorDataTable({
     }
   }, [columnVisibility]);
 
+  const handleFilterChange = (columnId: string, value: any) => {
+    const newFilters = { ...filters };
+
+    // Se o valor é vazio, remove a chave do objeto
+    if (value === '' || value === null || value === undefined) {
+      delete newFilters[columnId];
+    } else {
+      newFilters[columnId] = value;
+    }
+
+    onFilterChange(newFilters);
+  };
+
   const isLicenseExpiringSoon = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -154,7 +167,7 @@ export function ConductorDataTable({
             { value: "false", label: "Inativo" },
           ],
           filterValue: filters?.is_active || "true",
-          onFilterChange: (value: any) => onFilterChange("is_active", value === "all" ? "" : value),
+          onFilterChange: (value: any) => handleFilterChange("is_active", value === "all" ? "" : value),
         },
         cell: ({ row }: any) => (row.getValue("is_active") ? "Ativo" : "Inativo"),
       },
@@ -183,7 +196,7 @@ export function ConductorDataTable({
         defaultVisibleColumns={DEFAULT_VISIBLE_COLUMNS}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
-        onFilterChange={onFilterChange}
+        onFilterChange={handleFilterChange}
         sorting={sorting}
         onSortingChange={onSortingChange}
       />

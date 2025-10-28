@@ -244,6 +244,12 @@ export default function SiteHomePage() {
   const [complaintData, setComplaintData] = useState<any>(null);
   const [isCheckingComplaint, setIsCheckingComplaint] = useState(false);
   const [checkComplaintError, setCheckComplaintError] = useState('');
+  const [driverProtocolNumber, setDriverProtocolNumber] = useState<number | null>(null);
+  const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
+  const [vehicleProtocolNumber, setVehicleProtocolNumber] = useState<number | null>(null);
+  const [isVehicleProtocolModalOpen, setIsVehicleProtocolModalOpen] = useState(false);
+  const [complaintProtocolNumber, setComplaintProtocolNumber] = useState<number | null>(null);
+  const [isComplaintProtocolModalOpen, setIsComplaintProtocolModalOpen] = useState(false);
 
   // Complaint form
   const complaintForm = useForm<ComplaintFormData>({
@@ -402,11 +408,19 @@ export default function SiteHomePage() {
         throw new Error(errorMessage);
       }
 
-      toast.success('Solicitação enviada com sucesso!', {
-        description: 'Sua solicitação de cadastro de motorista será analisada em breve.',
-      });
+      const responseData = await response.json();
+      const protocolNumber = responseData.data?.id;
 
-      setIsDriverDialogOpen(false);
+      if (protocolNumber) {
+        setDriverProtocolNumber(protocolNumber);
+        setIsDriverDialogOpen(false);
+        setIsProtocolModalOpen(true);
+      } else {
+        toast.success('Solicitação enviada com sucesso!', {
+          description: 'Sua solicitação de cadastro de motorista será analisada em breve.',
+        });
+        setIsDriverDialogOpen(false);
+      }
     } catch (error) {
       console.error('Error submitting driver request:', error);
       toast.error('Erro ao enviar solicitação', {
@@ -484,11 +498,19 @@ export default function SiteHomePage() {
         throw new Error(errorMessage);
       }
 
-      toast.success('Solicitação enviada com sucesso!', {
-        description: 'Sua solicitação de cadastro de veículo será analisada em breve.',
-      });
+      const responseData = await response.json();
+      const protocolNumber = responseData.data?.id;
 
-      setIsVehicleDialogOpen(false);
+      if (protocolNumber) {
+        setVehicleProtocolNumber(protocolNumber);
+        setIsVehicleDialogOpen(false);
+        setIsVehicleProtocolModalOpen(true);
+      } else {
+        toast.success('Solicitação enviada com sucesso!', {
+          description: 'Sua solicitação de cadastro de veículo será analisada em breve.',
+        });
+        setIsVehicleDialogOpen(false);
+      }
     } catch (error) {
       console.error('Error submitting vehicle request:', error);
       toast.error('Erro ao enviar solicitação', {
@@ -607,13 +629,23 @@ export default function SiteHomePage() {
         throw new Error('Erro ao enviar denúncia. Tente novamente.');
       }
 
-      toast.success('Denúncia enviada com sucesso!', {
-        description: 'Sua denúncia será analisada pela equipe responsável.',
-      });
+      const responseData = await response.json();
+      const protocolNumber = responseData.complaint?.id;
 
-      complaintForm.reset();
-      setSelectedPhotos([]);
-      setIsComplaintDialogOpen(false);
+      if (protocolNumber) {
+        setComplaintProtocolNumber(protocolNumber);
+        complaintForm.reset();
+        setSelectedPhotos([]);
+        setIsComplaintDialogOpen(false);
+        setIsComplaintProtocolModalOpen(true);
+      } else {
+        toast.success('Denúncia enviada com sucesso!', {
+          description: 'Sua denúncia será analisada pela equipe responsável.',
+        });
+        complaintForm.reset();
+        setSelectedPhotos([]);
+        setIsComplaintDialogOpen(false);
+      }
     } catch (error) {
       console.error('Error submitting complaint:', error);
 
@@ -2002,6 +2034,201 @@ export default function SiteHomePage() {
                 )}
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Protocol Number Modal - Driver */}
+      <Dialog open={isProtocolModalOpen} onOpenChange={setIsProtocolModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <FileText className="w-6 h-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl">
+              Solicitação Enviada com Sucesso!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Sua solicitação de cadastro de motorista foi registrada e será analisada em breve.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Protocol Number Display */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
+              <div className="text-center space-y-2">
+                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                  Número do Protocolo
+                </div>
+                <div className="text-4xl font-bold text-blue-600 font-mono">
+                  #{driverProtocolNumber?.toString().padStart(8, '0')}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Guarde este número para acompanhar sua solicitação
+                </p>
+              </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-600" />
+                Próximos Passos
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                  <span>Sua solicitação será analisada por nossa equipe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                  <span>Você será contatado através do email e telefone informados</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 flex-shrink-0" />
+                  <span>O prazo médio de análise é de 3 a 5 dias úteis</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setIsProtocolModalOpen(false)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              Entendi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Protocol Number Modal - Vehicle */}
+      <Dialog open={isVehicleProtocolModalOpen} onOpenChange={setIsVehicleProtocolModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <Car className="w-6 h-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl">
+              Solicitação Enviada com Sucesso!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Sua solicitação de cadastro de veículo foi registrada e será analisada em breve.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Protocol Number Display */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
+              <div className="text-center space-y-2">
+                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                  Número do Protocolo
+                </div>
+                <div className="text-4xl font-bold text-purple-600 font-mono">
+                  #{vehicleProtocolNumber?.toString().padStart(8, '0')}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Guarde este número para acompanhar sua solicitação
+                </p>
+              </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-purple-600" />
+                Próximos Passos
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span>Sua solicitação será analisada por nossa equipe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span>Verificaremos a documentação do veículo</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span>O prazo médio de análise é de 3 a 5 dias úteis</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setIsVehicleProtocolModalOpen(false)}
+              className="flex-1 bg-purple-600 hover:bg-purple-700"
+            >
+              Entendi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Protocol Number Modal - Complaint */}
+      <Dialog open={isComplaintProtocolModalOpen} onOpenChange={setIsComplaintProtocolModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl">
+              Denúncia Registrada com Sucesso!
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Sua denúncia foi registrada e será analisada pela equipe responsável.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Protocol Number Display */}
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border-2 border-orange-200">
+              <div className="text-center space-y-2">
+                <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                  Número do Protocolo
+                </div>
+                <div className="text-4xl font-bold text-orange-600 font-mono">
+                  #{complaintProtocolNumber?.toString().padStart(8, '0')}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Guarde este número para consultar o andamento da denúncia
+                </p>
+              </div>
+            </div>
+
+            {/* Next Steps */}
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-orange-600" />
+                Próximos Passos
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5 flex-shrink-0" />
+                  <span>Sua denúncia será analisada por nossa equipe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5 flex-shrink-0" />
+                  <span>Você pode consultar o status usando o número do protocolo</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-600 mt-1.5 flex-shrink-0" />
+                  <span>As providências cabíveis serão tomadas conforme necessário</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setIsComplaintProtocolModalOpen(false)}
+              className="flex-1 bg-orange-600 hover:bg-orange-700"
+            >
+              Entendi
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

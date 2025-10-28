@@ -69,6 +69,7 @@ interface FetchParams {
   page?: number
   pageSize?: number
   filters?: Record<string, any>
+  ordering?: string
 }
 
 export interface VehicleStats {
@@ -92,7 +93,7 @@ export function useVehicles() {
     setIsLoading(true)
     setError(null)
 
-    const { page = 1, pageSize = 10, filters = {} } = params
+    const { page = 1, pageSize = 10, filters = {}, ordering = '' } = params
 
     try {
       const queryParams = new URLSearchParams({
@@ -105,6 +106,10 @@ export function useVehicles() {
           queryParams.append(key, value.toString())
         }
       })
+
+      if (ordering) {
+        queryParams.append('ordering', ordering)
+      }
 
       const url = `${API_BASE_URL}/vehicles/?${queryParams.toString()}`
       console.log('URL da requisição:', url)

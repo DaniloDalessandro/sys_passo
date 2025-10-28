@@ -1,9 +1,37 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import api_view, permission_classes as drf_permission_classes
 from rest_framework.response import Response
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import FilterSet, CharFilter, NumberFilter
 from .models import Vehicle
 from .serializers import VehicleSerializer
+
+
+class VehicleFilter(FilterSet):
+    """Custom filter for Vehicle model with case-insensitive partial matching"""
+    placa = CharFilter(field_name='plate', lookup_expr='icontains')
+    marca = CharFilter(field_name='brand', lookup_expr='icontains')
+    modelo = CharFilter(field_name='model', lookup_expr='icontains')
+    ano = NumberFilter(field_name='year', lookup_expr='exact')
+    cor = CharFilter(field_name='color', lookup_expr='icontains')
+    chassi = CharFilter(field_name='chassis', lookup_expr='icontains')
+    renavam = CharFilter(field_name='renavam', lookup_expr='icontains')
+    categoria = CharFilter(field_name='category', lookup_expr='icontains')
+    combustivel = CharFilter(field_name='fuel_type', lookup_expr='icontains')
+    capacidade = NumberFilter(field_name='capacity', lookup_expr='exact')
+    status = CharFilter(field_name='status', lookup_expr='iexact')
+    created_by_username = CharFilter(field_name='created_by__username', lookup_expr='icontains')
+    updated_by_username = CharFilter(field_name='updated_by__username', lookup_expr='icontains')
+
+    class Meta:
+        model = Vehicle
+        fields = [
+            'placa', 'marca', 'modelo', 'ano', 'cor', 'chassi', 'renavam',
+            'categoria', 'combustivel', 'capacidade', 'status',
+            'created_by_username', 'updated_by_username'
+        ]
+
 
 class VehicleViewSet(viewsets.ModelViewSet):
     """
@@ -12,6 +40,11 @@ class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.select_related('created_by', 'updated_by').order_by('-created_at')
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = VehicleFilter
+    search_fields = ['plate', 'brand', 'model', 'chassis', 'renavam']
+    ordering_fields = ['plate', 'brand', 'model', 'year', 'created_at', 'updated_at']
+    ordering = ['-created_at']
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
