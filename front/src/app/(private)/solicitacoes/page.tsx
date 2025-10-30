@@ -152,10 +152,13 @@ export default function SolicitacoesPage() {
       if (message.type === 'new_request') {
         console.log('Nova solicitação recebida via WebSocket:', message);
 
-        // Cria URL para a página de detalhes
-        const detailsUrl = message.request_type === 'driver'
+        // Cria URL absoluta para a página de detalhes
+        const relativePath = message.request_type === 'driver'
           ? `/solicitacoes/motoristas/${message.request_id}`
           : `/solicitacoes/veiculos/${message.request_id}`;
+
+        // Cria URL absoluta usando window.location.origin
+        const detailsUrl = `${window.location.origin}${relativePath}`;
 
         // Mostra notificação clicável com protocolo
         const title = message.title || message.message || 'Nova solicitação recebida!';
@@ -166,6 +169,7 @@ export default function SolicitacoesPage() {
           action: {
             label: 'Ver',
             onClick: () => {
+              console.log('Abrindo URL:', detailsUrl);
               window.open(detailsUrl, '_blank');
             },
           },
@@ -380,7 +384,7 @@ export default function SolicitacoesPage() {
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50 select-none"
+                className="cursor-pointer hover:bg-muted/50 select-none pl-6"
                 onClick={() => handleSort('name')}
               >
                 <div className="flex items-center">
@@ -417,7 +421,7 @@ export default function SolicitacoesPage() {
                 key={request.id}
                 className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
               >
-                <TableCell className="font-medium">
+                <TableCell className="font-medium pl-6">
                   <div className="flex items-center gap-2">
                     {!request.viewed_at && (
                       <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
@@ -518,7 +522,7 @@ export default function SolicitacoesPage() {
           <TableHeader>
             <TableRow>
               <TableHead
-                className="cursor-pointer hover:bg-muted/50 select-none"
+                className="cursor-pointer hover:bg-muted/50 select-none pl-6"
                 onClick={() => handleSort('plate')}
               >
                 <div className="flex items-center">
@@ -573,7 +577,7 @@ export default function SolicitacoesPage() {
                 key={request.id}
                 className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
               >
-                <TableCell className="font-medium">
+                <TableCell className="font-medium pl-6">
                   <div className="flex items-center gap-2">
                     {!request.viewed_at && (
                       <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
