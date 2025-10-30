@@ -97,6 +97,30 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
             )
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_as_viewed(self, request, pk=None):
+        """
+        Marca uma solicitação como visualizada.
+
+        Registra a data e hora da primeira visualização.
+        """
+        driver_request = self.get_object()
+
+        # Marca como visualizada apenas se ainda não foi visualizada
+        if not driver_request.viewed_at:
+            driver_request.viewed_at = timezone.now()
+            driver_request.save(update_fields=['viewed_at'])
+
+            logger.info(
+                f"Solicitação de motorista visualizada: ID {driver_request.id}, "
+                f"Visualizado por: {request.user.username}"
+            )
+
+        return Response(
+            {'message': 'Solicitação marcada como visualizada'},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
         """
         Aprova uma solicitação de motorista e cria o condutor.
@@ -301,6 +325,30 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                 {'error': 'Erro ao processar solicitação. Tente novamente mais tarde.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_as_viewed(self, request, pk=None):
+        """
+        Marca uma solicitação como visualizada.
+
+        Registra a data e hora da primeira visualização.
+        """
+        vehicle_request = self.get_object()
+
+        # Marca como visualizada apenas se ainda não foi visualizada
+        if not vehicle_request.viewed_at:
+            vehicle_request.viewed_at = timezone.now()
+            vehicle_request.save(update_fields=['viewed_at'])
+
+            logger.info(
+                f"Solicitação de veículo visualizada: ID {vehicle_request.id}, "
+                f"Visualizado por: {request.user.username}"
+            )
+
+        return Response(
+            {'message': 'Solicitação marcada como visualizada'},
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):

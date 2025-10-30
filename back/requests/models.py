@@ -39,6 +39,18 @@ class DriverRequest(models.Model):
         ('reprovado', 'Reprovado'),
     ]
 
+    # Protocolo único
+    protocol = models.CharField(
+        max_length=12,
+        unique=True,
+        editable=False,
+        null=True,
+        blank=True,
+        verbose_name='Protocolo',
+        help_text='Protocolo gerado automaticamente (formato: DRV-YYYYNNNN)',
+        db_index=True
+    )
+
     # Dados pessoais
     name = models.CharField(
         max_length=150,
@@ -188,6 +200,12 @@ class DriverRequest(models.Model):
         verbose_name='Data de Criação',
         help_text='Data e hora em que a solicitação foi criada'
     )
+    viewed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Data de Visualização',
+        help_text='Data e hora em que a solicitação foi visualizada pela primeira vez'
+    )
     reviewed_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -251,7 +269,43 @@ class DriverRequest(models.Model):
         if self.license_number:
             self.license_number = self.license_number.strip()
 
+    def _generate_protocol(self):
+        """
+        Gera protocolo automaticamente no formato DRV-YYYYNNNN.
+
+        Returns:
+            str: Protocolo único no formato DRV-ano + 4 dígitos sequenciais
+        """
+        from django.db.models import Max
+
+        current_year = timezone.now().year
+        year_prefix = f"DRV-{current_year}"
+
+        # Buscar o último protocolo do ano atual
+        last_request = DriverRequest.objects.filter(
+            protocol__startswith=year_prefix
+        ).aggregate(Max('protocol'))
+
+        last_protocol = last_request['protocol__max']
+
+        if last_protocol:
+            # Extrair o número sequencial do último protocolo
+            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
+            new_number = last_number + 1
+        else:
+            # Primeiro protocolo do ano
+            new_number = 1
+
+        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
+        protocol = f"{year_prefix}{new_number:04d}"
+
+        return protocol
+
     def save(self, *args, **kwargs):
+        # Gerar protocolo se não existir
+        if not self.protocol:
+            self.protocol = self._generate_protocol()
+
         self.full_clean(exclude=None)
         super().save(*args, **kwargs)
 
@@ -286,6 +340,18 @@ class VehicleRequest(models.Model):
         ('aprovado', 'Aprovado'),
         ('reprovado', 'Reprovado'),
     ]
+
+    # Protocolo único
+    protocol = models.CharField(
+        max_length=12,
+        unique=True,
+        editable=False,
+        null=True,
+        blank=True,
+        verbose_name='Protocolo',
+        help_text='Protocolo gerado automaticamente (formato: VHC-YYYYNNNN)',
+        db_index=True
+    )
 
     # Dados básicos do veículo
     plate = models.CharField(
@@ -410,6 +476,12 @@ class VehicleRequest(models.Model):
         verbose_name='Data de Criação',
         help_text='Data e hora em que a solicitação foi criada'
     )
+    viewed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Data de Visualização',
+        help_text='Data e hora em que a solicitação foi visualizada pela primeira vez'
+    )
     reviewed_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -473,6 +545,43 @@ class VehicleRequest(models.Model):
         if self.plate:
             self.plate = self.plate.upper().strip().replace(' ', '')
 
+    def _generate_protocol(self):
+        """
+        Gera protocolo automaticamente no formato VHC-YYYYNNNN.
+
+        Returns:
+            str: Protocolo único no formato VHC-ano + 4 dígitos sequenciais
+        """
+        from django.db.models import Max
+        from django.utils import timezone
+
+        current_year = timezone.now().year
+        year_prefix = f"VHC-{current_year}"
+
+        # Buscar o último protocolo do ano atual
+        last_request = VehicleRequest.objects.filter(
+            protocol__startswith=year_prefix
+        ).aggregate(Max('protocol'))
+
+        last_protocol = last_request['protocol__max']
+
+        if last_protocol:
+            # Extrair o número sequencial do último protocolo
+            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
+            new_number = last_number + 1
+        else:
+            # Primeiro protocolo do ano
+            new_number = 1
+
+        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
+        protocol = f"{year_prefix}{new_number:04d}"
+
+        return protocol
+
     def save(self, *args, **kwargs):
+        # Gerar protocolo se não existir
+        if not self.protocol:
+            self.protocol = self._generate_protocol()
+
         self.full_clean(exclude=None)
         super().save(*args, **kwargs)

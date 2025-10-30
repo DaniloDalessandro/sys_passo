@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { useWebSocket } from "@/hooks/useWebSocket"
 import {
   Card,
   CardContent,
@@ -49,12 +50,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import {
-  Search,
   Eye,
   CheckCircle,
   XCircle,
@@ -63,6 +62,10 @@ import {
   Car,
   User,
   AlertCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  RefreshCw,
 } from "lucide-react"
 
 import {
@@ -72,6 +75,8 @@ import {
   rejectDriverRequest,
   approveVehicleRequest,
   rejectVehicleRequest,
+  markDriverRequestAsViewed,
+  markVehicleRequestAsViewed,
   type DriverRequest,
   type VehicleRequest,
 } from "@/services/requests"
@@ -98,10 +103,10 @@ export default function SolicitacoesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
 
-  // Filters
+  // Filters and sorting
   const [statusFilter, setStatusFilter] = useState<string>('todas')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [sortField, setSortField] = useState<string>('')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   // Modals
   const [detailsDialog, setDetailsDialog] = useState<{
@@ -140,21 +145,68 @@ export default function SolicitacoesPage() {
 
   const [rejectionReason, setRejectionReason] = useState('')
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm)
-    }, 500)
+  // WebSocket para notificações em tempo real
+  const { isConnected } = useWebSocket('ws://127.0.0.1:8000/ws/requests/', {
+    onMessage: (message) => {
+      // Quando recebe notificação de nova solicitação
+      if (message.type === 'new_request') {
+        console.log('Nova solicitação recebida via WebSocket:', message);
 
-    return () => clearTimeout(timer)
-  }, [searchTerm])
+        // Cria URL para a página de detalhes
+        const detailsUrl = message.request_type === 'driver'
+          ? `/solicitacoes/motoristas/${message.request_id}`
+          : `/solicitacoes/veiculos/${message.request_id}`;
+
+        // Mostra notificação clicável com protocolo
+        const title = message.title || message.message || 'Nova solicitação recebida!';
+        const protocol = message.protocol || `#${message.request_id}`;
+
+        toast.info(title, {
+          description: `${protocol} - Clique para ver detalhes`,
+          action: {
+            label: 'Ver',
+            onClick: () => {
+              window.open(detailsUrl, '_blank');
+            },
+          },
+          duration: 10000, // 10 segundos
+        });
+
+        // Recarrega automaticamente a lista SOMENTE se estiver na aba correta
+        const isCorrectTab = (message.request_type === 'driver' && activeTab === 'driver') ||
+                            (message.request_type === 'vehicle' && activeTab === 'vehicle');
+
+        if (isCorrectTab) {
+          // Usa timeout para evitar múltiplas chamadas simultâneas
+          setTimeout(() => {
+            if (activeTab === 'driver') {
+              loadDriverRequests();
+            } else {
+              loadVehicleRequests();
+            }
+          }, 500);
+        }
+      } else if (message.type === 'connection_established') {
+        console.log('Conexão WebSocket confirmada');
+      }
+    },
+    onConnect: () => {
+      console.log('Conectado ao servidor WebSocket');
+    },
+    onDisconnect: () => {
+      console.log('Desconectado do servidor WebSocket');
+    },
+    onError: (error) => {
+      console.error('Erro no WebSocket:', error);
+    },
+  })
 
   // Load data
   const loadDriverRequests = useCallback(async () => {
     try {
       const filters: any = {}
       if (statusFilter !== 'todas') filters.status = statusFilter
-      if (debouncedSearch) filters.search = debouncedSearch
+      if (sortField) filters.ordering = sortOrder === 'desc' ? `-${sortField}` : sortField
 
       const data = await getDriverRequests(filters)
       // Garantir que sempre seja um array, mesmo se o service retornar algo inesperado
@@ -163,13 +215,13 @@ export default function SolicitacoesPage() {
       toast.error(error.message || 'Erro ao carregar solicitações de motoristas')
       setDriverRequests([]) // Define array vazio em caso de erro
     }
-  }, [statusFilter, debouncedSearch])
+  }, [statusFilter, sortField, sortOrder])
 
   const loadVehicleRequests = useCallback(async () => {
     try {
       const filters: any = {}
       if (statusFilter !== 'todas') filters.status = statusFilter
-      if (debouncedSearch) filters.search = debouncedSearch
+      if (sortField) filters.ordering = sortOrder === 'desc' ? `-${sortField}` : sortField
 
       const data = await getVehicleRequests(filters)
       // Garantir que sempre seja um array, mesmo se o service retornar algo inesperado
@@ -178,7 +230,7 @@ export default function SolicitacoesPage() {
       toast.error(error.message || 'Erro ao carregar solicitações de veículos')
       setVehicleRequests([]) // Define array vazio em caso de erro
     }
-  }, [statusFilter, debouncedSearch])
+  }, [statusFilter, sortField, sortOrder])
 
   const loadData = useCallback(async () => {
     setIsLoading(true)
@@ -203,6 +255,48 @@ export default function SolicitacoesPage() {
 
     loadData()
   }, [router, loadData])
+
+  // Handle sort
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // New field, default desc
+      setSortField(field)
+      setSortOrder('desc')
+    }
+  }
+
+  // Get sort icon
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
+    return sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 ml-1" /> : <ArrowDown className="h-3.5 w-3.5 ml-1" />
+  }
+
+  // Handle view request - marks as viewed and opens in new tab
+  const handleViewRequest = async (type: RequestType, id: number) => {
+    try {
+      // Mark as viewed
+      if (type === 'driver') {
+        await markDriverRequestAsViewed(id)
+      } else {
+        await markVehicleRequestAsViewed(id)
+      }
+
+      // Open in new tab
+      const url = type === 'driver' ? `/solicitacoes/motoristas/${id}` : `/solicitacoes/veiculos/${id}`
+      window.open(url, '_blank')
+
+      // Reload data to update the viewed status
+      await loadData()
+    } catch (error) {
+      // Silent fail - just open the page anyway
+      console.error('Error marking as viewed:', error)
+      const url = type === 'driver' ? `/solicitacoes/motoristas/${id}` : `/solicitacoes/veiculos/${id}`
+      window.open(url, '_blank')
+    }
+  }
 
   // Handle approve
   const handleApprove = async () => {
@@ -272,8 +366,8 @@ export default function SolicitacoesPage() {
           <User className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">Nenhuma solicitação encontrada</h3>
           <p className="text-sm text-muted-foreground">
-            {statusFilter !== 'todas' || debouncedSearch
-              ? 'Tente ajustar os filtros de busca'
+            {statusFilter !== 'todas'
+              ? 'Tente ajustar os filtros'
               : 'Não há solicitações de motoristas no momento'}
           </p>
         </div>
@@ -285,18 +379,52 @@ export default function SolicitacoesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('name')}
+              >
+                <div className="flex items-center">
+                  Nome
+                  {getSortIcon('name')}
+                </div>
+              </TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>CNH</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Data</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center">
+                  Status
+                  {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('created_at')}
+              >
+                <div className="flex items-center">
+                  Data
+                  {getSortIcon('created_at')}
+                </div>
+              </TableHead>
               <TableHead className="text-center w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.isArray(driverRequests) && driverRequests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="font-medium">{request.name}</TableCell>
+              <TableRow
+                key={request.id}
+                className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {!request.viewed_at && (
+                      <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
+                    )}
+                    {request.name}
+                  </div>
+                </TableCell>
                 <TableCell>{formatPhone(request.phone)}</TableCell>
                 <TableCell>
                   {request.license_number} - {formatCNHCategory(request.license_category)}
@@ -313,7 +441,7 @@ export default function SolicitacoesPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => window.open(`/solicitacoes/motoristas/${request.id}`, '_blank')}
+                      onClick={() => handleViewRequest('driver', request.id)}
                       title="Ver detalhes"
                     >
                       <Eye className="h-4 w-4" />
@@ -376,8 +504,8 @@ export default function SolicitacoesPage() {
           <Car className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold mb-2">Nenhuma solicitação encontrada</h3>
           <p className="text-sm text-muted-foreground">
-            {statusFilter !== 'todas' || debouncedSearch
-              ? 'Tente ajustar os filtros de busca'
+            {statusFilter !== 'todas'
+              ? 'Tente ajustar os filtros'
               : 'Não há solicitações de veículos no momento'}
           </p>
         </div>
@@ -389,20 +517,70 @@ export default function SolicitacoesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Placa</TableHead>
-              <TableHead>Marca/Modelo</TableHead>
-              <TableHead>Ano</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('plate')}
+              >
+                <div className="flex items-center">
+                  Placa
+                  {getSortIcon('plate')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('brand')}
+              >
+                <div className="flex items-center">
+                  Marca/Modelo
+                  {getSortIcon('brand')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('year')}
+              >
+                <div className="flex items-center">
+                  Ano
+                  {getSortIcon('year')}
+                </div>
+              </TableHead>
               <TableHead>Cor</TableHead>
               <TableHead>Combustível</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Data</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('status')}
+              >
+                <div className="flex items-center">
+                  Status
+                  {getSortIcon('status')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 select-none"
+                onClick={() => handleSort('created_at')}
+              >
+                <div className="flex items-center">
+                  Data
+                  {getSortIcon('created_at')}
+                </div>
+              </TableHead>
               <TableHead className="text-center w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.isArray(vehicleRequests) && vehicleRequests.map((request) => (
-              <TableRow key={request.id}>
-                <TableCell className="font-medium">{formatPlate(request.plate)}</TableCell>
+              <TableRow
+                key={request.id}
+                className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {!request.viewed_at && (
+                      <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
+                    )}
+                    {formatPlate(request.plate)}
+                  </div>
+                </TableCell>
                 <TableCell>{request.brand} {request.model}</TableCell>
                 <TableCell>{request.year}</TableCell>
                 <TableCell>{request.color}</TableCell>
@@ -419,7 +597,7 @@ export default function SolicitacoesPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => window.open(`/solicitacoes/veiculos/${request.id}`, '_blank')}
+                      onClick={() => handleViewRequest('vehicle', request.id)}
                       title="Ver detalhes"
                     >
                       <Eye className="h-4 w-4" />
@@ -699,51 +877,40 @@ export default function SolicitacoesPage() {
   return (
     <div className="flex flex-col gap-4 p-4 pt-2">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Gestão de Solicitações</h1>
-        <p className="text-sm text-muted-foreground">
-          Gerencie solicitações de cadastro de motoristas e veículos
-        </p>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={
-                    activeTab === 'driver'
-                      ? 'Buscar por nome, CPF ou email...'
-                      : 'Buscar por placa, marca ou modelo...'
-                  }
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <div className="w-full sm:w-48">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4" />
-                    <SelectValue placeholder="Filtrar por status" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  <SelectItem value="em_analise">Em Análise</SelectItem>
-                  <SelectItem value="aprovado">Aprovadas</SelectItem>
-                  <SelectItem value="reprovado">Reprovadas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Gestão de Solicitações</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie solicitações de cadastro de motoristas e veículos
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-48">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  <SelectValue placeholder="Filtrar por status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="em_analise">Em Análise</SelectItem>
+                <SelectItem value="aprovado">Aprovadas</SelectItem>
+                <SelectItem value="reprovado">Reprovadas</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => loadData()}
+            title="Atualizar"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RequestType)} className="w-full">

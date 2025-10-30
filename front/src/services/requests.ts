@@ -29,6 +29,7 @@ export interface DriverRequest {
   status: 'em_analise' | 'aprovado' | 'reprovado';
   status_display?: string;
   created_at: string;
+  viewed_at?: string;
   reviewed_at?: string;
   reviewed_by?: {
     id: number;
@@ -62,6 +63,7 @@ export interface VehicleRequest {
   message?: string;
   status: 'em_analise' | 'aprovado' | 'reprovado';
   created_at: string;
+  viewed_at?: string;
   reviewed_at?: string;
   reviewed_by?: {
     id: number;
@@ -165,6 +167,17 @@ export async function rejectDriverRequest(id: number, reason: string): Promise<v
   }
 }
 
+export async function markDriverRequestAsViewed(id: number): Promise<void> {
+  const response = await fetchWithAuth(`api/requests/drivers/${id}/mark_as_viewed/`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Erro ao marcar solicitação como visualizada');
+  }
+}
+
 // Vehicle Requests
 export async function getVehicleRequests(filters?: RequestFilters): Promise<VehicleRequest[]> {
   const params = new URLSearchParams();
@@ -222,5 +235,16 @@ export async function rejectVehicleRequest(id: number, reason: string): Promise<
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Erro ao reprovar solicitação');
+  }
+}
+
+export async function markVehicleRequestAsViewed(id: number): Promise<void> {
+  const response = await fetchWithAuth(`api/requests/vehicles/${id}/mark_as_viewed/`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Erro ao marcar solicitação como visualizada');
   }
 }

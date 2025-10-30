@@ -1,3 +1,4 @@
+import datetime
 import logging
 import re
 
@@ -232,6 +233,7 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
             'status',
             'status_display',
             'created_at',
+            'viewed_at',
             'reviewed_at',
             'reviewed_by',
             'rejection_reason',
@@ -240,6 +242,7 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'created_at',
+            'viewed_at',
             'reviewed_at',
             'reviewed_by',
             'conductor',
@@ -394,6 +397,7 @@ class VehicleRequestListSerializer(serializers.ModelSerializer):
             'status',
             'status_display',
             'created_at',
+            'viewed_at',
             'reviewed_at',
             'reviewed_by',
             'rejection_reason',
@@ -402,6 +406,7 @@ class VehicleRequestListSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'created_at',
+            'viewed_at',
             'reviewed_at',
             'reviewed_by',
             'vehicle',

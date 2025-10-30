@@ -48,6 +48,7 @@ import {
   getVehicleRequestById,
   approveVehicleRequest,
   rejectVehicleRequest,
+  markVehicleRequestAsViewed,
   type VehicleRequest,
 } from "@/services/requests"
 
@@ -85,6 +86,15 @@ export default function VehicleRequestDetailsPage() {
       setIsLoading(true)
       const data = await getVehicleRequestById(Number(id))
       setRequest(data)
+
+      // Mark as viewed if not already viewed
+      if (!data.viewed_at) {
+        try {
+          await markVehicleRequestAsViewed(Number(id))
+        } catch (error) {
+          console.error('Error marking as viewed:', error)
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar solicitação')
       router.push('/solicitacoes')
@@ -163,24 +173,24 @@ export default function VehicleRequestDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header fixo com fundo gradiente */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white shadow-lg">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/solicitacoes')}
-                className="hover:bg-gray-100 h-8 w-8"
+                className="hover:bg-white/20 text-white h-9 w-9"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Detalhes da Solicitação</h1>
-                <p className="text-xs text-gray-600">
-                  Solicitação #{request.id} - {request.brand} {request.model}
+                <h1 className="text-2xl font-bold">Solicitação de Veículo</h1>
+                <p className="text-sm text-indigo-100">
+                  #{request.id} - {request.brand} {request.model}
                 </p>
               </div>
             </div>
@@ -189,20 +199,23 @@ export default function VehicleRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Content com scroll */}
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-3">
+          <div className="xl:col-span-2 space-y-4">
             {/* Dados do Veículo */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Car className="h-4 w-4" />
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-indigo-900">
+                  <div className="p-2 bg-indigo-500 rounded-lg">
+                    <Car className="h-5 w-5 text-white" />
+                  </div>
                   Dados do Veículo
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3 pt-0">
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Placa</Label>
                   <p className="text-sm mt-1 font-medium font-mono">{formatPlate(request.plate)}</p>
@@ -224,14 +237,16 @@ export default function VehicleRequestDetailsPage() {
 
             {/* Documentação */}
             {(request.chassis_number || request.renavam) && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <FileText className="h-4 w-4" />
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
+                    <div className="p-2 bg-blue-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
                     Documentação
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3 pt-0">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                   {request.chassis_number && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">Chassi</Label>
@@ -249,14 +264,16 @@ export default function VehicleRequestDetailsPage() {
             )}
 
             {/* Características */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Gauge className="h-4 w-4" />
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-emerald-900">
+                  <div className="p-2 bg-emerald-500 rounded-lg">
+                    <Gauge className="h-5 w-5 text-white" />
+                  </div>
                   Características
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3 pt-0">
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <Palette className="h-3 w-3" />
@@ -288,14 +305,16 @@ export default function VehicleRequestDetailsPage() {
 
             {/* Fotos */}
             {(request.photo_1 || request.photo_2 || request.photo_3 || request.photo_4 || request.photo_5) && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <FileText className="h-4 w-4" />
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-amber-900">
+                    <div className="p-2 bg-amber-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
                     Fotos do Veículo
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {[request.photo_1, request.photo_2, request.photo_3, request.photo_4, request.photo_5]
                       .filter(photo => photo)
@@ -317,14 +336,16 @@ export default function VehicleRequestDetailsPage() {
 
             {/* Mensagem */}
             {request.message && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <FileText className="h-4 w-4" />
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-pink-900">
+                    <div className="p-2 bg-pink-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
                     Mensagem
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0">
+                <CardContent className="pt-4">
                   <p className="text-sm p-3 bg-muted rounded-md">{request.message}</p>
                 </CardContent>
               </Card>
@@ -332,30 +353,30 @@ export default function VehicleRequestDetailsPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-3">
+          <div className="xl:col-span-1 space-y-4">
             {/* Ações */}
             {request.status === 'em_analise' && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Ações</CardTitle>
+              <Card className="border-0 shadow-lg sticky top-4">
+                <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
+                  <CardTitle className="text-lg text-gray-900">Ações</CardTitle>
                   <CardDescription className="text-xs">
                     Analise a solicitação e tome uma decisão
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2 pt-0">
+                <CardContent className="space-y-3 pt-4">
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-10 text-sm font-medium shadow-md"
                     onClick={() => setApproveDialog(true)}
                   >
-                    <CheckCircle className="mr-2 h-3.5 w-3.5" />
+                    <CheckCircle className="mr-2 h-4 w-4" />
                     Aprovar Solicitação
                   </Button>
                   <Button
                     variant="destructive"
-                    className="w-full h-9 text-sm"
+                    className="w-full h-10 text-sm font-medium shadow-md"
                     onClick={() => setRejectDialog(true)}
                   >
-                    <XCircle className="mr-2 h-3.5 w-3.5" />
+                    <XCircle className="mr-2 h-4 w-4" />
                     Recusar Solicitação
                   </Button>
                 </CardContent>
@@ -363,14 +384,16 @@ export default function VehicleRequestDetailsPage() {
             )}
 
             {/* Informações da Solicitação */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Calendar className="h-4 w-4" />
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <div className="p-2 bg-gray-500 rounded-lg">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
                   Informações
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 pt-0">
+              <CardContent className="space-y-3 pt-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Data da Solicitação</Label>
                   <p className="text-sm mt-1">{formatDateTime(request.created_at)}</p>
@@ -392,30 +415,37 @@ export default function VehicleRequestDetailsPage() {
 
             {/* Reprovação */}
             {request.rejection_reason && (
-              <Card className="border-red-200 bg-red-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-red-700 text-base">Motivo da Reprovação</CardTitle>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-red-800 text-lg font-bold flex items-center gap-2">
+                    <XCircle className="h-5 w-5" />
+                    Motivo da Reprovação
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-xs text-red-900">{request.rejection_reason}</p>
+                  <p className="text-sm text-red-900 font-medium">{request.rejection_reason}</p>
                 </CardContent>
               </Card>
             )}
 
             {/* Veículo Criado */}
             {request.vehicle && (
-              <Card className="border-green-200 bg-green-50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-green-700 text-base">Veículo Criado</CardTitle>
+              <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-green-800 text-lg font-bold flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Veículo Criado
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-xs text-green-900">
+                  <p className="text-sm text-green-900 font-medium">
                     ID: {request.vehicle.id} - {formatPlate(request.vehicle.plate)}
                   </p>
                 </CardContent>
               </Card>
             )}
           </div>
+        </div>
         </div>
       </div>
 

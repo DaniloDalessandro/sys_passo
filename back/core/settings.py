@@ -35,6 +35,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Must be first for WebSocket support
     'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'sitehome',
     'requests',
     'complaints',
+    'notifications.apps.NotificationsConfig',
 
     # Third party apps
     'rest_framework',
@@ -56,6 +58,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
+    'channels',
 
     # Local apps
     'authentication.apps.AuthenticationConfig',
@@ -357,4 +360,22 @@ JAZZMIN_SETTINGS = {
     "site_brand": "Sys Passo",
     "welcome_sign": "Bem-vindo ao Sys Passo",
     "copyright": "Sys Passo",
+}
+
+# ============================================================================
+# CHANNELS CONFIGURATION (WebSocket Support)
+# ============================================================================
+
+ASGI_APPLICATION = 'core.asgi.application'
+
+# Channel layers configuration for WebSocket communication
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # Development only
+        # For production, use Redis:
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
 }

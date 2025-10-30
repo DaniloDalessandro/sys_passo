@@ -33,13 +33,13 @@ class Complaint(models.Model):
 
     # Dados da denúncia
     protocol = models.CharField(
-        max_length=8,
+        max_length=12,
         unique=True,
         editable=False,
         null=True,
         blank=True,
         verbose_name='Protocolo',
-        help_text='Protocolo gerado automaticamente (formato: YYYYNNNN)',
+        help_text='Protocolo gerado automaticamente (formato: CMP-YYYYNNNN)',
         db_index=True
     )
     vehicle = models.ForeignKey(
@@ -174,16 +174,16 @@ class Complaint(models.Model):
 
     def _generate_protocol(self):
         """
-        Gera protocolo automaticamente no formato YYYYNNNN.
+        Gera protocolo automaticamente no formato CMP-YYYYNNNN.
 
         Returns:
-            str: Protocolo único no formato ano + 4 dígitos sequenciais
+            str: Protocolo único no formato CMP-ano + 4 dígitos sequenciais
         """
         from django.utils import timezone
         from django.db.models import Max
 
         current_year = timezone.now().year
-        year_prefix = str(current_year)
+        year_prefix = f"CMP-{current_year}"
 
         # Buscar o último protocolo do ano atual
         last_complaint = Complaint.objects.filter(
@@ -194,7 +194,7 @@ class Complaint(models.Model):
 
         if last_protocol:
             # Extrair o número sequencial do último protocolo
-            last_number = int(last_protocol[4:])  # Pega os 4 últimos dígitos
+            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
             new_number = last_number + 1
         else:
             # Primeiro protocolo do ano

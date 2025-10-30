@@ -34,6 +34,11 @@ const DEFAULT_VISIBLE_COLUMNS = [
   "status"
 ];
 
+const DEFAULT_HIDDEN_COLUMNS = [
+  "created_by_username",
+  "updated_by_username"
+];
+
 export function VehicleDataTable({
   vehicles,
   totalCount,
@@ -53,7 +58,14 @@ export function VehicleDataTable({
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const savedVisibility = JSON.parse(saved);
+        // Garante que as colunas de auditoria sempre comecem desmarcadas
+        DEFAULT_HIDDEN_COLUMNS.forEach(col => {
+          savedVisibility[col] = false;
+        });
+        return savedVisibility;
+      }
     }
 
     const allColumns = [
@@ -64,7 +76,7 @@ export function VehicleDataTable({
 
     const initialVisibility: Record<string, boolean> = {};
     allColumns.forEach(col => {
-      initialVisibility[col] = DEFAULT_VISIBLE_COLUMNS.includes(col);
+      initialVisibility[col] = DEFAULT_VISIBLE_COLUMNS.includes(col) && !DEFAULT_HIDDEN_COLUMNS.includes(col);
     });
 
     return initialVisibility;

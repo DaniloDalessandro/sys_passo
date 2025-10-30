@@ -53,6 +53,7 @@ import {
   getDriverRequestById,
   approveDriverRequest,
   rejectDriverRequest,
+  markDriverRequestAsViewed,
   type DriverRequest,
 } from "@/services/requests"
 import { buildApiUrl } from "@/lib/api-client"
@@ -112,6 +113,15 @@ export default function DriverRequestDetailsPage() {
       setIsLoading(true)
       const data = await getDriverRequestById(Number(id))
       setRequest(data)
+
+      // Mark as viewed if not already viewed
+      if (!data.viewed_at) {
+        try {
+          await markDriverRequestAsViewed(Number(id))
+        } catch (error) {
+          console.error('Error marking as viewed:', error)
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar solicitação')
       router.push('/solicitacoes')
@@ -178,24 +188,24 @@ export default function DriverRequestDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header com fundo */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header fixo com fundo gradiente */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/solicitacoes')}
-                className="hover:bg-gray-100 h-8 w-8"
+                className="hover:bg-white/20 text-white h-9 w-9"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Detalhes da Solicitação</h1>
-                <p className="text-xs text-gray-600">
-                  Solicitação #{request.id} - {request.name}
+                <h1 className="text-2xl font-bold">Solicitação de Motorista</h1>
+                <p className="text-sm text-blue-100">
+                  #{request.id} - {request.name}
                 </p>
               </div>
             </div>
@@ -204,20 +214,23 @@ export default function DriverRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-3">
-          {/* Dados Pessoais */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <User className="h-4 w-4" />
-                Dados Pessoais
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3 pt-0">
+      {/* Content com scroll */}
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-6 py-6">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="xl:col-span-2 space-y-4">
+            {/* Dados Pessoais */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  Dados Pessoais
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Nome Completo</Label>
                 <p className="text-sm mt-1 font-medium">{request.name}</p>
@@ -247,15 +260,17 @@ export default function DriverRequestDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Contato */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Phone className="h-4 w-4" />
-                Informações de Contato
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3 pt-0">
+            {/* Contato */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-green-900">
+                  <div className="p-2 bg-green-500 rounded-lg">
+                    <Phone className="h-5 w-5 text-white" />
+                  </div>
+                  Informações de Contato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Email</Label>
                 <p className="text-sm mt-1">{request.email}</p>
@@ -273,16 +288,18 @@ export default function DriverRequestDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Endereço */}
-          {request.address && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MapPin className="h-4 w-4" />
-                  Endereço
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
+            {/* Endereço */}
+            {request.address && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-orange-900">
+                    <div className="p-2 bg-orange-500 rounded-lg">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    Endereço
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
                 <p className="text-sm">{request.address}</p>
                 {request.reference_point && (
                   <div className="mt-3">
@@ -294,15 +311,17 @@ export default function DriverRequestDetailsPage() {
             </Card>
           )}
 
-          {/* CNH */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard className="h-4 w-4" />
-                Carteira Nacional de Habilitação
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3 pt-0">
+            {/* CNH */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
+                  <div className="p-2 bg-purple-500 rounded-lg">
+                    <CreditCard className="h-5 w-5 text-white" />
+                  </div>
+                  Carteira Nacional de Habilitação
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Número da CNH</Label>
                 <p className="text-sm mt-1 font-medium">{request.license_number}</p>
@@ -318,36 +337,40 @@ export default function DriverRequestDetailsPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
 
-          {/* Mensagem */}
-          {request.message && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileText className="h-4 w-4" />
-                  Mensagem
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
+            {/* Mensagem */}
+            {request.message && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-pink-900">
+                    <div className="p-2 bg-pink-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
+                    Mensagem
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
                 <p className="text-sm p-3 bg-muted rounded-md">{request.message}</p>
               </CardContent>
             </Card>
           )}
 
-          {/* Documentos */}
-          {(request.document || request.cnh_digital || request.photo) && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <File className="h-4 w-4" />
-                  Documentos Anexados
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Clique em "Ver" para visualizar o documento em tela cheia
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-0">
+            {/* Documentos */}
+            {(request.document || request.cnh_digital || request.photo) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-cyan-50 to-sky-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-cyan-900">
+                    <div className="p-2 bg-cyan-500 rounded-lg">
+                      <File className="h-5 w-5 text-white" />
+                    </div>
+                    Documentos Anexados
+                  </CardTitle>
+                  <CardDescription className="text-xs text-cyan-700">
+                    Clique em "Ver" para visualizar o documento em tela cheia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-4">
                 {request.document && (
                   <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-2">
@@ -426,48 +449,50 @@ export default function DriverRequestDetailsPage() {
               </CardContent>
             </Card>
           )}
-        </div>
+          </div>
 
-        {/* Sidebar */}
-        <div className="space-y-3">
-          {/* Ações */}
-          {request.status === 'em_analise' && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Ações</CardTitle>
-                <CardDescription className="text-xs">
-                  Analise a solicitação e tome uma decisão
-                </CardDescription>
+          {/* Sidebar */}
+          <div className="xl:col-span-1 space-y-4">
+            {/* Ações */}
+            {request.status === 'em_analise' && (
+              <Card className="border-0 shadow-lg sticky top-4">
+                <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
+                  <CardTitle className="text-lg text-gray-900">Ações</CardTitle>
+                  <CardDescription className="text-xs">
+                    Analise a solicitação e tome uma decisão
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-4">
+                  <Button
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-10 text-sm font-medium shadow-md"
+                    onClick={() => setApproveDialog(true)}
+                  >
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Aprovar Solicitação
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full h-10 text-sm font-medium shadow-md"
+                    onClick={() => setRejectDialog(true)}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Recusar Solicitação
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Informações da Solicitação */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <div className="p-2 bg-gray-500 rounded-lg">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  Informações
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 pt-0">
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700 h-9 text-sm"
-                  onClick={() => setApproveDialog(true)}
-                >
-                  <CheckCircle className="mr-2 h-3.5 w-3.5" />
-                  Aprovar Solicitação
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="w-full h-9 text-sm"
-                  onClick={() => setRejectDialog(true)}
-                >
-                  <XCircle className="mr-2 h-3.5 w-3.5" />
-                  Recusar Solicitação
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Informações da Solicitação */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-4 w-4" />
-                Informações
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0">
+              <CardContent className="space-y-3 pt-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Data da Solicitação</Label>
                 <p className="text-sm mt-1">{formatDateTime(request.created_at)}</p>
@@ -485,35 +510,42 @@ export default function DriverRequestDetailsPage() {
                 </div>
               )}
             </CardContent>
-          </Card>
-
-          {/* Reprovação */}
-          {request.rejection_reason && (
-            <Card className="border-red-200 bg-red-50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-red-700 text-base">Motivo da Reprovação</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-xs text-red-900">{request.rejection_reason}</p>
-              </CardContent>
             </Card>
-          )}
 
-          {/* Condutor Criado */}
-          {request.conductor && (
-            <Card className="border-green-200 bg-green-50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-green-700 text-base">Condutor Criado</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-xs text-green-900">
-                  ID: {request.conductor.id} - {request.conductor.name}
-                </p>
-              </CardContent>
-            </Card>
-          )}
+            {/* Reprovação */}
+            {request.rejection_reason && (
+              <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-red-800 text-lg font-bold flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Motivo da Reprovação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-red-900 font-medium">{request.rejection_reason}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Condutor Criado */}
+            {request.conductor && (
+              <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-green-800 text-lg font-bold flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Condutor Criado
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-green-900 font-medium">
+                    ID: {request.conductor.id} - {request.conductor.name}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-      </div>
+        </div>
       </div>
 
       {/* Approve Dialog */}

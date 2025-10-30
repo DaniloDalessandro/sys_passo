@@ -15,6 +15,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { NotificationBadge } from "@/components/NotificationBadge"
 import { usePathname } from "next/navigation"
 import React, { memo, useMemo } from "react"
 
@@ -87,6 +88,9 @@ export default function Layout({
             className="mr-2 data-[orientation=vertical]:h-4"
           />
           <MemoizedBreadcrumb pathSegments={pathSegments} />
+          <div className="ml-auto">
+            <NotificationBadge />
+          </div>
         </header>
         <main className="flex-1 p-4 overflow-hidden w-full">{children}</main>
       </SidebarInset>
