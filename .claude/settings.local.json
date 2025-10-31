@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./venv/Scripts/python.exe:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []

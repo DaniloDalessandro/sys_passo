@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
@@ -26,8 +19,8 @@ import {
   FileText,
   File,
   Image as ImageIcon,
-  X,
   Eye,
+  AlertCircle,
 } from "lucide-react"
 import {
   Dialog,
@@ -104,7 +97,6 @@ export default function DriverRequestDetailsPage() {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
-    // Remove leading slash if exists
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     return `http://127.0.0.1:8000/${cleanPath}`;
   }
@@ -112,6 +104,44 @@ export default function DriverRequestDetailsPage() {
   const getPdfEndpointUrl = (requestId: number, type: 'document' | 'cnh') => {
     const endpoint = type === 'document' ? 'document-pdf' : 'cnh-pdf';
     return `http://127.0.0.1:8000/api/requests/drivers/${requestId}/${endpoint}/`;
+  }
+
+  const openPdfInNewTab = async (requestId: number, type: 'document' | 'cnh', title: string) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        toast.error('Token de autenticação não encontrado');
+        return;
+      }
+
+      const url = getPdfEndpointUrl(requestId, type);
+
+      // Fetch PDF with authentication
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao carregar PDF');
+      }
+
+      // Get PDF as blob
+      const blob = await response.blob();
+
+      // Create object URL and open in new tab
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+
+      // Clean up after a delay
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+
+      toast.success('PDF aberto em nova aba');
+    } catch (error: any) {
+      console.error('Error opening PDF:', error);
+      toast.error('Erro ao abrir PDF');
+    }
   }
 
   useEffect(() => {
@@ -130,7 +160,6 @@ export default function DriverRequestDetailsPage() {
       const data = await getDriverRequestById(Number(id))
       setRequest(data)
 
-      // Mark as viewed if not already viewed
       if (!data.viewed_at) {
         try {
           await markDriverRequestAsViewed(Number(id))
@@ -204,25 +233,22 @@ export default function DriverRequestDetailsPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header fixo com fundo gradiente */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-        <div className="container mx-auto px-6 py-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm sticky top-0 z-10">
+        <div className="max-w-full mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push('/solicitacoes')}
-                className="hover:bg-white/20 text-white h-9 w-9"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Solicitação de Motorista</h1>
-                <p className="text-sm text-blue-100">
-                  #{request.id} - {request.name}
-                </p>
+                <h1 className="text-xl font-semibold text-gray-900">{request.name}</h1>
+                <p className="text-sm text-gray-500">Protocolo #{request.id}</p>
               </div>
             </div>
             <RequestStatusBadge status={request.status} />
@@ -230,347 +256,279 @@ export default function DriverRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Content com scroll */}
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto px-6 py-6">
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* Content */}
+      <div className="max-w-full mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Main Content */}
-          <div className="xl:col-span-2 space-y-4">
+          <div className="lg:col-span-3 space-y-4">
             {/* Dados Pessoais */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-lg text-blue-900">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <User className="h-5 w-5 text-white" />
+            <div className="bg-white rounded-lg p-4">
+              <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <User className="h-4 w-4 text-blue-600" />
+                Dados Pessoais
+              </h2>
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-xs text-gray-500">Nome Completo</Label>
+                  <p className="text-sm font-medium mt-1">{request.name}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500">CPF</Label>
+                  <p className="text-sm font-medium mt-1">{formatCPF(request.cpf)}</p>
+                </div>
+                {request.birth_date && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Data de Nascimento</Label>
+                    <p className="text-sm mt-1">{new Date(request.birth_date).toLocaleDateString('pt-BR')}</p>
                   </div>
-                  Dados Pessoais
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Nome Completo</Label>
-                <p className="text-sm mt-1 font-medium">{request.name}</p>
+                )}
+                {request.gender_display && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Sexo</Label>
+                    <p className="text-sm mt-1">{request.gender_display}</p>
+                  </div>
+                )}
+                {request.nationality && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Nacionalidade</Label>
+                    <p className="text-sm mt-1">{request.nationality}</p>
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">CPF</Label>
-                <p className="text-sm mt-1 font-medium">{formatCPF(request.cpf)}</p>
-              </div>
-              {request.birth_date && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Data de Nascimento</Label>
-                  <p className="text-sm mt-1">{new Date(request.birth_date).toLocaleDateString('pt-BR')}</p>
-                </div>
-              )}
-              {request.gender_display && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Sexo</Label>
-                  <p className="text-sm mt-1">{request.gender_display}</p>
-                </div>
-              )}
-              {request.nationality && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Nacionalidade</Label>
-                  <p className="text-sm mt-1">{request.nationality}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
 
             {/* Contato */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-lg text-green-900">
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <Phone className="h-5 w-5 text-white" />
-                  </div>
-                  Informações de Contato
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Email</Label>
-                <p className="text-sm mt-1">{request.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Telefone</Label>
-                <p className="text-sm mt-1">{formatPhone(request.phone)}</p>
-              </div>
-              {request.whatsapp && (
+            <div className="bg-white rounded-lg p-4">
+              <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Phone className="h-4 w-4 text-green-600" />
+                Contato
+              </h2>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">WhatsApp</Label>
-                  <p className="text-sm mt-1">{formatPhone(request.whatsapp)}</p>
+                  <Label className="text-xs text-gray-500">Email</Label>
+                  <p className="text-sm mt-1">{request.email}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div>
+                  <Label className="text-xs text-gray-500">Telefone</Label>
+                  <p className="text-sm mt-1">{formatPhone(request.phone)}</p>
+                </div>
+                {request.whatsapp && (
+                  <div>
+                    <Label className="text-xs text-gray-500">WhatsApp</Label>
+                    <p className="text-sm mt-1">{formatPhone(request.whatsapp)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Endereço */}
             {request.address && (
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-lg text-orange-900">
-                    <div className="p-2 bg-orange-500 rounded-lg">
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-                    Endereço
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                <p className="text-sm">{request.address}</p>
-                {request.reference_point && (
-                  <div className="mt-3">
-                    <Label className="text-sm font-medium text-muted-foreground">Ponto de Referência</Label>
-                    <p className="text-sm mt-1">{request.reference_point}</p>
+              <div className="bg-white rounded-lg p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-orange-600" />
+                  Endereço
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Endereço Completo</Label>
+                    <p className="text-sm mt-1">{request.address}</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  {request.reference_point && (
+                    <div>
+                      <Label className="text-xs text-gray-500">Ponto de Referência</Label>
+                      <p className="text-sm mt-1">{request.reference_point}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* CNH */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-lg text-purple-900">
-                  <div className="p-2 bg-purple-500 rounded-lg">
-                    <CreditCard className="h-5 w-5 text-white" />
-                  </div>
-                  Carteira Nacional de Habilitação
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Número da CNH</Label>
-                <p className="text-sm mt-1 font-medium">{request.license_number}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Categoria</Label>
-                <p className="text-sm mt-1">{formatCNHCategory(request.license_category)}</p>
-              </div>
-              {request.license_expiry_date && (
+            <div className="bg-white rounded-lg p-4">
+              <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-purple-600" />
+                CNH
+              </h2>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Validade</Label>
-                  <p className="text-sm mt-1">{new Date(request.license_expiry_date).toLocaleDateString('pt-BR')}</p>
+                  <Label className="text-xs text-gray-500">Número</Label>
+                  <p className="text-sm font-medium mt-1">{request.license_number}</p>
                 </div>
-              )}
-            </CardContent>
-            </Card>
-
-            {/* Mensagem */}
-            {request.message && (
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-lg text-pink-900">
-                    <div className="p-2 bg-pink-500 rounded-lg">
-                      <FileText className="h-5 w-5 text-white" />
-                    </div>
-                    Mensagem
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                <p className="text-sm p-3 bg-muted rounded-md">{request.message}</p>
-              </CardContent>
-            </Card>
-          )}
+                <div>
+                  <Label className="text-xs text-gray-500">Categoria</Label>
+                  <p className="text-sm mt-1">{formatCNHCategory(request.license_category)}</p>
+                </div>
+                {request.license_expiry_date && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Validade</Label>
+                    <p className="text-sm mt-1">{new Date(request.license_expiry_date).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Documentos */}
             {(request.document || request.cnh_digital || request.photo) && (
-              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-4 bg-gradient-to-r from-cyan-50 to-sky-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-lg text-cyan-900">
-                    <div className="p-2 bg-cyan-500 rounded-lg">
-                      <File className="h-5 w-5 text-white" />
-                    </div>
-                    Documentos Anexados
-                  </CardTitle>
-                  <CardDescription className="text-xs text-cyan-700">
-                    Clique em "Ver" para visualizar o documento em tela cheia
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-4">
-                {request.document && (
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-500 rounded-lg">
-                        <File className="h-4 w-4 text-white" />
+              <div className="bg-white rounded-lg p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <File className="h-4 w-4 text-cyan-600" />
+                  Documentos
+                </h2>
+                <div className="space-y-2">
+                  {request.document && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <div className="flex items-center gap-3">
+                        <File className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium">Documento de Identificação</p>
+                          <p className="text-xs text-gray-500">PDF</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold text-blue-900">Documento de Identificação</p>
-                        <p className="text-[10px] text-blue-700">Arquivo PDF</p>
-                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => openPdfInNewTab(request.id, 'document', 'Documento de Identificação')}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
-                      onClick={() => {
-                        const pdfUrl = getPdfEndpointUrl(request.id, 'document');
-                        setPdfModal({
+                  )}
+                  {request.cnh_digital && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium">CNH Digital</p>
+                          <p className="text-xs text-gray-500">PDF</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => openPdfInNewTab(request.id, 'cnh', 'CNH Digital')}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                    </div>
+                  )}
+                  {request.photo && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="h-5 w-5 text-purple-600" />
+                        <div>
+                          <p className="text-sm font-medium">Foto</p>
+                          <p className="text-xs text-gray-500">Imagem</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => setDocumentModal({
                           open: true,
-                          url: pdfUrl,
-                          title: 'Documento de Identificação',
-                        });
-                      }}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Ver PDF
-                    </Button>
-                  </div>
-                )}
-                {request.cnh_digital && (
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-green-500 rounded-lg">
-                        <CreditCard className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-green-900">CNH Digital</p>
-                        <p className="text-[10px] text-green-700">Arquivo PDF</p>
-                      </div>
+                          url: request.photo!,
+                          title: 'Foto do Motorista',
+                        })}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white h-7 text-xs"
-                      onClick={() => {
-                        const pdfUrl = getPdfEndpointUrl(request.id, 'cnh');
-                        setPdfModal({
-                          open: true,
-                          url: pdfUrl,
-                          title: 'CNH Digital',
-                        });
-                      }}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Ver PDF
-                    </Button>
-                  </div>
-                )}
-                {request.photo && (
-                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-purple-500 rounded-lg">
-                        <ImageIcon className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-purple-900">Foto do Motorista</p>
-                        <p className="text-[10px] text-purple-700">Imagem JPG/PNG</p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs"
-                      onClick={() => setDocumentModal({
-                        open: true,
-                        url: request.photo!,
-                        title: 'Foto do Motorista',
-                      })}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Ver
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Mensagem */}
+            {request.message && (
+              <div className="bg-white rounded-lg p-4">
+                <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-pink-600" />
+                  Mensagem
+                </h2>
+                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{request.message}</p>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
-          <div className="xl:col-span-1 space-y-4">
+          <div className="space-y-4">
             {/* Ações */}
             {request.status === 'em_analise' && (
-              <Card className="border-0 shadow-lg sticky top-4">
-                <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
-                  <CardTitle className="text-lg text-gray-900">Ações</CardTitle>
-                  <CardDescription className="text-xs">
-                    Analise a solicitação e tome uma decisão
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-4">
+              <div className="bg-white rounded-lg p-4">
+                <h3 className="text-base font-semibold text-gray-900 mb-3">Ações</h3>
+                <div className="space-y-2">
                   <Button
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 h-10 text-sm font-medium shadow-md"
+                    className="w-full bg-green-600 hover:bg-green-700"
                     onClick={() => setApproveDialog(true)}
                   >
                     <CheckCircle className="mr-2 h-4 w-4" />
-                    Aprovar Solicitação
+                    Aprovar
                   </Button>
                   <Button
                     variant="destructive"
-                    className="w-full h-10 text-sm font-medium shadow-md"
+                    className="w-full"
                     onClick={() => setRejectDialog(true)}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
-                    Recusar Solicitação
+                    Recusar
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
-            {/* Informações da Solicitação */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <div className="p-2 bg-gray-500 rounded-lg">
-                    <Calendar className="h-5 w-5 text-white" />
+            {/* Informações */}
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-600" />
+                Informações
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-gray-500">Data da Solicitação</Label>
+                  <p className="text-sm mt-1">{formatDateTime(request.created_at)}</p>
+                </div>
+                {request.reviewed_at && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Data da Análise</Label>
+                    <p className="text-sm mt-1">{formatDateTime(request.reviewed_at)}</p>
                   </div>
-                  Informações
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-4">
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Data da Solicitação</Label>
-                <p className="text-sm mt-1">{formatDateTime(request.created_at)}</p>
+                )}
+                {request.reviewed_by && (
+                  <div>
+                    <Label className="text-xs text-gray-500">Analisado por</Label>
+                    <p className="text-sm mt-1">{request.reviewed_by.username}</p>
+                  </div>
+                )}
               </div>
-              {request.reviewed_at && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Data da Análise</Label>
-                  <p className="text-sm mt-1">{formatDateTime(request.reviewed_at)}</p>
-                </div>
-              )}
-              {request.reviewed_by && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Analisado por</Label>
-                  <p className="text-sm mt-1">{request.reviewed_by.username}</p>
-                </div>
-              )}
-            </CardContent>
-            </Card>
+            </div>
 
             {/* Reprovação */}
             {request.rejection_reason && (
-              <Card className="border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-red-800 text-lg font-bold flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" />
-                    Motivo da Reprovação
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-red-900 font-medium">{request.rejection_reason}</p>
-                </CardContent>
-              </Card>
+              <div className="bg-red-50 rounded-lg p-4">
+                <h3 className="text-base font-semibold text-red-900 mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Reprovação
+                </h3>
+                <p className="text-sm text-red-800">{request.rejection_reason}</p>
+              </div>
             )}
 
             {/* Condutor Criado */}
             {request.conductor && (
-              <Card className="border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-green-800 text-lg font-bold flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Condutor Criado
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-green-900 font-medium">
-                    ID: {request.conductor.id} - {request.conductor.name}
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="bg-green-50 rounded-lg p-4">
+                <h3 className="text-base font-semibold text-green-900 mb-2 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Criado
+                </h3>
+                <p className="text-sm text-green-800">
+                  ID: {request.conductor.id} - {request.conductor.name}
+                </p>
+              </div>
             )}
           </div>
         </div>
-        </div>
       </div>
 
-      {/* Approve Dialog */}
+      {/* Dialogs */}
       <AlertDialog open={approveDialog} onOpenChange={setApproveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -604,7 +562,6 @@ export default function DriverRequestDetailsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reject Dialog */}
       <Dialog open={rejectDialog} onOpenChange={(open) => {
         setRejectDialog(open)
         if (!open) setRejectionReason('')
@@ -668,50 +625,29 @@ export default function DriverRequestDetailsPage() {
 
       {/* Document Viewer Modal */}
       {documentModal.open && (
-        <div className="fixed inset-0 z-50 bg-black/80">
-          <div className="fixed inset-0 overflow-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <div className="relative w-full max-w-7xl h-[95vh] bg-white rounded-lg shadow-xl flex flex-col">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b bg-white rounded-t-lg">
-                  <h2 className="text-lg font-semibold text-gray-900">{documentModal.title}</h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-gray-100"
-                    onClick={() => setDocumentModal({ open: false, url: '', title: '' })}
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 overflow-hidden bg-gray-100 rounded-b-lg">
-                  {documentModal.url && (
-                    documentModal.url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                      <div className="w-full h-full flex items-center justify-center p-6">
-                        <img
-                          src={getDocumentUrl(documentModal.url)}
-                          alt={documentModal.title}
-                          className="max-w-full max-h-full object-contain rounded-lg shadow-lg bg-white"
-                        />
-                      </div>
-                    ) : (
-                      <embed
-                        src={getDocumentUrl(documentModal.url)}
-                        type="application/pdf"
-                        className="w-full h-full"
-                      />
-                    )
-                  )}
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setDocumentModal({ open: false, url: '', title: '' })}>
+          <div className="relative max-w-5xl w-full max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-100">
+              <h3 className="font-semibold">{documentModal.title}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDocumentModal({ open: false, url: '', title: '' })}
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <img
+                src={getDocumentUrl(documentModal.url)}
+                alt={documentModal.title}
+                className="max-w-full max-h-[calc(90vh-100px)] mx-auto"
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
       <PDFViewer
         open={pdfModal.open}
         onOpenChange={(open) => setPdfModal({ ...pdfModal, open })}
