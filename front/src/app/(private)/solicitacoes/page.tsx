@@ -888,23 +888,21 @@ export default function SolicitacoesPage() {
             Gerencie solicitações de cadastro de motoristas e veículos
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-48">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filtrar por status" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="em_analise">Em Análise</SelectItem>
-                <SelectItem value="aprovado">Aprovadas</SelectItem>
-                <SelectItem value="reprovado">Reprovadas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center gap-1">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px] h-9">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                <SelectValue placeholder="Filtrar por status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas</SelectItem>
+              <SelectItem value="em_analise">Em Análise</SelectItem>
+              <SelectItem value="aprovado">Aprovadas</SelectItem>
+              <SelectItem value="reprovado">Reprovadas</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             size="icon"
