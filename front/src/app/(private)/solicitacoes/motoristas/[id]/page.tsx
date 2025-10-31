@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { PDFViewer } from "@/components/PDFViewer"
 
 import {
   getDriverRequestById,
@@ -89,6 +90,16 @@ export default function DriverRequestDetailsPage() {
     title: '',
   })
 
+  const [pdfModal, setPdfModal] = useState<{
+    open: boolean;
+    url: string;
+    title: string;
+  }>({
+    open: false,
+    url: '',
+    title: '',
+  })
+
   const getDocumentUrl = (path: string) => {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
@@ -96,6 +107,11 @@ export default function DriverRequestDetailsPage() {
     // Remove leading slash if exists
     const cleanPath = path.startsWith('/') ? path.slice(1) : path;
     return `http://127.0.0.1:8000/${cleanPath}`;
+  }
+
+  const getPdfEndpointUrl = (requestId: number, type: 'document' | 'cnh') => {
+    const endpoint = type === 'document' ? 'document-pdf' : 'cnh-pdf';
+    return `http://127.0.0.1:8000/api/requests/drivers/${requestId}/${endpoint}/`;
   }
 
   useEffect(() => {
@@ -385,14 +401,17 @@ export default function DriverRequestDetailsPage() {
                     <Button
                       size="sm"
                       className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
-                      onClick={() => setDocumentModal({
-                        open: true,
-                        url: request.document!,
-                        title: 'Documento de Identificação',
-                      })}
+                      onClick={() => {
+                        const pdfUrl = getPdfEndpointUrl(request.id, 'document');
+                        setPdfModal({
+                          open: true,
+                          url: pdfUrl,
+                          title: 'Documento de Identificação',
+                        });
+                      }}
                     >
                       <Eye className="h-3 w-3 mr-1" />
-                      Ver
+                      Ver PDF
                     </Button>
                   </div>
                 )}
@@ -410,14 +429,17 @@ export default function DriverRequestDetailsPage() {
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700 text-white h-7 text-xs"
-                      onClick={() => setDocumentModal({
-                        open: true,
-                        url: request.cnh_digital!,
-                        title: 'CNH Digital',
-                      })}
+                      onClick={() => {
+                        const pdfUrl = getPdfEndpointUrl(request.id, 'cnh');
+                        setPdfModal({
+                          open: true,
+                          url: pdfUrl,
+                          title: 'CNH Digital',
+                        });
+                      }}
                     >
                       <Eye className="h-3 w-3 mr-1" />
-                      Ver
+                      Ver PDF
                     </Button>
                   </div>
                 )}
@@ -688,6 +710,14 @@ export default function DriverRequestDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* PDF Viewer Modal */}
+      <PDFViewer
+        open={pdfModal.open}
+        onOpenChange={(open) => setPdfModal({ ...pdfModal, open })}
+        pdfUrl={pdfModal.url}
+        title={pdfModal.title}
+      />
     </div>
   )
 }

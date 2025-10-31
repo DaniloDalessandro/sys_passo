@@ -420,6 +420,22 @@ class VehicleRequest(models.Model):
         help_text='Número de passageiros que o veículo comporta'
     )
 
+    # Documentos do veículo
+    crlv_pdf = models.FileField(
+        upload_to='requests/vehicle/documents/',
+        blank=True,
+        null=True,
+        verbose_name='CRLV (PDF)',
+        help_text='Certificado de Registro e Licenciamento de Veículo em PDF (opcional)'
+    )
+    insurance_pdf = models.FileField(
+        upload_to='requests/vehicle/documents/',
+        blank=True,
+        null=True,
+        verbose_name='Seguro (PDF)',
+        help_text='Documento do seguro do veículo em PDF (opcional)'
+    )
+
     # Fotos do veículo
     photo_1 = models.ImageField(
         upload_to='requests/vehicle/photos/',

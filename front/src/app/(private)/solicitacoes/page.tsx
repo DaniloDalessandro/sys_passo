@@ -419,11 +419,11 @@ export default function SolicitacoesPage() {
             {Array.isArray(driverRequests) && driverRequests.map((request) => (
               <TableRow
                 key={request.id}
-                className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
+                className={!request.viewed_at && request.status === 'em_analise' ? "bg-blue-50 hover:bg-blue-100/80" : ""}
               >
                 <TableCell className="font-medium pl-6">
                   <div className="flex items-center gap-2">
-                    {!request.viewed_at && (
+                    {!request.viewed_at && request.status === 'em_analise' && (
                       <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
                     )}
                     {request.name}
@@ -575,11 +575,11 @@ export default function SolicitacoesPage() {
             {Array.isArray(vehicleRequests) && vehicleRequests.map((request) => (
               <TableRow
                 key={request.id}
-                className={!request.viewed_at ? "bg-blue-50 hover:bg-blue-100/80" : ""}
+                className={!request.viewed_at && request.status === 'em_analise' ? "bg-blue-50 hover:bg-blue-100/80" : ""}
               >
                 <TableCell className="font-medium pl-6">
                   <div className="flex items-center gap-2">
-                    {!request.viewed_at && (
+                    {!request.viewed_at && request.status === 'em_analise' && (
                       <span className="h-2 w-2 rounded-full bg-blue-600" title="Não visualizada" />
                     )}
                     {formatPlate(request.plate)}

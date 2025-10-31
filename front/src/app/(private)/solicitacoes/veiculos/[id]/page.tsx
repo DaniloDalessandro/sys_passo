@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { PDFViewer } from "@/components/PDFViewer"
 
 import {
   getVehicleRequestById,
@@ -70,6 +71,21 @@ export default function VehicleRequestDetailsPage() {
   const [approveDialog, setApproveDialog] = useState(false)
   const [rejectDialog, setRejectDialog] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
+
+  const [pdfModal, setPdfModal] = useState<{
+    open: boolean;
+    url: string;
+    title: string;
+  }>({
+    open: false,
+    url: '',
+    title: '',
+  })
+
+  const getPdfEndpointUrl = (requestId: number, type: 'crlv' | 'insurance') => {
+    const endpoint = type === 'crlv' ? 'crlv-pdf' : 'insurance-pdf';
+    return `http://127.0.0.1:8000/api/requests/vehicles/${requestId}/${endpoint}/`;
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("access_token")
@@ -302,6 +318,79 @@ export default function VehicleRequestDetailsPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Documentos PDF */}
+            {(request.crlv_pdf || request.insurance_pdf) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardHeader className="pb-4 bg-gradient-to-r from-cyan-50 to-sky-50 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg text-cyan-900">
+                    <div className="p-2 bg-cyan-500 rounded-lg">
+                      <FileText className="h-5 w-5 text-white" />
+                    </div>
+                    Documentos do Veículo
+                  </CardTitle>
+                  <CardDescription className="text-xs text-cyan-700">
+                    Clique em "Ver PDF" para visualizar o documento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-4">
+                  {request.crlv_pdf && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-500 rounded-lg">
+                          <FileText className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-blue-900">CRLV</p>
+                          <p className="text-[10px] text-blue-700">Certificado de Registro e Licenciamento</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs"
+                        onClick={() => {
+                          const pdfUrl = getPdfEndpointUrl(request.id, 'crlv');
+                          setPdfModal({
+                            open: true,
+                            url: pdfUrl,
+                            title: 'CRLV - Certificado de Registro e Licenciamento',
+                          });
+                        }}
+                      >
+                        Ver PDF
+                      </Button>
+                    </div>
+                  )}
+                  {request.insurance_pdf && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-green-500 rounded-lg">
+                          <FileText className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-green-900">Seguro do Veículo</p>
+                          <p className="text-[10px] text-green-700">Documento do Seguro</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white h-7 text-xs"
+                        onClick={() => {
+                          const pdfUrl = getPdfEndpointUrl(request.id, 'insurance');
+                          setPdfModal({
+                            open: true,
+                            url: pdfUrl,
+                            title: 'Seguro do Veículo',
+                          });
+                        }}
+                      >
+                        Ver PDF
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Fotos */}
             {(request.photo_1 || request.photo_2 || request.photo_3 || request.photo_4 || request.photo_5) && (
@@ -544,6 +633,14 @@ export default function VehicleRequestDetailsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Viewer Modal */}
+      <PDFViewer
+        open={pdfModal.open}
+        onOpenChange={(open) => setPdfModal({ ...pdfModal, open })}
+        pdfUrl={pdfModal.url}
+        title={pdfModal.title}
+      />
     </div>
   )
 }

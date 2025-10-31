@@ -55,6 +55,8 @@ export interface VehicleRequest {
   fuel_type: string;
   category?: string;
   passenger_capacity?: number;
+  crlv_pdf?: string;
+  insurance_pdf?: string;
   photo_1?: string;
   photo_2?: string;
   photo_3?: string;

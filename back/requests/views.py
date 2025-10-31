@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db import transaction
 from django.utils import timezone
+from django.http import FileResponse, Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 import logging
+import os
 
 from .models import DriverRequest, VehicleRequest
 from .serializers import (
@@ -252,6 +254,56 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='document-pdf')
+    def view_document_pdf(self, request, pk=None):
+        """
+        Retorna o PDF do documento do motorista para visualização inline.
+        """
+        driver_request = self.get_object()
+
+        if not driver_request.document:
+            raise Http404("Documento não encontrado")
+
+        try:
+            file_path = driver_request.document.path
+            if not os.path.exists(file_path):
+                raise Http404("Arquivo não encontrado no servidor")
+
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = 'inline; filename="documento.pdf"'
+            return response
+        except Exception as e:
+            logger.error(f"Erro ao servir PDF do documento: {str(e)}")
+            raise Http404("Erro ao carregar documento")
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='cnh-pdf')
+    def view_cnh_pdf(self, request, pk=None):
+        """
+        Retorna o PDF da CNH digital do motorista para visualização inline.
+        """
+        driver_request = self.get_object()
+
+        if not driver_request.cnh_digital:
+            raise Http404("CNH digital não encontrada")
+
+        try:
+            file_path = driver_request.cnh_digital.path
+            if not os.path.exists(file_path):
+                raise Http404("Arquivo não encontrado no servidor")
+
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = 'inline; filename="cnh_digital.pdf"'
+            return response
+        except Exception as e:
+            logger.error(f"Erro ao servir PDF da CNH: {str(e)}")
+            raise Http404("Erro ao carregar CNH digital")
+
 
 class VehicleRequestViewSet(viewsets.ModelViewSet):
     """
@@ -474,3 +526,53 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                 {'error': 'Erro ao processar reprovação. Tente novamente mais tarde.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='crlv-pdf')
+    def view_crlv_pdf(self, request, pk=None):
+        """
+        Retorna o PDF do CRLV do veículo para visualização inline.
+        """
+        vehicle_request = self.get_object()
+
+        if not vehicle_request.crlv_pdf:
+            raise Http404("CRLV não encontrado")
+
+        try:
+            file_path = vehicle_request.crlv_pdf.path
+            if not os.path.exists(file_path):
+                raise Http404("Arquivo não encontrado no servidor")
+
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = 'inline; filename="crlv.pdf"'
+            return response
+        except Exception as e:
+            logger.error(f"Erro ao servir PDF do CRLV: {str(e)}")
+            raise Http404("Erro ao carregar CRLV")
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='insurance-pdf')
+    def view_insurance_pdf(self, request, pk=None):
+        """
+        Retorna o PDF do seguro do veículo para visualização inline.
+        """
+        vehicle_request = self.get_object()
+
+        if not vehicle_request.insurance_pdf:
+            raise Http404("Seguro não encontrado")
+
+        try:
+            file_path = vehicle_request.insurance_pdf.path
+            if not os.path.exists(file_path):
+                raise Http404("Arquivo não encontrado no servidor")
+
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = 'inline; filename="seguro.pdf"'
+            return response
+        except Exception as e:
+            logger.error(f"Erro ao servir PDF do seguro: {str(e)}")
+            raise Http404("Erro ao carregar seguro")
