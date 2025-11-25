@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
+from core.throttling import PublicWriteThrottle
 from .models import Complaint, ComplaintPhoto
 from .serializers import (
     ComplaintCreateSerializer,
@@ -71,6 +72,20 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [AllowAny()]
         return [IsAuthenticated()]
+
+    def get_throttles(self):
+        """
+        Define throttling baseado na ação.
+
+        - create: PublicWriteThrottle (20 requests/hour) - protege contra spam de denúncias
+        - Demais ações: Sem throttle (usuários autenticados)
+
+        Returns:
+            list: Lista de instâncias de throttles
+        """
+        if self.action == 'create':
+            return [PublicWriteThrottle()]
+        return []
 
     def get_queryset(self):
         """

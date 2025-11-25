@@ -10,6 +10,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 import logging
 import os
 
+from core.throttling import PublicWriteThrottle
 from .models import DriverRequest, VehicleRequest
 from .serializers import (
     DriverRequestCreateSerializer,
@@ -71,11 +72,24 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def get_throttles(self):
+        """
+        Define throttling baseado na ação.
+
+        - create: PublicWriteThrottle (20 requests/hour) - protege contra spam
+        - Demais ações: Sem throttle (usuários autenticados)
+        """
+        if self.action == 'create':
+            return [PublicWriteThrottle()]
+        return []
+
     def create(self, request, *args, **kwargs):
         """
         Cria uma nova solicitação de motorista.
 
         Endpoint público para receber solicitações do site.
+
+        Rate Limit: 20 requests/hour per IP
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -149,10 +163,23 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Validar campos obrigatórios antes de aprovar
+        if not driver_request.birth_date:
+            return Response(
+                {'error': 'Data de nascimento não informada na solicitação. Complete os dados antes de aprovar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not driver_request.license_expiry_date:
+            return Response(
+                {'error': 'Data de validade da CNH não informada na solicitação. Complete os dados antes de aprovar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Usar transação atômica para garantir consistência
         try:
             with transaction.atomic():
-                # Criar o condutor com dados básicos da solicitação
+                # Criar o condutor com dados da solicitação
                 conductor = Conductor.objects.create(
                     name=driver_request.name,
                     cpf=driver_request.cpf,
@@ -165,13 +192,19 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
                     nationality=driver_request.nationality or 'Brasileira',
                     is_active=True,
                     created_by=request.user,
-                    # Campos obrigatórios com valores padrão (devem ser atualizados depois)
-                    birth_date=timezone.now().date(),  # Deve ser atualizado
-                    license_expiry_date=timezone.now().date(),  # Deve ser atualizado
-                    street='',
-                    number='',
-                    neighborhood='',
-                    city='',
+                    # Usar dados reais da solicitação
+                    birth_date=driver_request.birth_date,
+                    license_expiry_date=driver_request.license_expiry_date,
+                    # Endereço (usar da solicitação ou valores vazios)
+                    street=driver_request.street or '',
+                    number=driver_request.number or '',
+                    neighborhood=driver_request.neighborhood or '',
+                    city=driver_request.city or '',
+                    reference_point=driver_request.reference_point or '',
+                    # Documentos (se disponíveis)
+                    document=driver_request.document,
+                    cnh_digital=driver_request.cnh_digital,
+                    photo=driver_request.photo,
                 )
 
                 # Atualizar a solicitação
@@ -429,6 +462,32 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Validar se chassis e renavam foram informados (são únicos no banco)
+        if not vehicle_request.chassis_number:
+            return Response(
+                {'error': 'Número do chassi não informado na solicitação. Complete os dados antes de aprovar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not vehicle_request.renavam:
+            return Response(
+                {'error': 'Número do RENAVAM não informado na solicitação. Complete os dados antes de aprovar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verificar se já existe veículo com o chassis ou renavam informados
+        if Vehicle.objects.filter(chassis_number=vehicle_request.chassis_number).exists():
+            return Response(
+                {'error': 'Já existe um veículo cadastrado com este número de chassi.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if Vehicle.objects.filter(renavam=vehicle_request.renavam).exists():
+            return Response(
+                {'error': 'Já existe um veículo cadastrado com este RENAVAM.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Usar transação atômica para garantir consistência
         try:
             with transaction.atomic():
@@ -442,9 +501,17 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                     fuel_type=vehicle_request.fuel_type,
                     is_active=True,
                     created_by=request.user,
-                    # Campos obrigatórios com valores padrão (devem ser atualizados depois)
-                    chassis_number=f'TEMP_{vehicle_request.plate}',  # Deve ser atualizado
-                    renavam=f'TEMP_{vehicle_request.plate}',  # Deve ser atualizado
+                    # Usar dados reais da solicitação
+                    chassis_number=vehicle_request.chassis_number,
+                    renavam=vehicle_request.renavam,
+                    category=vehicle_request.category,
+                    passenger_capacity=vehicle_request.passenger_capacity,
+                    # Fotos (se disponíveis)
+                    photo_1=vehicle_request.photo_1,
+                    photo_2=vehicle_request.photo_2,
+                    photo_3=vehicle_request.photo_3,
+                    photo_4=vehicle_request.photo_4,
+                    photo_5=vehicle_request.photo_5,
                 )
 
                 # Atualizar a solicitação

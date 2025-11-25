@@ -1,9 +1,10 @@
 from rest_framework import viewsets, permissions, status, filters
-from rest_framework.decorators import api_view, permission_classes as drf_permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import FilterSet, CharFilter, NumberFilter
+from core.throttling import PublicReadThrottle
 from .models import Vehicle
 from .serializers import VehicleSerializer
 
@@ -54,7 +55,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
-@drf_permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated])
 def vehicle_stats(request):
     """
     API endpoint que retorna estatísticas dos veículos.
@@ -118,5 +119,98 @@ def vehicle_stats(request):
     except Exception as e:
         return Response({
             'error': 'Falha ao obter estatísticas',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+@throttle_classes([PublicReadThrottle])
+def search_vehicles_by_plate(request):
+    """
+    API endpoint público para buscar veículos por placa (autocomplete).
+    Retorna apenas dados básicos: placa, marca, modelo
+
+    Rate Limit: 100 requests/hour per IP
+    """
+    search_query = request.GET.get('search', '').strip().upper()
+
+    if not search_query or len(search_query) < 2:
+        return Response([], status=status.HTTP_200_OK)
+
+    try:
+        # Buscar veículos ativos que começam com a placa digitada
+        vehicles = Vehicle.objects.filter(
+            plate__icontains=search_query,
+            is_active=True
+        ).values('plate', 'brand', 'model')[:10]  # Limitar a 10 resultados
+
+        return Response(list(vehicles), status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'error': 'Erro ao buscar veículos',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+@throttle_classes([PublicReadThrottle])
+def get_vehicle_by_plate(request, plate):
+    """
+    API endpoint público para buscar dados completos de um veículo por placa.
+    Retorna dados do veículo e do motorista atual vinculado.
+
+    Rate Limit: 100 requests/hour per IP
+    """
+    try:
+        plate = plate.strip().upper()
+
+        # Buscar veículo pela placa
+        vehicle = Vehicle.objects.filter(
+            plate__iexact=plate,
+            is_active=True
+        ).prefetch_related('conductors').first()
+
+        if not vehicle:
+            return Response({
+                'error': 'Veículo não encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Dados básicos do veículo
+        vehicle_data = {
+            'plate': vehicle.plate,
+            'brand': vehicle.brand,
+            'model': vehicle.model,
+            'year': vehicle.year,
+            'color': vehicle.color,
+            'fuel_type': vehicle.fuel_type,
+            'category': vehicle.category,
+            'passenger_capacity': vehicle.passenger_capacity,
+            'chassis_number': vehicle.chassis_number,
+            'renavam': vehicle.renavam,
+        }
+
+        # Buscar motorista ativo vinculado ao veículo
+        current_conductor = vehicle.conductors.filter(is_active=True).first()
+
+        if current_conductor:
+            vehicle_data['current_conductor'] = {
+                'full_name': current_conductor.full_name,
+                'cpf': current_conductor.cpf,
+                'cnh_number': current_conductor.cnh_number,
+                'cnh_category': current_conductor.cnh_category,
+                'phone': current_conductor.phone,
+                'email': current_conductor.email,
+            }
+        else:
+            vehicle_data['current_conductor'] = None
+
+        return Response(vehicle_data, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'error': 'Erro ao buscar veículo',
             'details': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

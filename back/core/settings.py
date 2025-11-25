@@ -26,10 +26,22 @@ load_dotenv(BASE_DIR / '.env')
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Validar se SECRET_KEY está configurada
+if not SECRET_KEY:
+    raise ValueError(
+        "DJANGO_SECRET_KEY não está configurada no arquivo .env! "
+        "Esta variável é obrigatória para a segurança do sistema."
+    )
 
-ALLOWED_HOSTS = []
+# SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG deve ser False em produção. Use DEBUG=True apenas em desenvolvimento.
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+# ALLOWED_HOSTS - Lista de hosts/domínios permitidos (separados por vírgula no .env)
+# Exemplo no .env: ALLOWED_HOSTS=localhost,127.0.0.1,seudominio.com
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Remove espaços em branco de cada host
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 
 
 # Application definition
@@ -177,7 +189,11 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
-        'user': '10000/hour'
+        'user': '10000/hour',
+        'public_read': '100/hour',      # Leitura pública (GET)
+        'public_write': '20/hour',      # Escrita pública (POST) - mais restritivo
+        'auth': '10/hour',              # Autenticação - prevenir brute force
+        'password_reset': '5/hour',     # Reset de senha - muito restritivo
     },
     'UNICODE_JSON': True,
     'STRICT_JSON': True,
@@ -288,10 +304,66 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Security Settings
+# ============================================================================
+# SECURITY SETTINGS
+# ============================================================================
+
+# Configurações básicas de segurança (sempre ativas)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# Configurações de segurança para PRODUÇÃO
+# Estas configurações são ativadas automaticamente quando DEBUG=False
+if not DEBUG:
+    # HTTPS/SSL Settings
+    SECURE_SSL_REDIRECT = True  # Redireciona HTTP para HTTPS
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Cookie Security
+    SESSION_COOKIE_SECURE = True  # Cookies de sessão apenas via HTTPS
+    CSRF_COOKIE_SECURE = True  # Cookies CSRF apenas via HTTPS
+    SESSION_COOKIE_HTTPONLY = True  # Cookies não acessíveis via JavaScript
+    CSRF_COOKIE_HTTPONLY = True
+
+    # HSTS (HTTP Strict Transport Security)
+    # Força o navegador a usar apenas HTTPS por 1 ano
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Content Security Policy
+    # Descomente e ajuste conforme necessário:
+    # CSP_DEFAULT_SRC = ("'self'",)
+    # CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'")
+    # CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+
+else:
+    # Desenvolvimento: cookies podem funcionar sem HTTPS
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+
+# Cookie Settings (aplicam tanto em dev quanto prod)
+SESSION_COOKIE_SAMESITE = 'Lax'  # Proteção contra CSRF
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_NAME = 'syspasso_sessionid'  # Nome customizado
+CSRF_COOKIE_NAME = 'syspasso_csrftoken'
+
+# CSRF Trusted Origins - Domínios confiáveis para requisições CSRF
+# Adicione seus domínios de produção aqui (separados por vírgula no .env)
+# Exemplo: CSRF_TRUSTED_ORIGINS=https://seudominio.com,https://api.seudominio.com
+CSRF_TRUSTED_ORIGINS_ENV = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if CSRF_TRUSTED_ORIGINS_ENV:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(',') if origin.strip()]
+else:
+    # Valores padrão para desenvolvimento
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
 
 # Custom User Settings
 AUTH_USER_MODEL = 'auth.User'  # Using default Django User model

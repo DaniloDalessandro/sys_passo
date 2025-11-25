@@ -3,15 +3,16 @@ from django.contrib.auth import authenticate
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
-# Rate limiting disabled for development
 from rest_framework import status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+
+from core.throttling import AuthThrottle, PasswordResetThrottle, PublicReadThrottle
 
 from .models import UserProfile, EmailVerification, PasswordResetToken
 from .serializers import (
@@ -66,8 +67,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class UserRegistrationView(APIView):
     """
     Register a new user account with JWT tokens
+
+    Rate Limit: 10 requests/hour per IP (prevents automated account creation)
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [AuthThrottle]
 
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
@@ -274,9 +278,12 @@ class PasswordChangeView(APIView):
 class PasswordResetRequestView(APIView):
     """
     Request password reset - send email with reset token
+
+    Rate Limit: 5 requests/hour per IP (prevents password reset abuse)
     """
     permission_classes = [permissions.AllowAny]
-    
+    throttle_classes = [PasswordResetThrottle]
+
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -329,9 +336,12 @@ class PasswordResetRequestView(APIView):
 class PasswordResetConfirmView(APIView):
     """
     Confirm password reset with token and set new password
+
+    Rate Limit: 10 requests/hour per IP (prevents token brute force)
     """
     permission_classes = [permissions.AllowAny]
-    
+    throttle_classes = [AuthThrottle]
+
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
@@ -374,9 +384,12 @@ class PasswordResetConfirmView(APIView):
 class EmailVerificationView(APIView):
     """
     Verify user email with verification token
+
+    Rate Limit: 10 requests/hour per IP (prevents token brute force)
     """
     permission_classes = [permissions.AllowAny]
-    
+    throttle_classes = [AuthThrottle]
+
     def post(self, request):
         serializer = EmailVerificationSerializer(data=request.data)
         if serializer.is_valid():
@@ -412,9 +425,12 @@ class EmailVerificationView(APIView):
 class ResendEmailVerificationView(APIView):
     """
     Resend email verification token
+
+    Rate Limit: 5 requests/hour per IP (prevents email spam)
     """
     permission_classes = [permissions.AllowAny]
-    
+    throttle_classes = [PasswordResetThrottle]
+
     def post(self, request):
         serializer = ResendEmailVerificationSerializer(data=request.data)
         if serializer.is_valid():
@@ -525,9 +541,12 @@ def verify_token(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([PublicReadThrottle])
 def auth_status(request):
     """
     Check authentication status and configuration
+
+    Rate Limit: 100 requests/hour per IP
     """
     return Response({
         'authentication_type': 'JWT',

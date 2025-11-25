@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
+from core.throttling import PublicReadThrottle
 from .models import SiteConfiguration
 from .serializers import SiteConfigurationSerializer
 
@@ -18,11 +19,14 @@ class SiteConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
 
     Note: Editing is done exclusively through Django Admin (/admin/)
     Only superusers can modify configuration via Django Admin.
+
+    Rate Limit: 100 requests/hour per IP (read-only public access)
     """
 
     queryset = SiteConfiguration.objects.all()
     serializer_class = SiteConfigurationSerializer
     permission_classes = [AllowAny]  # Public read-only access
+    throttle_classes = [PublicReadThrottle]  # Rate limiting
 
     def get_queryset(self):
         """
