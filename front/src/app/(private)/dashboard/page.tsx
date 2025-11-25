@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,96 +15,94 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
   Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
 } from "recharts"
 import {
+  Car,
   Users,
   FileText,
-  DollarSign,
-  Heart,
+  AlertCircle,
   TrendingUp,
-  TrendingDown,
-  Clock,
-  CheckCircle,
   Maximize2,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CheckCircle,
+  Clock,
+  XCircle
 } from "lucide-react"
 
-// Mock data for charts
-const contractStatusData = [
-  { name: 'Ativos', value: 45, color: '#10b981' },
-  { name: 'Expirados', value: 12, color: '#ef4444' },
-  { name: 'Em Análise', value: 8, color: '#f59e0b' },
-  { name: 'Suspensos', value: 3, color: '#6b7280' },
+// Dados modernos para o sistema de veículos e condutores
+const vehicleStatusData = [
+  { name: 'Ativos', value: 156, color: '#10b981' },
+  { name: 'Manutenção', value: 23, color: '#f59e0b' },
+  { name: 'Inativos', value: 12, color: '#ef4444' },
+  { name: 'Reserva', value: 8, color: '#6366f1' },
 ]
 
-const monthlyContractValues = [
-  { month: 'Jan', value: 2450000, contracts: 12 },
-  { month: 'Fev', value: 2800000, contracts: 15 },
-  { month: 'Mar', value: 3200000, contracts: 18 },
-  { month: 'Abr', value: 2900000, contracts: 14 },
-  { month: 'Mai', value: 3500000, contracts: 21 },
-  { month: 'Jun', value: 4200000, contracts: 25 },
+const monthlyRegistrations = [
+  { month: 'Jan', veiculos: 12, condutores: 18 },
+  { month: 'Fev', veiculos: 15, condutores: 22 },
+  { month: 'Mar', veiculos: 18, condutores: 25 },
+  { month: 'Abr', veiculos: 14, condutores: 20 },
+  { month: 'Mai', veiculos: 21, condutores: 28 },
+  { month: 'Jun', veiculos: 25, condutores: 32 },
 ]
 
-const budgetUtilizationData = [
-  { category: 'Obras', utilizado: 2800000, total: 4000000 },
-  { category: 'Serviços', utilizado: 1500000, total: 2200000 },
-  { category: 'Equipamentos', utilizado: 800000, total: 1200000 },
-  { category: 'Consultoria', utilizado: 600000, total: 1000000 },
-  { category: 'Manutenção', utilizado: 400000, total: 800000 },
+const categoryDistribution = [
+  { category: 'Micro-ônibus', quantidade: 45, percentage: 23 },
+  { category: 'Van', quantidade: 67, percentage: 34 },
+  { category: 'Ônibus', quantidade: 52, percentage: 26 },
+  { category: 'Executivo', quantidade: 35, percentage: 17 },
 ]
 
-const contractTimelineData = [
-  { month: 'Jan', novos: 5, renovados: 3, finalizados: 2 },
-  { month: 'Fev', novos: 8, renovados: 4, finalizados: 1 },
-  { month: 'Mar', novos: 12, renovados: 2, finalizados: 3 },
-  { month: 'Abr', novos: 6, renovados: 5, finalizados: 4 },
-  { month: 'Mai', novos: 10, renovados: 3, finalizados: 2 },
-  { month: 'Jun', novos: 15, renovados: 6, finalizados: 5 },
+const requestsStatus = [
+  { month: 'Jan', aprovadas: 15, pendentes: 8, rejeitadas: 2 },
+  { month: 'Fev', aprovadas: 22, pendentes: 5, rejeitadas: 3 },
+  { month: 'Mar', aprovadas: 18, pendentes: 12, rejeitadas: 1 },
+  { month: 'Abr', aprovadas: 25, pendentes: 7, rejeitadas: 4 },
+  { month: 'Mai', aprovadas: 20, pendentes: 10, rejeitadas: 2 },
+  { month: 'Jun', aprovadas: 28, pendentes: 6, rejeitadas: 3 },
 ]
 
-// Format currency in Brazilian Real
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
-}
+const performanceMetrics = [
+  { subject: 'Pontualidade', A: 92, fullMark: 100 },
+  { subject: 'Segurança', A: 88, fullMark: 100 },
+  { subject: 'Satisfação', A: 95, fullMark: 100 },
+  { subject: 'Manutenção', A: 78, fullMark: 100 },
+  { subject: 'Disponibilidade', A: 85, fullMark: 100 },
+]
 
-// Format percentage
-const formatPercentage = (value: number, total: number) => {
-  return `${Math.round((value / total) * 100)}%`
-}
-
-// Interfaces for chart fullscreen state
+// Interfaces para estado do gráfico
 interface ChartStates {
-  contractStatus: { fullscreen: boolean }
-  monthlyValues: { fullscreen: boolean }
-  budgetUtilization: { fullscreen: boolean }
-  contractTimeline: { fullscreen: boolean }
+  vehicleStatus: { fullscreen: boolean }
+  monthlyRegistrations: { fullscreen: boolean }
+  categoryDistribution: { fullscreen: boolean }
+  requestsStatus: { fullscreen: boolean }
+  performanceMetrics: { fullscreen: boolean }
 }
 
-// Chart Card Wrapper Component
+// Componente de Card de Gráfico
 interface ChartCardProps {
   title: string
   children: React.ReactNode
@@ -124,26 +122,26 @@ function ChartCard({
 
   return (
     <>
-      <Card>
-        <CardHeader className="p-3 pb-2">
+      <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+            <CardTitle className="text-sm font-semibold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{title}</CardTitle>
             <Dialog open={isFullscreen} onOpenChange={() => onToggleFullscreen(chartKey)}>
               <DialogTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors hover:bg-blue-50"
                   title="Tela cheia"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-white !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" hideClose>
-                <div className="h-screen w-screen flex flex-col bg-white">
-                  <div className="flex-shrink-0 p-6 pb-4 border-b bg-white shadow-sm">
+              <DialogContent className="!max-w-none !w-screen !h-screen !p-0 !m-0 !rounded-none !border-0 !bg-gradient-to-br !from-gray-50 !to-gray-100 !top-0 !left-0 !translate-x-0 !translate-y-0 !fixed !inset-0 !z-50" hideClose>
+                <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+                  <div className="flex-shrink-0 p-6 pb-4 border-b bg-white/80 backdrop-blur-sm shadow-sm">
                     <div className="flex items-center justify-between">
-                      <DialogTitle className="text-2xl font-semibold text-gray-900">{title}</DialogTitle>
+                      <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{title}</DialogTitle>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -155,8 +153,8 @@ function ChartCard({
                       </Button>
                     </div>
                   </div>
-                  <div className="flex-1 p-8 bg-gray-50 overflow-hidden">
-                    <div className="h-full bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                  <div className="flex-1 p-8 overflow-hidden">
+                    <div className="h-full bg-white rounded-2xl shadow-2xl border border-gray-200 p-8">
                       <ResponsiveContainer width="100%" height="100%">
                         {children}
                       </ResponsiveContainer>
@@ -167,8 +165,8 @@ function ChartCard({
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <ResponsiveContainer width="100%" height={130}>
+        <CardContent className="p-4 pt-0">
+          <ResponsiveContainer width="100%" height={180}>
             {children}
           </ResponsiveContainer>
         </CardContent>
@@ -182,16 +180,15 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [chartStates, setChartStates] = useState<ChartStates>({
-    contractStatus: { fullscreen: false },
-    monthlyValues: { fullscreen: false },
-    budgetUtilization: { fullscreen: false },
-    contractTimeline: { fullscreen: false },
+    vehicleStatus: { fullscreen: false },
+    monthlyRegistrations: { fullscreen: false },
+    categoryDistribution: { fullscreen: false },
+    requestsStatus: { fullscreen: false },
+    performanceMetrics: { fullscreen: false },
   })
 
-  const totalPages = 3
+  const totalPages = 2
 
-
-  // Toggle fullscreen state for a chart
   const toggleFullscreen = (chartKey: keyof ChartStates) => {
     setChartStates(prev => ({
       ...prev,
@@ -202,7 +199,6 @@ export default function Page() {
     }))
   }
 
-  // Navigation functions
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(prev => prev + 1)
@@ -221,316 +217,314 @@ export default function Page() {
     }
   }
 
-  // Render page content based on current page
   const renderPageContent = () => {
     switch (currentPage) {
       case 1:
         return (
-          <div className="h-full flex flex-col gap-2 overflow-hidden">
-            {/* Metrics Cards */}
-            <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4 flex-shrink-0">
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Contratos</p>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-xl font-bold">68</h3>
-                        <span className="text-xs text-green-600 font-medium">+12%</span>
-                      </div>
+          <div className="h-full flex flex-col gap-4 overflow-hidden">
+            {/* Métricas Cards com gradiente */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 flex-shrink-0">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-100">Total de Veículos</p>
+                      <h3 className="text-3xl font-bold mt-1">199</h3>
+                      <span className="text-xs text-blue-100 flex items-center gap-1 mt-1">
+                        <TrendingUp className="h-3 w-3" />
+                        +12% este mês
+                      </span>
                     </div>
+                    <Car className="h-12 w-12 text-blue-200" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Colaboradores</p>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-xl font-bold">156</h3>
-                        <span className="text-xs text-green-600 font-medium">+5%</span>
-                      </div>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-100">Condutores Ativos</p>
+                      <h3 className="text-3xl font-bold mt-1">145</h3>
+                      <span className="text-xs text-purple-100 flex items-center gap-1 mt-1">
+                        <TrendingUp className="h-3 w-3" />
+                        +8% este mês
+                      </span>
                     </div>
+                    <Users className="h-12 w-12 text-purple-200" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Orçamentos</p>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-base font-bold">R$ 18,75M</h3>
-                        <span className="text-xs text-green-600 font-medium">+8%</span>
-                      </div>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 text-white hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-100">Solicitações</p>
+                      <h3 className="text-3xl font-bold mt-1">67</h3>
+                      <span className="text-xs text-green-100 flex items-center gap-1 mt-1">
+                        <CheckCircle className="h-3 w-3" />
+                        28 aprovadas
+                      </span>
                     </div>
+                    <FileText className="h-12 w-12 text-green-200" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-2">
-                    <Heart className="h-5 w-5 text-red-500 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Auxílios</p>
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-xl font-bold">42</h3>
-                        <span className="text-xs text-red-500 font-medium">-3%</span>
-                      </div>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-500 to-amber-600 text-white hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-amber-100">Denúncias</p>
+                      <h3 className="text-3xl font-bold mt-1">23</h3>
+                      <span className="text-xs text-amber-100 flex items-center gap-1 mt-1">
+                        <Clock className="h-3 w-3" />
+                        15 pendentes
+                      </span>
                     </div>
+                    <AlertCircle className="h-12 w-12 text-amber-200" />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Main Charts */}
-            <div className="flex-1 min-h-0 grid gap-2 md:grid-cols-2">
-              {/* Contract Status Distribution */}
+            {/* Gráficos Principais */}
+            <div className="flex-1 min-h-0 grid gap-4 md:grid-cols-2">
+              {/* Status dos Veículos - Donut Chart Moderno */}
               <ChartCard
-                title="Distribuição de Status dos Contratos"
-                chartKey="contractStatus"
+                title="Status dos Veículos"
+                chartKey="vehicleStatus"
                 chartStates={chartStates}
                 onToggleFullscreen={toggleFullscreen}
               >
                 <PieChart>
+                  <defs>
+                    <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
                   <Pie
-                    data={contractStatusData}
+                    data={vehicleStatusData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={50}
+                    innerRadius={45}
+                    outerRadius={75}
                     fill="#8884d8"
+                    paddingAngle={2}
                     dataKey="value"
                     label={({ name, value }) => `${name}: ${value}`}
                   >
-                    {contractStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    <Cell fill="url(#greenGrad)" />
+                    <Cell fill="url(#amberGrad)" />
+                    <Cell fill="url(#redGrad)" />
+                    <Cell fill="url(#indigoGrad)" />
                   </Pie>
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px'
+                    }}
+                  />
                 </PieChart>
               </ChartCard>
 
-              {/* Monthly Contract Values */}
+              {/* Cadastros Mensais - Area Chart com Gradiente */}
               <ChartCard
-                title="Valores Mensais de Contratos"
-                chartKey="monthlyValues"
+                title="Cadastros Mensais"
+                chartKey="monthlyRegistrations"
                 chartStates={chartStates}
                 onToggleFullscreen={toggleFullscreen}
               >
-                <AreaChart data={monthlyContractValues}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} tick={{ fontSize: 11 }} width={40} />
+                <AreaChart data={monthlyRegistrations}>
+                  <defs>
+                    <linearGradient id="colorVeiculos" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="colorCondutores" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={30} />
                   <Tooltip
-                    contentStyle={{ fontSize: '11px' }}
-                    formatter={(value, name) => [
-                      name === 'value' ? formatCurrency(value as number) : value,
-                      name === 'value' ? 'Valor Total' : 'Contratos'
-                    ]}
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Area
+                    type="monotone"
+                    dataKey="veiculos"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorVeiculos)"
+                    name="Veículos"
                   />
                   <Area
                     type="monotone"
-                    dataKey="value"
-                    stroke="#3b82f6"
-                    fill="#3b82f6"
-                    fillOpacity={0.2}
+                    dataKey="condutores"
+                    stroke="#8b5cf6"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorCondutores)"
+                    name="Condutores"
                   />
                 </AreaChart>
               </ChartCard>
             </div>
           </div>
         )
-      
+
       case 2:
         return (
-          <div className="h-full flex flex-col gap-2 overflow-hidden">
-            {/* Secondary Charts */}
-            <div className="flex-1 min-h-0 grid gap-2 md:grid-cols-2">
-              {/* Budget Utilization */}
+          <div className="h-full flex flex-col gap-4 overflow-hidden">
+            {/* Gráficos Secundários */}
+            <div className="flex-1 min-h-0 grid gap-4 md:grid-cols-2">
+              {/* Distribuição por Categoria - Bar Chart Horizontal */}
               <ChartCard
-                title="Utilização de Orçamento por Categoria"
-                chartKey="budgetUtilization"
+                title="Distribuição por Categoria"
+                chartKey="categoryDistribution"
                 chartStates={chartStates}
                 onToggleFullscreen={toggleFullscreen}
               >
-                <BarChart data={budgetUtilizationData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis type="number" tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} tick={{ fontSize: 11 }} />
-                  <YAxis dataKey="category" type="category" width={70} tick={{ fontSize: 11 }} />
+                <BarChart data={categoryDistribution} layout="vertical">
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.9}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <YAxis dataKey="category" type="category" width={100} tick={{ fontSize: 11, fill: '#6b7280' }} />
                   <Tooltip
-                    contentStyle={{ fontSize: '11px' }}
-                    formatter={(value, name) => [
-                      formatCurrency(value as number),
-                      name === 'utilizado' ? 'Utilizado' : 'Total Disponível'
-                    ]}
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px'
+                    }}
                   />
-                  <Bar dataKey="total" fill="#e5e7eb" name="total" />
-                  <Bar dataKey="utilizado" fill="#10b981" name="utilizado" />
+                  <Bar dataKey="quantidade" fill="url(#barGrad)" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ChartCard>
 
-              {/* Contract Timeline Activity */}
+              {/* Status de Solicitações - Line Chart */}
               <ChartCard
-                title="Atividade de Contratos por Mês"
-                chartKey="contractTimeline"
+                title="Solicitações por Mês"
+                chartKey="requestsStatus"
                 chartStates={chartStates}
                 onToggleFullscreen={toggleFullscreen}
               >
-                <LineChart data={contractTimelineData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} width={25} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <LineChart data={requestsStatus}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={30} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                   <Line
                     type="monotone"
-                    dataKey="novos"
+                    dataKey="aprovadas"
                     stroke="#10b981"
-                    strokeWidth={2}
-                    name="Novos"
-                    dot={false}
+                    strokeWidth={3}
+                    name="Aprovadas"
+                    dot={{ fill: '#10b981', r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="renovados"
+                    dataKey="pendentes"
                     stroke="#f59e0b"
-                    strokeWidth={2}
-                    name="Renovados"
-                    dot={false}
+                    strokeWidth={3}
+                    name="Pendentes"
+                    dot={{ fill: '#f59e0b', r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="finalizados"
+                    dataKey="rejeitadas"
                     stroke="#ef4444"
-                    strokeWidth={2}
-                    name="Finalizados"
-                    dot={false}
+                    strokeWidth={3}
+                    name="Rejeitadas"
+                    dot={{ fill: '#ef4444', r: 4 }}
+                    activeDot={{ r: 6 }}
                   />
                 </LineChart>
               </ChartCard>
             </div>
 
-            {/* Expiring Contracts Summary */}
+            {/* Métricas de Performance - Radar Chart */}
             <div className="flex-shrink-0">
-              <Card>
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                    <Clock className="h-4 w-4 text-amber-500" />
-                    Contratos Próximos ao Vencimento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="grid gap-2 md:grid-cols-3">
-                    <div className="flex justify-between items-center p-2 bg-amber-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-001</p>
-                        <p className="text-xs text-muted-foreground">15 dias</p>
-                      </div>
-                      <span className="text-amber-600 font-semibold text-xs">R$ 85k</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-amber-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-003</p>
-                        <p className="text-xs text-muted-foreground">22 dias</p>
-                      </div>
-                      <span className="text-amber-600 font-semibold text-xs">R$ 120k</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-amber-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-007</p>
-                        <p className="text-xs text-muted-foreground">28 dias</p>
-                      </div>
-                      <span className="text-amber-600 font-semibold text-xs">R$ 95k</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )
-
-      case 3:
-        return (
-          <div className="h-full flex flex-col gap-2 justify-center overflow-hidden">
-            {/* Recently Approved Contracts + Performance Summary */}
-            <div className="grid gap-2 md:grid-cols-2 max-w-6xl mx-auto w-full">
-              <Card>
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Contratos Recém Aprovados
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-015</p>
-                        <p className="text-xs text-muted-foreground">Aprovado hoje</p>
-                      </div>
-                      <span className="text-green-600 font-semibold text-xs">R$ 275k</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-016</p>
-                        <p className="text-xs text-muted-foreground">Aprovado ontem</p>
-                      </div>
-                      <span className="text-green-600 font-semibold text-xs">R$ 150k</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 bg-green-50 rounded">
-                      <div>
-                        <p className="font-medium text-xs">Contrato #2024-017</p>
-                        <p className="text-xs text-muted-foreground">Há 2 dias</p>
-                      </div>
-                      <span className="text-green-600 font-semibold text-xs">R$ 89k</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="text-sm font-semibold">Resumo de Performance</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="space-y-2.5">
-                    <div>
-                      <div className="flex justify-between text-xs">
-                        <span>Contratos no Prazo</span>
-                        <span className="font-medium">92%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-xs">
-                        <span>Utilização do Orçamento</span>
-                        <span className="font-medium">78%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '78%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-xs">
-                        <span>Satisfação Interna</span>
-                        <span className="font-medium">87%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div className="bg-purple-500 h-2 rounded-full" style={{ width: '87%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ChartCard
+                title="Métricas de Performance"
+                chartKey="performanceMetrics"
+                chartStates={chartStates}
+                onToggleFullscreen={toggleFullscreen}
+              >
+                <RadarChart data={performanceMetrics}>
+                  <defs>
+                    <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <PolarGrid stroke="#e5e7eb" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: '#6b7280' }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10, fill: '#6b7280' }} />
+                  <Radar
+                    name="Performance"
+                    dataKey="A"
+                    stroke="#3b82f6"
+                    fill="url(#radarGrad)"
+                    fillOpacity={0.7}
+                    strokeWidth={2}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value) => [`${value}%`, 'Score']}
+                  />
+                </RadarChart>
+              </ChartCard>
             </div>
           </div>
         )
@@ -546,37 +540,34 @@ export default function Page() {
       router.push("/")
     }
 
-    // Simulate loading time
-    const timer = setTimeout(() => setIsLoading(false), 1500)
+    const timer = setTimeout(() => setIsLoading(false), 800)
     return () => clearTimeout(timer)
   }, [router])
 
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        
-        {/* Loading skeletons */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
+            <Card key={i} className="border-0 shadow-lg">
               <CardContent className="p-6">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/2 mb-2"></div>
+                  <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3"></div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-        
+
         <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
+          {[1, 2].map((i) => (
+            <Card key={i} className="border-0 shadow-lg">
               <CardContent className="p-6">
                 <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                  <div className="h-64 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded w-1/3 mb-4"></div>
+                  <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg"></div>
                 </div>
               </CardContent>
             </Card>
@@ -587,39 +578,37 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden p-2 pt-0">
-      {/* Page Content */}
+    <div className="flex flex-col h-screen overflow-hidden p-4 pt-0 bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Conteúdo da Página */}
       <div className="flex-1 min-h-0 overflow-hidden transition-all duration-300 ease-in-out">
         {renderPageContent()}
       </div>
 
-      {/* Navigation */}
-      <div className="flex-shrink-0 mt-2 border-t border-gray-200 pt-2">
-        <div className="flex items-center justify-between max-w-md mx-auto">
-          {/* Previous Button */}
+      {/* Navegação */}
+      <div className="flex-shrink-0 mt-4">
+        <div className="flex items-center justify-between max-w-md mx-auto bg-white rounded-full shadow-lg px-4 py-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="flex items-center gap-1 h-7 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 h-8 px-4 text-xs disabled:opacity-30 disabled:cursor-not-allowed rounded-full hover:bg-blue-50"
           >
             <ChevronLeft className="h-4 w-4" />
             Anterior
           </Button>
 
-          {/* Page Indicators */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {Array.from({ length: totalPages }, (_, index) => {
               const pageNumber = index + 1
               return (
                 <button
                   key={pageNumber}
                   onClick={() => goToPage(pageNumber)}
-                  className={`w-7 h-7 rounded-full text-xs font-medium transition-all duration-200 ${
+                  className={`w-8 h-8 rounded-full text-xs font-semibold transition-all duration-300 ${
                     currentPage === pageNumber
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-110'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105'
                   }`}
                 >
                   {pageNumber}
@@ -628,17 +617,12 @@ export default function Page() {
             })}
           </div>
 
-          <div className="text-xs text-muted-foreground font-medium">
-            {currentPage}/{totalPages}
-          </div>
-
-          {/* Next Button */}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="flex items-center gap-1 h-7 px-3 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 h-8 px-4 text-xs disabled:opacity-30 disabled:cursor-not-allowed rounded-full hover:bg-blue-50"
           >
             Próximo
             <ChevronRight className="h-4 w-4" />

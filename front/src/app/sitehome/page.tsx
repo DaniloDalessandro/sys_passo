@@ -238,6 +238,9 @@ export default function SiteHomePage() {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [plateSuggestions, setPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string}>>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [checkProtocol, setCheckProtocol] = useState('');
@@ -341,6 +344,48 @@ export default function SiteHomePage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Debounced plate search for autocomplete
+  useEffect(() => {
+    // Only search if there are at least 2 characters
+    if (searchPlate.length < 2) {
+      setPlateSuggestions([]);
+      setIsLoadingSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+
+    // Debounce the search
+    const timeoutId = setTimeout(async () => {
+      try {
+        const url = buildApiUrl(`api/vehicles/search-by-plate/?search=${encodeURIComponent(searchPlate)}`);
+
+        // Use the new public endpoint for plate search
+        const response = await fetch(url);
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // The response is already in the correct format: [{plate, brand, model}]
+          setPlateSuggestions(data || []);
+        } else {
+          setPlateSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching plate suggestions:', error);
+        setPlateSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300); // 300ms debounce
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      setIsLoadingSuggestions(false);
+    };
+  }, [searchPlate]);
 
   // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
@@ -1897,20 +1942,77 @@ export default function SiteHomePage() {
                 <CreditCard className="w-4 h-4" />
                 Placa do Veículo
               </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="searchPlate"
-                  placeholder="ABC1D23"
-                  maxLength={7}
-                  value={searchPlate}
-                  onChange={(e) => {
-                    setSearchPlate(e.target.value.toUpperCase());
-                    setSearchError('');
-                    setVehicleData(null);
-                  }}
-                  className="uppercase"
-                />
+              <div className="flex gap-2 relative">
+                <div className="flex-1 relative">
+                  <Input
+                    id="searchPlate"
+                    placeholder="ABC1D23"
+                    maxLength={7}
+                    value={searchPlate}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase();
+                      setSearchPlate(value);
+                      setSearchError('');
+                      setVehicleData(null);
+
+                      // Start searching after 2 characters
+                      if (value.length >= 2) {
+                        setShowSuggestions(true);
+                        // Debounce will be handled by useEffect
+                      } else {
+                        setShowSuggestions(false);
+                        setPlateSuggestions([]);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (searchPlate.length >= 2 && plateSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      // Delay to allow click on suggestion
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    className="uppercase"
+                  />
+
+                  {/* Autocomplete Dropdown */}
+                  {showSuggestions && plateSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {plateSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            setSearchPlate(suggestion.plate);
+                            setShowSuggestions(false);
+                            // Auto-trigger search when selecting from suggestions
+                            setTimeout(() => {
+                              document.getElementById('searchPlateButton')?.click();
+                            }, 100);
+                          }}
+                          className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold text-gray-900">{suggestion.plate}</div>
+                              <div className="text-sm text-gray-600">{suggestion.brand} {suggestion.model}</div>
+                            </div>
+                            <Car className="w-4 h-4 text-gray-400" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {isLoadingSuggestions && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
                 <Button
+                  id="searchPlateButton"
                   onClick={async () => {
                     if (!searchPlate || searchPlate.length < 7) {
                       setSearchError('Digite uma placa válida');
@@ -1922,7 +2024,7 @@ export default function SiteHomePage() {
                     setVehicleData(null);
 
                     try {
-                      const response = await fetch(buildApiUrl(`api/vehicles/by-plate/${searchPlate}/`));
+                      const response = await fetch(buildApiUrl(`api/vehicles/plate/${searchPlate}/`));
 
                       if (!response.ok) {
                         if (response.status === 404) {
