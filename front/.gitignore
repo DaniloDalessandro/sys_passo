@@ -34,7 +34,7 @@ debug.log
 
 # Tooling
 .mcp.json
-components.json
+# Note: components.json is required for shadcn/ui configuration
 
 # OS
 .DS_Store

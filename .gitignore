@@ -10,9 +10,10 @@
 # WORKSPACE & DEVELOPMENT TOOLS
 # ============================================================================
 
-# Claude Code workspace files
-.claude/
-AGENTS.md
+# Claude Code workspace files (keep project settings, ignore local settings)
+.claude/settings.local.json
+.claude/chats/
+.claude/history/
 
 # MCP (Model Context Protocol) configuration
 .mcp.json
