@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Output standalone para Docker (reduz tamanho da imagem)
+  output: 'standalone',
+
   // Configurações do Turbopack (agora estável)
   turbopack: {
     resolveAlias: {

@@ -6,7 +6,8 @@ Sistema completo de gerenciamento de condutores, veículos, solicitações e den
 
 - [Stack Tecnológica](#-stack-tecnológica)
 - [Pré-requisitos](#-pré-requisitos)
-- [Instalação](#-instalação)
+- [🐳 Opção 1: Instalação com Docker (Recomendado)](#-opção-1-instalação-com-docker-recomendado)
+- [💻 Opção 2: Instalação Manual](#-opção-2-instalação-manual)
 - [Configuração](#-configuração)
 - [Executando o Projeto](#-executando-o-projeto)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
@@ -36,12 +37,117 @@ Sistema completo de gerenciamento de condutores, veículos, solicitações e den
 
 ## 📦 Pré-requisitos
 
+### Para Docker (Recomendado)
+- **Docker** e **Docker Compose** instalados
+- **Git** instalado
+
+### Para Instalação Manual
 - **Python 3.12+** instalado
 - **Node.js 18+** e npm instalado
 - **Git** instalado
+- **PostgreSQL** (recomendado) ou SQLite
 - **Redis** (opcional, para Celery)
 
-## 💻 Instalação
+---
+
+## 🐳 Opção 1: Instalação com Docker (Recomendado)
+
+A forma mais rápida e fácil de executar o projeto completo com todos os serviços.
+
+### 1️⃣ Clone o Repositório
+
+```bash
+git clone <url-do-repositorio>
+cd sys_passo
+```
+
+### 2️⃣ Configure as Variáveis de Ambiente
+
+```bash
+# Copie o arquivo de exemplo
+cp .env.example .env
+
+# Edite o .env e configure:
+# - DJANGO_SECRET_KEY (gere uma chave segura)
+# - DB_PASSWORD (senha do PostgreSQL)
+# - Outros valores conforme necessário
+```
+
+### 3️⃣ Inicie os Serviços
+
+```bash
+# Iniciar todos os serviços (build na primeira vez)
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar os serviços
+docker-compose down
+
+# Parar e remover volumes (CUIDADO: apaga dados)
+docker-compose down -v
+```
+
+### 4️⃣ Criar Superusuário (Admin)
+
+```bash
+# Executar comando no container do backend
+docker-compose exec backend python manage.py createsuperuser
+```
+
+### 5️⃣ Acessar a Aplicação
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **Admin Django:** http://localhost:8000/admin/
+
+### 📦 Serviços Incluídos
+
+| Serviço | Container | Porta | Descrição |
+|---------|-----------|-------|-----------|
+| Frontend | syspasso_frontend | 3000 | Next.js UI |
+| Backend | syspasso_backend | 8000 | Django API |
+| PostgreSQL | syspasso_db | 5432 | Banco de dados |
+| Redis | syspasso_redis | 6379 | Cache & Celery |
+| Celery Worker | syspasso_celery | - | Tarefas assíncronas |
+| Celery Beat | syspasso_celery_beat | - | Agendador |
+
+### 🔧 Comandos Úteis Docker
+
+```bash
+# Ver status dos containers
+docker-compose ps
+
+# Acessar shell do backend
+docker-compose exec backend python manage.py shell
+
+# Acessar bash do backend
+docker-compose exec backend sh
+
+# Ver logs de um serviço específico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Rebuild de um serviço
+docker-compose up -d --build backend
+
+# Executar migrações
+docker-compose exec backend python manage.py migrate
+
+# Coletar arquivos estáticos
+docker-compose exec backend python manage.py collectstatic --noinput
+
+# Backup do banco de dados
+docker-compose exec db pg_dump -U postgres syspasso > backup.sql
+
+# Restaurar banco de dados
+docker-compose exec -T db psql -U postgres syspasso < backup.sql
+```
+
+---
+
+## 💻 Opção 2: Instalação Manual
 
 ### 1️⃣ Clone o Repositório
 
@@ -375,7 +481,101 @@ npx shadcn-ui@latest add [component]
 
 ## 🚀 Deploy em Produção
 
-### Backend
+### 🐳 Opção 1: Deploy com Docker (Recomendado)
+
+1. **Configure as variáveis de ambiente no servidor:**
+
+```bash
+# Copie .env.example para .env
+cp .env.example .env
+
+# Edite .env com valores de produção
+nano .env
+```
+
+Configure valores de produção:
+```env
+DJANGO_SECRET_KEY=sua-chave-super-segura-aqui
+DEBUG=False
+ALLOWED_HOSTS=api.seu-dominio.com,seu-dominio.com
+DB_PASSWORD=senha-forte-do-postgres
+NEXT_PUBLIC_API_BASE_URL=https://api.seu-dominio.com
+CSRF_TRUSTED_ORIGINS=https://seu-dominio.com,https://api.seu-dominio.com
+```
+
+2. **Inicie os serviços:**
+
+```bash
+# Build e start em modo produção
+docker-compose up -d --build
+
+# Verificar logs
+docker-compose logs -f
+
+# Criar superusuário
+docker-compose exec backend python manage.py createsuperuser
+```
+
+3. **Configure Nginx como reverse proxy:**
+
+```nginx
+# /etc/nginx/sites-available/syspasso
+
+# Backend API
+server {
+    listen 80;
+    server_name api.seu-dominio.com;
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /media/ {
+        alias /caminho/para/sys_passo/back/media/;
+    }
+
+    location /static/ {
+        alias /caminho/para/sys_passo/back/staticfiles/;
+    }
+}
+
+# Frontend
+server {
+    listen 80;
+    server_name seu-dominio.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+4. **Configure SSL com Let's Encrypt:**
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d seu-dominio.com -d api.seu-dominio.com
+```
+
+5. **Configure backups automáticos:**
+
+```bash
+# Script de backup (cron diário)
+#!/bin/bash
+docker-compose exec -T db pg_dump -U postgres syspasso > /backups/syspasso_$(date +%Y%m%d).sql
+```
+
+### 📦 Opção 2: Deploy Manual (Tradicional)
+
+#### Backend
 
 1. **Configure variáveis de ambiente:**
    - `DEBUG=False`
@@ -389,12 +589,34 @@ npx shadcn-ui@latest add [component]
    python manage.py collectstatic --noinput
    ```
 
-3. **Use Gunicorn:**
-   ```bash
-   gunicorn core.wsgi:application --bind 0.0.0.0:8000
-   ```
+3. **Use Gunicorn com systemd:**
 
-### Frontend
+```ini
+# /etc/systemd/system/syspasso.service
+[Unit]
+Description=Sys Passo Django Backend
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/syspasso/back
+Environment="PATH=/var/www/syspasso/back/venv/bin"
+ExecStart=/var/www/syspasso/back/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 0.0.0.0:8000 \
+    core.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable syspasso
+sudo systemctl start syspasso
+```
+
+#### Frontend
 
 1. **Build de produção:**
    ```bash
@@ -402,30 +624,18 @@ npx shadcn-ui@latest add [component]
    npm start
    ```
 
-2. **Ou deploy na Vercel:**
+2. **Ou use PM2:**
+   ```bash
+   npm install -g pm2
+   pm2 start npm --name "syspasso-frontend" -- start
+   pm2 save
+   pm2 startup
+   ```
+
+3. **Ou deploy na Vercel:**
    ```bash
    vercel deploy --prod
    ```
-
-### Servidor Web (Nginx)
-
-Configure reverse proxy para Django e Next.js:
-
-```nginx
-# Django API
-location /api/ {
-    proxy_pass http://127.0.0.1:8000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-
-# Next.js
-location / {
-    proxy_pass http://127.0.0.1:3000;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-}
-```
 
 ## 🤝 Contribuindo
 
