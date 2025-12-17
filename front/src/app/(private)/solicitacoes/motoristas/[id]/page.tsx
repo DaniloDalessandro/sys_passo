@@ -192,14 +192,19 @@ export default function DriverRequestDetailsPage() {
   }
 
   const handleReject = async () => {
-    if (!request || !rejectionReason || rejectionReason.length < 10) {
-      toast.error('O motivo da reprovação deve ter pelo menos 10 caracteres')
+    if (!request) {
+      return
+    }
+
+    // Validar apenas se foi preenchido algo e é muito curto
+    if (rejectionReason && rejectionReason.trim().length > 0 && rejectionReason.trim().length < 10) {
+      toast.error('Se informar o motivo da reprovação, ele deve ter pelo menos 10 caracteres')
       return
     }
 
     setIsActionLoading(true)
     try {
-      await rejectDriverRequest(request.id, rejectionReason)
+      await rejectDriverRequest(request.id, rejectionReason.trim())
       toast.success('Solicitação reprovada')
       setRejectDialog(false)
       setRejectionReason('')
@@ -570,25 +575,26 @@ export default function DriverRequestDetailsPage() {
           <DialogHeader>
             <DialogTitle>Reprovar Solicitação</DialogTitle>
             <DialogDescription>
-              Informe o motivo da reprovação para <strong>{request.name}</strong>
+              Você pode informar o motivo da reprovação para <strong>{request.name}</strong> (opcional)
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="rejection-reason">
-                Motivo da Reprovação <span className="text-red-500">*</span>
+                Motivo da Reprovação <span className="text-xs text-muted-foreground">(opcional)</span>
               </Label>
               <Textarea
                 id="rejection-reason"
-                placeholder="Digite o motivo detalhado da reprovação (mínimo 10 caracteres)..."
+                placeholder="Digite o motivo da reprovação (opcional, mas recomendado)..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 rows={4}
-                className={rejectionReason && rejectionReason.length < 10 ? 'border-red-500' : ''}
               />
-              <p className="text-xs text-muted-foreground">
-                {rejectionReason.length}/10 caracteres mínimos
-              </p>
+              {rejectionReason && rejectionReason.trim().length > 0 && rejectionReason.trim().length < 10 && (
+                <p className="text-xs text-destructive">
+                  Se preenchido, o motivo deve ter pelo menos 10 caracteres
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -605,7 +611,7 @@ export default function DriverRequestDetailsPage() {
             <Button
               variant="destructive"
               onClick={handleReject}
-              disabled={isActionLoading || rejectionReason.length < 10}
+              disabled={isActionLoading}
             >
               {isActionLoading ? (
                 <>

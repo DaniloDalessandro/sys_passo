@@ -551,13 +551,7 @@ class VehicleRequest(models.Model):
 
     def clean(self):
         """Validação adicional do model."""
-        from django.core.exceptions import ValidationError
-
-        if self.status == 'reprovado' and not self.rejection_reason:
-            raise ValidationError({
-                'rejection_reason': 'O motivo da reprovação é obrigatório quando o status é "reprovado".'
-            })
-
+        # Normalizar placa
         if self.plate:
             self.plate = self.plate.upper().strip().replace(' ', '')
 

@@ -5,25 +5,45 @@ import {
   MarkAllAsReadResponse,
 } from "@/types/notification";
 
+/**
+ * Helper para fazer requisições autenticadas
+ * Adiciona o token de autenticação aos headers
+ */
 async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("access_token");
   const url =
     pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")
       ? pathOrUrl
       : buildApiUrl(pathOrUrl);
 
+  // Obtém o token do localStorage
+  const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null;
+
+  // Prepara os headers com o token
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  // Adiciona o token de autenticação se existir
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Faz a requisição
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
+    headers,
   });
 
+  // Se receber 401, token expirou ou é inválido
   if (response.status === 401) {
-    window.location.href = "/login";
-    throw new Error("Sessão expirada");
+    // Redireciona para login
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      window.location.href = "/";
+    }
   }
 
   return response;

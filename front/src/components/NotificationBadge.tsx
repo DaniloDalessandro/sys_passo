@@ -27,8 +27,11 @@ export function NotificationBadge() {
     try {
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
-    } catch (error) {
-      console.error("Erro ao buscar contador de notificações:", error);
+    } catch (error: any) {
+      // Silencia erros de rede para não bloquear a UI
+      console.warn("Erro ao buscar contador de notificações:", error.message);
+      // Define contador como 0 em caso de erro
+      setUnreadCount(0);
     }
   };
 
@@ -36,8 +39,11 @@ export function NotificationBadge() {
     try {
       const data = await notificationService.getUnread();
       setNotifications(data);
-    } catch (error) {
-      console.error("Erro ao buscar notificações:", error);
+    } catch (error: any) {
+      // Silencia erros de rede para não bloquear a UI
+      console.warn("Erro ao buscar notificações:", error.message);
+      // Define array vazio em caso de erro
+      setNotifications([]);
     }
   };
 

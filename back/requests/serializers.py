@@ -256,21 +256,13 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
 class DriverRequestActionSerializer(serializers.Serializer):
     """
     Serializer para ações de aprovação/reprovação de solicitações de motoristas.
+
+    Nota: O motivo da reprovação é opcional, mas recomendado para melhor comunicação
+    com o solicitante.
     """
 
     status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)
-    rejection_reason = serializers.CharField(required=False, allow_blank=True, max_length=2000)
-
-    def validate(self, data):
-        status = data.get('status')
-        rejection_reason = data.get('rejection_reason', '').strip()
-
-        if status == 'reprovado' and not rejection_reason:
-            raise serializers.ValidationError({
-                'rejection_reason': 'O motivo da reprovação é obrigatório quando o status é "reprovado".'
-            })
-
-        return data
+    rejection_reason = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=2000)
 
 
 # ========== VEHICLE REQUEST SERIALIZERS ==========
@@ -421,20 +413,9 @@ class VehicleRequestActionSerializer(serializers.Serializer):
     """
     Serializer para ações de aprovação/reprovação de solicitações de veículos.
 
-    Validações:
-    - rejection_reason é obrigatório se status for 'reprovado'
+    Nota: O motivo da reprovação é opcional, mas recomendado para melhor comunicação
+    com o solicitante.
     """
 
     status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)
-    rejection_reason = serializers.CharField(required=False, allow_blank=True, max_length=2000)
-
-    def validate(self, data):
-        status = data.get('status')
-        rejection_reason = data.get('rejection_reason', '').strip()
-
-        if status == 'reprovado' and not rejection_reason:
-            raise serializers.ValidationError({
-                'rejection_reason': 'O motivo da reprovação é obrigatório quando o status é "reprovado".'
-            })
-
-        return data
+    rejection_reason = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=2000)

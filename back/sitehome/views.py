@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from core.throttling import PublicReadThrottle
+from core.exceptions import safe_error_response
 from .models import SiteConfiguration
 from .serializers import SiteConfigurationSerializer
 
@@ -51,10 +52,11 @@ class SiteConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({
-                'success': False,
-                'message': f'Erro ao obter configuração: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Erro ao obter configuração do site',
+                exception=e,
+                context={'action': 'site_config_list'}
+            )
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -72,10 +74,11 @@ class SiteConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({
-                'success': False,
-                'message': f'Erro ao obter configuração: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Erro ao obter configuração do site',
+                exception=e,
+                context={'action': 'site_config_retrieve'}
+            )
 
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
@@ -96,7 +99,8 @@ class SiteConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({
-                'success': False,
-                'message': f'Erro ao obter configuração: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Erro ao obter configuração do site',
+                exception=e,
+                context={'action': 'site_config_current'}
+            )

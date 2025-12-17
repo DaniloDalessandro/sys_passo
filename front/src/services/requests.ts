@@ -86,6 +86,11 @@ export interface RequestFilters {
 
 // API Functions with authentication
 async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
+  // Verifica se está no contexto do cliente (browser)
+  if (typeof window === 'undefined') {
+    throw new Error('fetchWithAuth can only be called on the client side');
+  }
+
   const token = localStorage.getItem('access_token');
   const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
     ? pathOrUrl
@@ -101,8 +106,11 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   });
 
   if (response.status === 401) {
-    // Token expired - redirect to login
-    window.location.href = '/login';
+    // Token expired - remove tokens and redirect to login
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    window.location.href = '/';
     throw new Error('Sessão expirada');
   }
 
@@ -160,12 +168,15 @@ export async function approveDriverRequest(id: number): Promise<void> {
 export async function rejectDriverRequest(id: number, reason: string): Promise<void> {
   const response = await fetchWithAuth(`api/requests/drivers/${id}/reject/`, {
     method: 'POST',
-    body: JSON.stringify({ rejection_reason: reason }),
+    body: JSON.stringify({
+      status: 'reprovado',
+      rejection_reason: reason && reason.trim() ? reason.trim() : null
+    }),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.detail || 'Erro ao reprovar solicitação');
+    throw new Error(error.detail || error.error || 'Erro ao reprovar solicitação');
   }
 }
 
@@ -231,7 +242,10 @@ export async function approveVehicleRequest(id: number): Promise<void> {
 export async function rejectVehicleRequest(id: number, reason: string): Promise<void> {
   const response = await fetchWithAuth(`api/requests/vehicles/${id}/reject/`, {
     method: 'POST',
-    body: JSON.stringify({ rejection_reason: reason }),
+    body: JSON.stringify({
+      status: 'reprovado',
+      rejection_reason: reason && reason.trim() ? reason.trim() : null
+    }),
   });
 
   if (!response.ok) {

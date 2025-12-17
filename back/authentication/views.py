@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
 from core.throttling import AuthThrottle, PasswordResetThrottle, PublicReadThrottle
+from core.exceptions import safe_error_response, get_error_message
 
 from .models import UserProfile, EmailVerification, PasswordResetToken
 from .serializers import (
@@ -114,10 +115,11 @@ class UserRegistrationView(APIView):
                     }, status=status.HTTP_201_CREATED)
                     
             except Exception as e:
-                return Response({
-                    'error': 'Registration failed',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao criar usuário',
+                    exception=e,
+                    context={'action': 'user_registration'}
+                )
         
         return Response({
             'error': 'Registration failed',
@@ -152,10 +154,12 @@ class UserLogoutView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            return Response({
-                'error': 'Logout failed',
-                'details': str(e)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return safe_error_response(
+                message='Falha ao realizar logout',
+                status_code=status.HTTP_400_BAD_REQUEST,
+                exception=e,
+                context={'action': 'user_logout', 'user': request.user.username}
+            )
 
 
 class UserProfileView(RetrieveUpdateAPIView):
@@ -233,12 +237,25 @@ class PasswordChangeView(APIView):
                 
                 # Blacklist all existing refresh tokens for this user
                 # This forces re-authentication on all devices
-                tokens = user.outstandingtoken_set.all()
-                for token in tokens:
-                    try:
-                        BlacklistedToken.objects.get_or_create(token=token)
-                    except Exception:
-                        pass  # Handle any blacklisting errors gracefully
+                # Otimizado: usa bulk_create em vez de loop
+                from django.db import IntegrityError
+                outstanding_tokens = user.outstandingtoken_set.all()
+                blacklist_entries = [
+                    BlacklistedToken(token=token)
+                    for token in outstanding_tokens
+                ]
+                try:
+                    BlacklistedToken.objects.bulk_create(
+                        blacklist_entries,
+                        ignore_conflicts=True  # Ignora se já existe
+                    )
+                except (IntegrityError, Exception) as e:
+                    # Fallback para método antigo se bulk_create falhar
+                    for token in outstanding_tokens:
+                        try:
+                            BlacklistedToken.objects.get_or_create(token=token)
+                        except Exception:
+                            pass
                 
                 # Generate new tokens
                 refresh = RefreshToken.for_user(user)
@@ -264,10 +281,11 @@ class PasswordChangeView(APIView):
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
-                return Response({
-                    'error': 'Password change failed',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao alterar senha',
+                    exception=e,
+                    context={'action': 'password_change', 'user': request.user.username}
+                )
         
         return Response({
             'error': 'Password change failed',
@@ -322,10 +340,11 @@ class PasswordResetRequestView(APIView):
                     'message': 'If an account with this email exists, a password reset link has been sent.'
                 }, status=status.HTTP_200_OK)
             except Exception as e:
-                return Response({
-                    'error': 'Password reset request failed',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao processar solicitação de reset de senha',
+                    exception=e,
+                    context={'action': 'password_reset_request'}
+                )
         
         return Response({
             'error': 'Invalid email address',
@@ -348,14 +367,26 @@ class PasswordResetConfirmView(APIView):
             try:
                 # Reset password and mark token as used
                 user = serializer.save()
-                
+
                 # Blacklist all existing refresh tokens for this user
-                tokens = user.outstandingtoken_set.all()
-                for token in tokens:
-                    try:
-                        BlacklistedToken.objects.get_or_create(token=token)
-                    except Exception:
-                        pass
+                # Otimizado: usa bulk_create
+                from django.db import IntegrityError
+                outstanding_tokens = user.outstandingtoken_set.all()
+                blacklist_entries = [
+                    BlacklistedToken(token=token)
+                    for token in outstanding_tokens
+                ]
+                try:
+                    BlacklistedToken.objects.bulk_create(
+                        blacklist_entries,
+                        ignore_conflicts=True
+                    )
+                except (IntegrityError, Exception):
+                    for token in outstanding_tokens:
+                        try:
+                            BlacklistedToken.objects.get_or_create(token=token)
+                        except Exception:
+                            pass
                 
                 # Log password reset
                 log_user_activity(
@@ -370,10 +401,11 @@ class PasswordResetConfirmView(APIView):
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
-                return Response({
-                    'error': 'Password reset confirmation failed',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao confirmar reset de senha',
+                    exception=e,
+                    context={'action': 'password_reset_confirm'}
+                )
         
         return Response({
             'error': 'Password reset confirmation failed',
@@ -411,10 +443,11 @@ class EmailVerificationView(APIView):
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
-                return Response({
-                    'error': 'Email verification failed',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao verificar email',
+                    exception=e,
+                    context={'action': 'email_verification'}
+                )
         
         return Response({
             'error': 'Email verification failed',
@@ -459,10 +492,11 @@ class ResendEmailVerificationView(APIView):
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
-                return Response({
-                    'error': 'Failed to resend verification email',
-                    'details': str(e)
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return safe_error_response(
+                    message='Falha ao reenviar email de verificação',
+                    exception=e,
+                    context={'action': 'resend_email_verification'}
+                )
         
         return Response({
             'error': 'Invalid email address',
@@ -509,10 +543,11 @@ def delete_account(request):
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        return Response({
-            'error': 'Account deletion failed',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return safe_error_response(
+            message='Falha ao deletar conta',
+            exception=e,
+            context={'action': 'account_deletion', 'user': request.user.username}
+        )
 
 
 @api_view(['GET'])
@@ -532,11 +567,11 @@ def verify_token(request):
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        return Response({
-            'valid': False,
-            'error': 'Token validation failed',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return safe_error_response(
+            message='Falha ao validar token',
+            exception=e,
+            context={'action': 'token_validation'}
+        )
 
 
 @api_view(['GET'])

@@ -21,6 +21,7 @@ from .serializers import (
     ConductorListSerializer
 )
 from authentication.utils import get_client_ip, get_user_agent, log_user_activity
+from core.exceptions import safe_error_response, get_error_message
 
 logger = logging.getLogger(__name__)
 
@@ -130,15 +131,14 @@ class ConductorListCreateView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            logger.info(f"Creating conductor with data: {request.data}")
+            logger.info(f"Creating conductor: {request.data.get('name', 'Unknown')}")
             return super().create(request, *args, **kwargs)
         except Exception as e:
-            logger.error(f"Unexpected error creating conductor: {e}", exc_info=True)
-            return Response({
-                'error': 'Falha ao criar condutor',
-                'message': 'Ocorreu um erro interno. Tente novamente.',
-                'details': str(e) if request.user.is_staff else 'Erro interno do servidor'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha ao criar condutor',
+                exception=e,
+                context={'action': 'conductor_create', 'user': request.user.username}
+            )
 
 
 class ConductorDetailView(RetrieveUpdateDestroyAPIView):
@@ -185,24 +185,24 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         try:
-            logger.info(f"Updating conductor {kwargs.get('pk')} with data: {request.data}")
+            logger.info(f"Updating conductor {kwargs.get('pk')}")
             return super().update(request, *args, **kwargs)
         except Exception as e:
-            logger.error(f"Unexpected error updating conductor: {e}", exc_info=True)
-            return Response({
-                'error': 'Falha ao atualizar condutor',
-                'message': 'Ocorreu um erro interno. Tente novamente.',
-                'details': str(e) if request.user.is_staff else 'Erro interno do servidor'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha ao atualizar condutor',
+                exception=e,
+                context={'action': 'conductor_update', 'user': request.user.username, 'conductor_id': kwargs.get('pk')}
+            )
 
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
         except Exception as e:
-            return Response({
-                'error': 'Falha ao deletar condutor',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message=get_error_message('deletion_failed'),
+                exception=e,
+                context={'action': 'conductor_delete', 'user': request.user.username, 'conductor_id': kwargs.get('pk')}
+            )
 
 
 class ConductorSearchView(APIView):
@@ -229,10 +229,11 @@ class ConductorSearchView(APIView):
                 'count': len(serializer.data)
             }, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({
-                'error': 'Falha na busca',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha na busca de condutores',
+                exception=e,
+                context={'action': 'conductor_search', 'query': query}
+            )
 
 
 class ConductorStatsView(APIView):
@@ -281,10 +282,11 @@ class ConductorStatsView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            return Response({
-                'error': 'Falha ao obter estatísticas',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha ao obter estatísticas',
+                exception=e,
+                context={'action': 'conductor_stats'}
+            )
 
 
 class CheckDuplicateFieldView(APIView):
@@ -370,11 +372,11 @@ class CheckDuplicateFieldView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error(f"Error checking duplicate field: {e}", exc_info=True)
-            return Response({
-                'error': 'Falha ao verificar duplicatas',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha ao verificar duplicatas',
+                exception=e,
+                context={'action': 'check_duplicate_field', 'field': field, 'value': value}
+            )
 
 
 class BulkDeactivateConductorsView(APIView):
@@ -409,7 +411,8 @@ class BulkDeactivateConductorsView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({
-                'error': 'Falha na desativação em massa',
-                'details': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return safe_error_response(
+                message='Falha na desativação em massa',
+                exception=e,
+                context={'action': 'bulk_deactivate_conductors', 'conductor_ids': conductor_ids}
+            )

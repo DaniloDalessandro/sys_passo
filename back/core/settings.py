@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'requests',
     'complaints',
     'notifications.apps.NotificationsConfig',
+    'dashboard',
 
     # Third party apps
     'rest_framework',
@@ -200,16 +201,25 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React default port
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",  # Next.js alternate port
-    "http://127.0.0.1:3001",
-    "http://localhost:8080",  # Vue default port
-    "http://127.0.0.1:8080",
-    "http://localhost:4200",  # Angular default port
-    "http://127.0.0.1:4200",
-]
+# Em produção, definir CORS_ALLOWED_ORIGINS no .env
+# Exemplo: CORS_ALLOWED_ORIGINS=https://seudominio.com,https://www.seudominio.com
+CORS_ORIGINS_ENV = os.getenv('CORS_ALLOWED_ORIGINS', '')
+
+if CORS_ORIGINS_ENV:
+    # Produção: usar origins do .env
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_ENV.split(',') if origin.strip()]
+else:
+    # Desenvolvimento: origens padrão
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",  # Next.js default
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -293,6 +303,16 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 # Password Reset Settings
 PASSWORD_RESET_TIMEOUT = 3600  # 1 hour in seconds
 EMAIL_VERIFICATION_TIMEOUT = 86400  # 24 hours in seconds
+
+# Authentication Settings
+SITE_NAME = 'SysPasso'  # Nome do site usado em templates de email
+AUTHENTICATION_TOKEN_LENGTH = 64  # Tamanho dos tokens de verificação/reset
+EMAIL_SEND_SYNC = True  # True = envio síncrono (dev), False = async via Celery (prod)
+
+# File Upload Settings (Security)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB em bytes
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB em bytes
+FILE_UPLOAD_PERMISSIONS = 0o644
 
 # Rate Limiting Settings - Disabled for development
 

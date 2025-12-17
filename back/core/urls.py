@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/requests/', include('requests.urls')),
     path('api/complaints/', include('complaints.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/dashboard/', include('dashboard.urls')),
 ]
 
 # Serve media files in development

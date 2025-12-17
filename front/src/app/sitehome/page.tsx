@@ -27,7 +27,6 @@ import {
   Calendar,
   Palette,
   Fuel,
-  CreditCard,
   AlertTriangle,
   TrendingUp,
   Activity,
@@ -241,6 +240,9 @@ export default function SiteHomePage() {
   const [plateSuggestions, setPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string}>>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [complaintPlateSuggestions, setComplaintPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string}>>([]);
+  const [isLoadingComplaintSuggestions, setIsLoadingComplaintSuggestions] = useState(false);
+  const [showComplaintSuggestions, setShowComplaintSuggestions] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [checkProtocol, setCheckProtocol] = useState('');
@@ -387,6 +389,83 @@ export default function SiteHomePage() {
     };
   }, [searchPlate]);
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside the search input and suggestions dropdown
+      if (!target.closest('.search-container')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSuggestions]);
+
+  // Debounced plate search for complaint form autocomplete
+  useEffect(() => {
+    const complaintPlate = complaintForm.watch('vehiclePlate');
+
+    // Only search if there are at least 2 characters
+    if (!complaintPlate || complaintPlate.length < 2) {
+      setComplaintPlateSuggestions([]);
+      setIsLoadingComplaintSuggestions(false);
+      return;
+    }
+
+    setIsLoadingComplaintSuggestions(true);
+
+    // Debounce the search
+    const timeoutId = setTimeout(async () => {
+      try {
+        const url = buildApiUrl(`api/vehicles/search-by-plate/?search=${encodeURIComponent(complaintPlate)}`);
+        const response = await fetch(url);
+
+        if (response.ok) {
+          const data = await response.json();
+          setComplaintPlateSuggestions(data || []);
+        } else {
+          setComplaintPlateSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching complaint plate suggestions:', error);
+        setComplaintPlateSuggestions([]);
+      } finally {
+        setIsLoadingComplaintSuggestions(false);
+      }
+    }, 300); // 300ms debounce
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      setIsLoadingComplaintSuggestions(false);
+    };
+  }, [complaintForm.watch('vehiclePlate')]);
+
+  // Close complaint suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.complaint-plate-container')) {
+        setShowComplaintSuggestions(false);
+      }
+    };
+
+    if (showComplaintSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showComplaintSuggestions]);
+
   // Smooth scroll to section
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -401,6 +480,47 @@ export default function SiteHomePage() {
       });
     }
     setIsMobileMenuOpen(false);
+  };
+
+  // Handle plate selection from autocomplete
+  const handleSelectPlate = async (plate: string) => {
+    setShowSuggestions(false);
+    setIsSearchingVehicle(true);
+    setSearchError('');
+    setVehicleData(null);
+
+    try {
+      const response = await fetch(buildApiUrl(`api/vehicles/plate/${plate}/`));
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setSearchError('Veículo não encontrado');
+          toast.error('Veículo não encontrado');
+        } else {
+          setSearchError('Erro ao consultar veículo');
+          toast.error('Erro ao consultar veículo');
+        }
+        return;
+      }
+
+      const data = await response.json();
+      setVehicleData(data);
+      setSearchPlate('');
+      toast.success('Veículo encontrado!');
+
+      // Scroll to vehicle data section
+      setTimeout(() => {
+        const vehicleSection = document.getElementById('vehicle-result-section');
+        if (vehicleSection) {
+          vehicleSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    } catch (error) {
+      setSearchError('Erro ao conectar com o servidor');
+      toast.error('Erro ao conectar com o servidor');
+    } finally {
+      setIsSearchingVehicle(false);
+    }
   };
 
   // Driver form submission
@@ -681,6 +801,8 @@ export default function SiteHomePage() {
         setComplaintProtocolNumber(protocolNumber);
         complaintForm.reset();
         setSelectedPhotos([]);
+        setShowComplaintSuggestions(false);
+        setComplaintPlateSuggestions([]);
         setIsComplaintDialogOpen(false);
         setIsComplaintProtocolModalOpen(true);
       } else {
@@ -689,6 +811,8 @@ export default function SiteHomePage() {
         });
         complaintForm.reset();
         setSelectedPhotos([]);
+        setShowComplaintSuggestions(false);
+        setComplaintPlateSuggestions([]);
         setIsComplaintDialogOpen(false);
       }
     } catch (error) {
@@ -720,7 +844,9 @@ export default function SiteHomePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao consultar denúncia');
+        // Usar mensagem detalhada do backend se disponível
+        const errorMessage = errorData.message || errorData.error || 'Erro ao consultar protocolo';
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -728,7 +854,7 @@ export default function SiteHomePage() {
       setCheckComplaintError('');
     } catch (error) {
       console.error('Error checking complaint:', error);
-      setCheckComplaintError(error instanceof Error ? error.message : 'Erro ao consultar denúncia');
+      setCheckComplaintError(error instanceof Error ? error.message : 'Erro ao consultar protocolo');
       setComplaintData(null);
     } finally {
       setIsCheckingComplaint(false);
@@ -947,24 +1073,63 @@ export default function SiteHomePage() {
             </div>
 
             <div className="w-full max-w-2xl mx-auto pt-2 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="relative flex items-center">
-                <div className="absolute top-1/2 left-2 -translate-y-1/2 flex items-center">
-                    <Button variant="ghost" size="icon" className="rounded-full h-12 w-12 text-gray-500 hover:text-gray-800">
-                        <Camera className="w-6 h-6" />
-                    </Button>
+              <div className="relative search-container">
+                <div className="relative flex items-center">
+                  <Input
+                    type="text"
+                    placeholder="Digite a placa do veículo"
+                    className="w-full pl-6 pr-6 py-5 text-lg text-gray-700 bg-white border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 transition-all uppercase"
+                    value={searchPlate}
+                    onChange={(e) => {
+                      setSearchPlate(e.target.value.toUpperCase());
+                      if (e.target.value.length >= 2) {
+                        setShowSuggestions(true);
+                      } else {
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && plateSuggestions.length > 0) {
+                        // Select first suggestion on Enter
+                        const firstSuggestion = plateSuggestions[0];
+                        handleSelectPlate(firstSuggestion.plate);
+                      } else if (e.key === 'Escape') {
+                        setShowSuggestions(false);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (searchPlate.length >= 2 && plateSuggestions.length > 0) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                  />
+                  {isLoadingSuggestions && (
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    </div>
+                  )}
                 </div>
-                <Input
-                  type="text"
-                  placeholder="Digite a placa do veículo"
-                  className="w-full pl-16 pr-6 py-5 text-lg text-gray-700 bg-white border-2 border-gray-200 rounded-full focus:outline-none focus:border-blue-500 transition-all"
-                  value={searchPlate}
-                  onChange={(e) => setSearchPlate(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setIsVehicleSearchDialogOpen(true);
-                    }
-                  }}
-                />
+
+                {/* Autocomplete Suggestions Dropdown */}
+                {showSuggestions && plateSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-80 overflow-y-auto">
+                    {plateSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleSelectPlate(suggestion.plate)}
+                        className="px-6 py-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">{suggestion.plate}</div>
+                            <div className="text-sm text-gray-600 mt-1">{suggestion.brand} {suggestion.model}</div>
+                          </div>
+                          <Car className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1005,6 +1170,126 @@ export default function SiteHomePage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Vehicle Search Result Section */}
+            {vehicleData && (
+              <div id="vehicle-result-section" className="w-full max-w-3xl mx-auto pt-12 animate-slide-up">
+                <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <Car className="w-7 h-7" />
+                        Informações do Veículo
+                      </h2>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setVehicleData(null)}
+                        className="text-white hover:bg-white/20"
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Vehicle Information */}
+                  <div className="p-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 border border-blue-200">
+                        <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Placa</div>
+                        <div className="text-2xl font-bold text-gray-900">{vehicleData.plate}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Marca</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.brand}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Modelo</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.model}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ano</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.year}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Cor</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.color}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Combustível</div>
+                        <div className="text-xl font-semibold text-gray-900">
+                          {vehicleData.fuel_type === 'gasoline' ? 'Gasolina' :
+                           vehicleData.fuel_type === 'ethanol' ? 'Etanol' :
+                           vehicleData.fuel_type === 'flex' ? 'Flex' :
+                           vehicleData.fuel_type === 'diesel' ? 'Diesel' :
+                           vehicleData.fuel_type === 'electric' ? 'Elétrico' :
+                           vehicleData.fuel_type === 'hybrid' ? 'Híbrido' : vehicleData.fuel_type}
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Categoria</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.category}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Capacidade</div>
+                        <div className="text-xl font-semibold text-gray-900">{vehicleData.passenger_capacity} passageiros</div>
+                      </div>
+                    </div>
+
+                    {/* Driver Information */}
+                    {vehicleData.current_conductor ? (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border-2 border-purple-200">
+                        <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                          <User className="w-6 h-6 text-purple-600" />
+                          Motorista Atual
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">Nome Completo</div>
+                            <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.full_name}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">CPF</div>
+                            <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.cpf}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">CNH</div>
+                            <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.cnh_number}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">Categoria CNH</div>
+                            <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.cnh_category}</div>
+                          </div>
+                          {vehicleData.current_conductor.phone && (
+                            <div>
+                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">Telefone</div>
+                              <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.phone}</div>
+                            </div>
+                          )}
+                          {vehicleData.current_conductor.email && (
+                            <div>
+                              <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2">E-mail</div>
+                              <div className="text-lg font-semibold text-gray-900">{vehicleData.current_conductor.email}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-50 rounded-2xl p-6 border-2 border-yellow-200">
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle className="w-6 h-6 text-yellow-600" />
+                          <div>
+                            <h3 className="font-semibold text-yellow-900 mb-1">Sem motorista vinculado</h3>
+                            <p className="text-sm text-yellow-700">Este veículo não possui motorista cadastrado no momento.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1486,17 +1771,67 @@ export default function SiteHomePage() {
           <form onSubmit={complaintForm.handleSubmit(onComplaintSubmit)} className="space-y-6">
             {/* Placa do Veículo */}
             <div className="space-y-2">
-              <Label htmlFor="vehiclePlate" className="flex items-center gap-2 text-sm font-medium">
-                <CreditCard className="w-4 h-4" />
+              <Label htmlFor="vehiclePlate" className="text-sm font-medium">
                 Placa do Veículo *
               </Label>
-              <Input
-                id="vehiclePlate"
-                placeholder="ABC1D23"
-                maxLength={10}
-                className="uppercase"
-                {...complaintForm.register('vehiclePlate')}
-              />
+              <div className="complaint-plate-container relative">
+                <Input
+                  id="vehiclePlate"
+                  placeholder="ABC1D23"
+                  maxLength={10}
+                  className="uppercase"
+                  {...complaintForm.register('vehiclePlate', {
+                    onChange: (e) => {
+                      const value = e.target.value.toUpperCase();
+                      complaintForm.setValue('vehiclePlate', value);
+                      if (value.length >= 2) {
+                        setShowComplaintSuggestions(true);
+                      } else {
+                        setShowComplaintSuggestions(false);
+                      }
+                    },
+                  })}
+                  onFocus={() => {
+                    const plate = complaintForm.watch('vehiclePlate');
+                    if (plate && plate.length >= 2 && complaintPlateSuggestions.length > 0) {
+                      setShowComplaintSuggestions(true);
+                    }
+                  }}
+                />
+                {isLoadingComplaintSuggestions && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                  </div>
+                )}
+
+                {/* Autocomplete Suggestions Dropdown */}
+                {showComplaintSuggestions && complaintPlateSuggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {complaintPlateSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          complaintForm.setValue('vehiclePlate', suggestion.plate);
+                          setShowComplaintSuggestions(false);
+                        }}
+                        className="px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                              {suggestion.plate}
+                            </div>
+                            <div className="text-xs text-gray-600 mt-0.5">
+                              {suggestion.brand} {suggestion.model}
+                            </div>
+                          </div>
+                          <Car className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {complaintForm.formState.errors.vehiclePlate && (
                 <p className="text-sm text-red-600">
                   {complaintForm.formState.errors.vehiclePlate.message}
@@ -1727,6 +2062,8 @@ export default function SiteHomePage() {
                   setIsComplaintDialogOpen(false);
                   complaintForm.reset();
                   setSelectedPhotos([]);
+                  setShowComplaintSuggestions(false);
+                  setComplaintPlateSuggestions([]);
                 }}
               >
                 Cancelar
@@ -1938,8 +2275,7 @@ export default function SiteHomePage() {
 
           <div className="space-y-6 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="searchPlate" className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
+              <Label htmlFor="searchPlate">
                 Placa do Veículo
               </Label>
               <div className="flex gap-2 relative">
@@ -2037,6 +2373,8 @@ export default function SiteHomePage() {
 
                       const data = await response.json();
                       setVehicleData(data);
+                      setIsVehicleSearchDialogOpen(false);
+                      setSearchPlate('');
                     } catch (error) {
                       setSearchError('Erro ao conectar com o servidor');
                     } finally {

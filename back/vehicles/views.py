@@ -5,6 +5,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import FilterSet, CharFilter, NumberFilter
 from core.throttling import PublicReadThrottle
+from core.exceptions import safe_error_response
 from .models import Vehicle
 from .serializers import VehicleSerializer
 
@@ -117,10 +118,11 @@ def vehicle_stats(request):
         }, status=status.HTTP_200_OK)
 
     except Exception as e:
-        return Response({
-            'error': 'Falha ao obter estatísticas',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return safe_error_response(
+            message='Falha ao obter estatísticas de veículos',
+            exception=e,
+            context={'action': 'vehicle_stats'}
+        )
 
 
 @api_view(['GET'])
@@ -148,10 +150,11 @@ def search_vehicles_by_plate(request):
         return Response(list(vehicles), status=status.HTTP_200_OK)
 
     except Exception as e:
-        return Response({
-            'error': 'Erro ao buscar veículos',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return safe_error_response(
+            message='Erro ao buscar veículos',
+            exception=e,
+            context={'action': 'search_vehicles_by_plate', 'query': search_query}
+        )
 
 
 @api_view(['GET'])
@@ -197,10 +200,10 @@ def get_vehicle_by_plate(request, plate):
 
         if current_conductor:
             vehicle_data['current_conductor'] = {
-                'full_name': current_conductor.full_name,
+                'full_name': current_conductor.name,
                 'cpf': current_conductor.cpf,
-                'cnh_number': current_conductor.cnh_number,
-                'cnh_category': current_conductor.cnh_category,
+                'cnh_number': current_conductor.license_number,
+                'cnh_category': current_conductor.license_category,
                 'phone': current_conductor.phone,
                 'email': current_conductor.email,
             }
@@ -210,7 +213,8 @@ def get_vehicle_by_plate(request, plate):
         return Response(vehicle_data, status=status.HTTP_200_OK)
 
     except Exception as e:
-        return Response({
-            'error': 'Erro ao buscar veículo',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return safe_error_response(
+            message='Erro ao buscar veículo por placa',
+            exception=e,
+            context={'action': 'get_vehicle_by_plate', 'plate': plate}
+        )

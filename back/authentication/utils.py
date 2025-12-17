@@ -73,7 +73,7 @@ def send_templated_email(subject, template_name, context, to_email, from_email=N
     # Add common context variables
     context.update({
         'timestamp': timezone.now(),
-        'site_name': 'SysPasso',
+        'site_name': getattr(settings, 'SITE_NAME', 'SysPasso'),
     })
     
     if sync or not hasattr(settings, 'CELERY_BROKER_URL'):
@@ -176,8 +176,8 @@ def send_email_verification(user, token_obj, request=None):
 
 def send_password_change_notification(user, request=None):
     """
-    Send notification when password is changed
-    
+    Send notification email when password is changed
+
     Args:
         user: User instance
         request: HTTP request object (optional)
@@ -186,13 +186,22 @@ def send_password_change_notification(user, request=None):
         'user': user,
         'ip_address': get_client_ip(request) if request else 'Unknown',
         'user_agent': get_user_agent(request) if request else 'Unknown',
-        'timestamp': timezone.now(),
     }
-    
-    subject = 'Password Changed - SysPasso Security Alert'
-    # You can create a password_change_notification template if needed
-    # For now, we'll just log it
-    logger.info(f"Password changed for user {user.username} from IP {context['ip_address']}")
+
+    site_name = getattr(settings, 'SITE_NAME', 'SysPasso')
+    subject = f'Senha Alterada - {site_name} Alerta de Segurança'
+
+    try:
+        send_templated_email(
+            subject=subject,
+            template_name='password_change_notification',
+            context=context,
+            to_email=user.email,
+            sync=getattr(settings, 'EMAIL_SEND_SYNC', True)
+        )
+        logger.info(f"Password change notification sent to {user.email} (IP: {context['ip_address']})")
+    except Exception as e:
+        logger.error(f"Failed to send password change notification to {user.email}: {e}")
 
 
 def cleanup_expired_tokens():

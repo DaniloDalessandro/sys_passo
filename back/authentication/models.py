@@ -6,7 +6,10 @@ from django.utils import timezone
 from django.conf import settings
 import secrets
 import string
+import logging
 from datetime import timedelta
+
+logger = logging.getLogger(__name__)
 
 
 class EmailVerification(models.Model):
@@ -14,10 +17,10 @@ class EmailVerification(models.Model):
     Model to handle email verification tokens
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_verifications')
-    token = models.CharField(max_length=64, unique=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_used = models.BooleanField(default=False)
-    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
 
     def __str__(self):
         return f"Email verification for {self.user.username}"
@@ -32,7 +35,8 @@ class EmailVerification(models.Model):
     @staticmethod
     def generate_token():
         """Generate a secure random token"""
-        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(64))
+        token_length = getattr(settings, 'AUTHENTICATION_TOKEN_LENGTH', 64)
+        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(token_length))
 
     def is_expired(self):
         """Check if the token has expired"""
@@ -52,10 +56,10 @@ class PasswordResetToken(models.Model):
     Model to handle password reset tokens
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
-    token = models.CharField(max_length=64, unique=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_used = models.BooleanField(default=False)
-    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     user_agent = models.TextField(blank=True, null=True)
 
@@ -72,7 +76,8 @@ class PasswordResetToken(models.Model):
     @staticmethod
     def generate_token():
         """Generate a secure random token"""
-        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(64))
+        token_length = getattr(settings, 'AUTHENTICATION_TOKEN_LENGTH', 64)
+        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(token_length))
 
     def is_expired(self):
         """Check if the token has expired"""
@@ -107,27 +112,20 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
-    Create a UserProfile and EmailVerification when a User is created
+    Create a UserProfile and EmailVerification when a User is created.
+
+    Nota: Não é necessário um signal separado para salvar o profile,
+    pois o Django já gerencia isso automaticamente através do relacionamento OneToOne.
     """
     if created:
-        # Create user profile with explicit defaults
-        UserProfile.objects.create(
-            user=instance,
-            is_email_verified=False
-        )
-
-        # Create email verification token
-        EmailVerification.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)  
-def save_user_profile(sender, instance, **kwargs):
-    """
-    Save the UserProfile when the User is saved
-    """
-    # Only save if profile exists and it's not during creation
-    if hasattr(instance, 'profile') and not kwargs.get('created', False):
         try:
-            instance.profile.save()
-        except:
-            pass  # Ignore errors during profile saving
+            # Create user profile with explicit defaults
+            UserProfile.objects.create(
+                user=instance,
+                is_email_verified=False
+            )
+
+            # Create email verification token
+            EmailVerification.objects.create(user=instance)
+        except Exception as e:
+            logger.error(f"Failed to create profile/verification for user {instance.username}: {e}")

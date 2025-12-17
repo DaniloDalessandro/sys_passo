@@ -202,12 +202,14 @@ export function useComplaints() {
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Erro ao consultar denúncia')
+        // Usar a mensagem detalhada do backend se disponível
+        const errorMessage = error.message || error.error || 'Erro ao consultar protocolo'
+        throw new Error(errorMessage)
       }
 
       return await response.json()
     } catch (error) {
-      console.error('Erro ao consultar denúncia:', error)
+      console.error('Erro ao consultar protocolo:', error)
       throw error
     }
   }, [])

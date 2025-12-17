@@ -24,53 +24,39 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # Allow login with email or username (case-insensitive and trimmed)
+        """
+        Otimizado para reduzir queries e evitar timing attacks.
+        Permite login com email ou username (case-insensitive).
+        """
+        from django.db.models import Q
+
         raw_identifier = attrs.get(self.username_field) or self.initial_data.get(self.username_field)
         password = attrs.get('password') or self.initial_data.get('password')
 
-        if password is None:
+        if not password or not raw_identifier:
             raise serializers.ValidationError('Username and password required.')
 
-        identifier_candidates = []
+        # Clean identifier
+        identifier = raw_identifier.strip() if isinstance(raw_identifier, str) else str(raw_identifier)
 
-        if isinstance(raw_identifier, str) and raw_identifier.strip():
-            identifier_candidates.append(raw_identifier.strip())
-
-        # Accept explicit email field from request payload
-        raw_email = self.initial_data.get('email')
-        if isinstance(raw_email, str):
-            cleaned_email = raw_email.strip()
-            if cleaned_email and cleaned_email.lower() not in [c.lower() for c in identifier_candidates]:
-                identifier_candidates.append(cleaned_email)
-
-        if not identifier_candidates:
+        if not identifier:
             raise serializers.ValidationError('Username and password required.')
 
-        user = None
+        # Busca única otimizada: procura por username OU email (case-insensitive)
+        candidate_user = User.objects.filter(
+            Q(username__iexact=identifier) | Q(email__iexact=identifier)
+        ).first()
 
-        for candidate in identifier_candidates:
-            # Try direct authentication using provided identifier
-            user = authenticate(username=candidate, password=password)
-            if user:
-                break
-
-            # Try matching by username case-insensitively
-            candidate_user = User.objects.filter(username__iexact=candidate).first()
-            if candidate_user:
-                user = authenticate(username=candidate_user.username, password=password)
-                if user:
-                    break
-
-            # Try matching by email case-insensitively
-            if '@' in candidate:
-                candidate_user = User.objects.filter(email__iexact=candidate).first()
-                if candidate_user:
-                    user = authenticate(username=candidate_user.username, password=password)
-                    if user:
-                        break
+        if candidate_user:
+            # Tenta autenticar com o username encontrado
+            user = authenticate(username=candidate_user.username, password=password)
+        else:
+            # Se não encontrou usuário, ainda chama authenticate para normalizar tempo
+            # (prevenção de timing attack)
+            user = authenticate(username=identifier, password=password)
 
         if user and user.is_active:
-            # Sync attrs so parent serializer can issue tokens correctly
+            # Sync attrs para o parent serializer
             attrs[self.username_field] = user.username
             attrs['password'] = password
 
@@ -201,16 +187,11 @@ class PasswordChangeSerializer(serializers.Serializer):
 class PasswordResetRequestSerializer(serializers.Serializer):
     """
     Serializer for password reset request
+
+    Nota: Não validamos se o email existe aqui por segurança
+    (prevenir account enumeration). A validação é feita na view.
     """
     email = serializers.EmailField()
-
-    def validate_email(self, value):
-        try:
-            User.objects.get(email=value, is_active=True)
-        except User.DoesNotExist:
-            # Don't reveal if email exists for security
-            pass
-        return value
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
@@ -258,6 +239,24 @@ class EmailVerificationSerializer(serializers.Serializer):
         except EmailVerification.DoesNotExist:
             raise serializers.ValidationError("Invalid or expired verification token.")
 
+    def save(self):
+        """Mark email as verified and token as used"""
+        from django.utils import timezone
+        verification_token = self.validated_data['token']
+        user = verification_token.user
+
+        # Mark token as used
+        verification_token.is_used = True
+        verification_token.save()
+
+        # Mark email as verified in UserProfile
+        if hasattr(user, 'profile'):
+            user.profile.is_email_verified = True
+            user.profile.email_verified_at = timezone.now()
+            user.profile.save()
+
+        return user
+
 
 class EmailResendSerializer(serializers.Serializer):
     """
@@ -268,7 +267,8 @@ class EmailResendSerializer(serializers.Serializer):
     def validate_email(self, value):
         try:
             user = User.objects.get(email=value)
-            if user.is_active:
+            # Corrigido: verifica se email já foi verificado usando UserProfile
+            if hasattr(user, 'profile') and user.profile.is_email_verified:
                 raise serializers.ValidationError("Email is already verified.")
             return user
         except User.DoesNotExist:

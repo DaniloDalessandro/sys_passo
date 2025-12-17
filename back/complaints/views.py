@@ -376,7 +376,11 @@ def check_complaint_by_protocol(request):
         complaint = Complaint.objects.select_related('vehicle').get(protocol=protocol)
     except Complaint.DoesNotExist:
         return Response(
-            {'error': 'Denúncia não encontrada. Verifique o número do protocolo.'},
+            {
+                'error': 'Protocolo não encontrado.',
+                'message': 'Não foi possível localizar uma denúncia com o protocolo informado. Verifique se o número está correto.',
+                'protocol_searched': protocol
+            },
             status=status.HTTP_404_NOT_FOUND
         )
 
