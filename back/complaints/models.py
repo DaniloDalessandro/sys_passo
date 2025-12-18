@@ -73,13 +73,6 @@ class Complaint(models.Model):
         verbose_name='Data da Ocorrência',
         help_text='Data em que o fato ocorreu'
     )
-    occurrence_location = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        verbose_name='Local da Ocorrência',
-        help_text='Endereço ou local onde ocorreu o fato'
-    )
 
     # Dados opcionais do denunciante
     complainant_name = models.CharField(

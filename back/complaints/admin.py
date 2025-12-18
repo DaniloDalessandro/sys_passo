@@ -37,7 +37,6 @@ class ComplaintAdmin(admin.ModelAdmin):
         'description',
         'complainant_name',
         'complainant_email',
-        'occurrence_location',
         'id',
     ]
 
@@ -56,7 +55,6 @@ class ComplaintAdmin(admin.ModelAdmin):
                 'complaint_type',
                 'description',
                 'occurrence_date',
-                'occurrence_location',
             )
         }),
         ('Denunciante', {

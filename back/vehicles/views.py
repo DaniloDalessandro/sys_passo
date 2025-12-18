@@ -145,7 +145,7 @@ def search_vehicles_by_plate(request):
         vehicles = Vehicle.objects.filter(
             plate__icontains=search_query,
             is_active=True
-        ).values('plate', 'brand', 'model')[:10]  # Limitar a 10 resultados
+        ).values('plate', 'brand', 'model', 'color')[:10]  # Limitar a 10 resultados
 
         return Response(list(vehicles), status=status.HTTP_200_OK)
 

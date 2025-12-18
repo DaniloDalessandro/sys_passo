@@ -148,7 +148,6 @@ const complaintSchema = z.object({
     .min(20, 'A descrição deve ter pelo menos 20 caracteres')
     .max(1000, 'A descrição deve ter no máximo 1000 caracteres'),
   occurrenceDate: z.string().optional(),
-  occurrenceLocation: z.string().optional(),
   complainantName: z.string().optional(),
   complainantEmail: z.string().email('Email inválido').optional().or(z.literal('')),
   complainantPhone: z.string().optional(),
@@ -237,10 +236,10 @@ export default function SiteHomePage() {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [isSearchingVehicle, setIsSearchingVehicle] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [plateSuggestions, setPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string}>>([]);
+  const [plateSuggestions, setPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string, color: string}>>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [complaintPlateSuggestions, setComplaintPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string}>>([]);
+  const [complaintPlateSuggestions, setComplaintPlateSuggestions] = useState<Array<{plate: string, brand: string, model: string, color: string}>>([]);
   const [isLoadingComplaintSuggestions, setIsLoadingComplaintSuggestions] = useState(false);
   const [showComplaintSuggestions, setShowComplaintSuggestions] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
@@ -264,7 +263,6 @@ export default function SiteHomePage() {
       complaintType: '',
       description: '',
       occurrenceDate: '',
-      occurrenceLocation: '',
       complainantName: '',
       complainantEmail: '',
       complainantPhone: '',
@@ -764,7 +762,6 @@ export default function SiteHomePage() {
       formData.append('description', data.description);
 
       if (data.occurrenceDate) formData.append('occurrence_date', data.occurrenceDate);
-      if (data.occurrenceLocation) formData.append('occurrence_location', data.occurrenceLocation);
       if (data.complainantName) formData.append('complainant_name', data.complainantName);
       if (data.complainantEmail) formData.append('complainant_email', data.complainantEmail);
       if (data.complainantPhone) formData.append('complainant_phone', data.complainantPhone);
@@ -1122,7 +1119,10 @@ export default function SiteHomePage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">{suggestion.plate}</div>
-                            <div className="text-sm text-gray-600 mt-1">{suggestion.brand} {suggestion.model}</div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {suggestion.brand} {suggestion.model}
+                              {suggestion.color && <span className="ml-1 text-gray-500">• {suggestion.color}</span>}
+                            </div>
                           </div>
                           <Car className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                         </div>
@@ -1823,6 +1823,7 @@ export default function SiteHomePage() {
                             </div>
                             <div className="text-xs text-gray-600 mt-0.5">
                               {suggestion.brand} {suggestion.model}
+                              {suggestion.color && <span className="ml-1 text-gray-500">• {suggestion.color}</span>}
                             </div>
                           </div>
                           <Car className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
@@ -1907,18 +1908,6 @@ export default function SiteHomePage() {
                   type="date"
                   max={new Date().toISOString().split('T')[0]}
                   {...complaintForm.register('occurrenceDate')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="occurrenceLocation" className="flex items-center gap-2 text-sm font-medium">
-                  <MapPin className="w-4 h-4" />
-                  Local da Ocorrência
-                </Label>
-                <Input
-                  id="occurrenceLocation"
-                  placeholder="Endereço ou local"
-                  {...complaintForm.register('occurrenceLocation')}
                 />
               </div>
             </div>
@@ -2190,13 +2179,6 @@ export default function SiteHomePage() {
                     </div>
                   )}
 
-                  {complaintData.occurrence_location && (
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Local da Ocorrência</Label>
-                      <p className="text-sm">{complaintData.occurrence_location}</p>
-                    </div>
-                  )}
-
                   <div className="space-y-1">
                     <Label className="text-xs text-gray-500">Data de Registro</Label>
                     <p className="text-sm">
@@ -2331,7 +2313,10 @@ export default function SiteHomePage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="font-semibold text-gray-900">{suggestion.plate}</div>
-                              <div className="text-sm text-gray-600">{suggestion.brand} {suggestion.model}</div>
+                              <div className="text-sm text-gray-600">
+                                {suggestion.brand} {suggestion.model}
+                                {suggestion.color && <span className="ml-1 text-gray-500">• {suggestion.color}</span>}
+                              </div>
                             </div>
                             <Car className="w-4 h-4 text-gray-400" />
                           </div>
