@@ -40,15 +40,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // FIX: Cache por instância usando useRef ao invés de variável global
+  // Cache por instância (useRef) para evitar leituras repetidas do localStorage
   const authDataCache = useRef<{ token: string | null; userData: UserData | null; timestamp: number } | null>(null)
-  const CACHE_DURATION = 5000 // 5 segundos de cache
+  const CACHE_DURATION = 5000 // 5 segundos
 
-  // Centraliza a leitura dos dados de autenticação com cache
   const getAuthData = useCallback(() => {
     const now = Date.now()
 
-    // Use cache se ainda está válido
     if (authDataCache.current && (now - authDataCache.current.timestamp) < CACHE_DURATION) {
       return authDataCache.current
     }
@@ -69,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         timestamp: now
       }
 
-      // Atualiza o cache
       authDataCache.current = result
       return result
     } catch (error) {
@@ -78,7 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [CACHE_DURATION])
 
-  // Verifica se o token está expirado (função estável, não precisa ser memoized)
   const isTokenExpired = useCallback((token: string): boolean => {
     try {
       const decoded = jwtDecode<{ exp: number }>(token)
@@ -88,10 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Função de login otimizada
   const login = useCallback((data: { access: string; refresh: string; user: UserData }) => {
     try {
-      // Batch localStorage writes
       const writes = [
         ["access_token", data.access],
         ["refresh", data.refresh],
@@ -104,7 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       writes.forEach(([key, value]) => localStorage.setItem(key, value))
 
-      // Set cookies
       const cookieOptions = "; path=/; SameSite=strict"
       document.cookie = `access=${data.access}${cookieOptions}`
       document.cookie = `refresh=${data.refresh}${cookieOptions}`
@@ -112,8 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(data.access)
       setUser(data.user)
       setError(null)
-
-      // Invalidate cache
       authDataCache.current = null
     } catch (error) {
       setError("Failed to save authentication data")
@@ -121,13 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Função de logout otimizada
   const logout = useCallback(() => {
     try {
       const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
       keys.forEach(key => localStorage.removeItem(key))
 
-      // Clear cookies
       const expireDate = "Thu, 01 Jan 1970 00:00:01 GMT"
       document.cookie = `access=; path=/; expires=${expireDate}`
       document.cookie = `refresh=; path=/; expires=${expireDate}`
@@ -135,8 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(null)
       setUser(null)
       setError(null)
-
-      // Invalidate cache
       authDataCache.current = null
     } catch (error) {
       setError("Failed to clear authentication data")
@@ -144,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Verifica se o token está prestes a expirar
   const tokenExpiringSoon = useMemo(() => {
     return (token: string, thresholdSeconds = 300): boolean => {
       try {
@@ -157,12 +143,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Refresh token com debouncing para evitar múltiplas chamadas
-  // IMPORTANTE: Não tem dependências para evitar loops infinitos
+  // Sem dependências no array para evitar loops infinitos com o interceptor
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
     const refresh = localStorage.getItem("refresh")
     if (!refresh) {
-      // Chama logout inline para evitar dependência circular
       try {
         const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
         keys.forEach(key => localStorage.removeItem(key))
@@ -195,13 +179,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("access_token", data.access)
       setAccessToken(data.access)
       setError(null)
-
-      // Invalidate cache
       authDataCache.current = null
       return true
     } catch (error) {
       setError("Session expired. Please login again.")
-      // Chama logout inline para evitar dependência circular
       try {
         const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
         keys.forEach(key => localStorage.removeItem(key))
@@ -221,15 +202,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, []) // SEM DEPENDÊNCIAS para evitar loops
+  }, [])
 
-  // Inicialização otimizada - RODA APENAS UMA VEZ
   useEffect(() => {
     let isMounted = true
     let hasInitialized = false
 
     const initializeAuth = async () => {
-      // Previne execução múltipla
       if (hasInitialized) return
       hasInitialized = true
 
@@ -264,17 +243,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isMounted = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // VAZIO - executa apenas na montagem
+  }, [])
 
-  // A verificação periódica foi removida para adotar uma estratégia de renovação de token sob demanda via interceptor.
-
-  // Sincronização entre abas otimizada
+  // Sincroniza estado entre abas do navegador
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "access_token") {
-        // Invalidate cache primeiro
         authDataCache.current = null
-        // Usa getAuthData diretamente sem depender dele no array
         try {
           const token = localStorage.getItem("access_token")
           const userData = {
@@ -294,9 +269,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("storage", handleStorageChange)
     return () => window.removeEventListener("storage", handleStorageChange)
-  }, []) // SEM DEPENDÊNCIAS
+  }, [])
 
-  // Memoize o valor do contexto para evitar re-renderizações
   const contextValue = useMemo(() => ({
     user,
     accessToken,

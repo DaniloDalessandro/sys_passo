@@ -39,17 +39,14 @@ export function MultiSelect({
   }, [open]);
 
   const handleSelect = (value: string) => {
-    console.log('Selecionando valor:', value);
     const newSelected = selected.includes(value)
       ? selected.filter((s) => s !== value)
       : [...selected, value];
-    console.log('Novos selecionados:', newSelected);
     onChange(newSelected);
   };
 
   const handleUnselect = (value: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('Removendo valor:', value);
     onChange(selected.filter((s) => s !== value));
   };
 
@@ -61,10 +58,7 @@ export function MultiSelect({
     <div className="relative w-full" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => {
-          console.log('Toggle dropdown, open:', !open);
-          setOpen(!open);
-        }}
+        onClick={() => setOpen(!open)}
         className="w-full min-h-[2.5rem] h-auto px-3 py-2 border rounded-md bg-white text-left flex items-center justify-between hover:bg-gray-50"
       >
         <div className="flex gap-1 flex-wrap flex-1">

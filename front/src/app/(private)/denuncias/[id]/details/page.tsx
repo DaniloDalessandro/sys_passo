@@ -33,8 +33,8 @@ export default function ComplaintDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
 
-  // Edit state
   const [editingStatus, setEditingStatus] = useState<string>("")
+  const [editingPriority, setEditingPriority] = useState<string>("")
   const [adminNotes, setAdminNotes] = useState<string>("")
   const [resolutionNotes, setResolutionNotes] = useState<string>("")
 
@@ -47,11 +47,11 @@ export default function ComplaintDetailsPage() {
         const data = await getComplaint(Number(id))
         setComplaint(data)
         setEditingStatus(data.status)
+        setEditingPriority(data.priority || "media")
         setAdminNotes(data.admin_notes || "")
         setResolutionNotes(data.resolution_notes || "")
-      } catch (error) {
+      } catch {
         toast.error("Erro ao carregar denúncia")
-        console.error(error)
       } finally {
         setIsLoading(false)
       }
@@ -73,7 +73,6 @@ export default function ComplaintDetailsPage() {
       await updateComplaintStatus(complaint.id, editingStatus)
       toast.success("Status atualizado com sucesso!")
 
-      // Reload complaint
       const updatedComplaint = await getComplaint(complaint.id)
       setComplaint(updatedComplaint)
     } catch (error: any) {
@@ -83,6 +82,29 @@ export default function ComplaintDetailsPage() {
     }
   }
 
+
+  const handlePriorityChange = async () => {
+    if (!complaint) return
+
+    if (editingPriority === complaint.priority) {
+      toast.info("A prioridade não foi alterada")
+      return
+    }
+
+    setIsActionLoading(true)
+    try {
+      await updateComplaint(complaint.id, { priority: editingPriority } as any)
+      toast.success("Prioridade atualizada com sucesso!")
+
+      const updatedComplaint = await getComplaint(complaint.id)
+      setComplaint(updatedComplaint)
+      setEditingPriority(updatedComplaint.priority || "media")
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar prioridade")
+    } finally {
+      setIsActionLoading(false)
+    }
+  }
 
   const handleNotesUpdate = async () => {
     if (!complaint) return
@@ -104,7 +126,6 @@ export default function ComplaintDetailsPage() {
       await updateComplaint(complaint.id, updateData)
       toast.success("Notas atualizadas com sucesso!")
 
-      // Reload complaint
       const updatedComplaint = await getComplaint(complaint.id)
       setComplaint(updatedComplaint)
     } catch (error: any) {
@@ -117,7 +138,7 @@ export default function ComplaintDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     )
   }
@@ -125,7 +146,7 @@ export default function ComplaintDetailsPage() {
   if (!complaint) {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <AlertTriangle className="h-12 w-12 text-orange-600" />
+        <AlertTriangle className="h-12 w-12 text-blue-600" />
         <h1 className="text-2xl font-bold">Denúncia não encontrada</h1>
         <Button onClick={() => router.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -137,7 +158,6 @@ export default function ComplaintDetailsPage() {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Header fixo */}
       <div className="border-b bg-background px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -146,48 +166,70 @@ export default function ComplaintDetailsPage() {
               Voltar
             </Button>
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              <AlertTriangle className="w-5 h-5 text-blue-600" />
               <div>
                 <h1 className="text-xl font-bold">Denúncia #{complaint.id}</h1>
                 <p className="text-sm text-muted-foreground">Protocolo: {complaint.protocol}</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">Status:</Label>
-            <Select value={editingStatus} onValueChange={setEditingStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="proposto">Proposto</SelectItem>
-                <SelectItem value="em_analise">Em Análise</SelectItem>
-                <SelectItem value="concluido">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
-            {editingStatus !== complaint.status && (
-              <Button
-                size="sm"
-                onClick={handleStatusChange}
-                disabled={isActionLoading}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                <Save className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Prioridade:</Label>
+              <Select value={editingPriority} onValueChange={setEditingPriority}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="media">Média</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+              {editingPriority !== complaint.priority && (
+                <Button
+                  size="sm"
+                  onClick={handlePriorityChange}
+                  disabled={isActionLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Status:</Label>
+              <Select value={editingStatus} onValueChange={setEditingStatus}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="proposto">Proposto</SelectItem>
+                  <SelectItem value="em_analise">Em Análise</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+              {editingStatus !== complaint.status && (
+                <Button
+                  size="sm"
+                  onClick={handleStatusChange}
+                  disabled={isActionLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Conteúdo em grid 2 colunas */}
       <div className="flex-1 overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-          {/* COLUNA ESQUERDA */}
-
-          {/* Informações do Veículo */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Informações do Veículo</CardTitle>
+              <CardTitle className="text-base text-blue-600">Informações do Veículo</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
@@ -221,10 +263,9 @@ export default function ComplaintDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Informações da Denúncia */}
           <Card className="lg:row-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Informações da Denúncia</CardTitle>
+              <CardTitle className="text-base text-blue-600">Informações da Denúncia</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -255,10 +296,9 @@ export default function ComplaintDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Informações do Denunciante */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Informações do Denunciante</CardTitle>
+              <CardTitle className="text-base text-blue-600">Informações do Denunciante</CardTitle>
             </CardHeader>
             <CardContent>
               {complaint.is_anonymous ? (
@@ -288,11 +328,10 @@ export default function ComplaintDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Fotos da Denúncia */}
           {complaint.photos && complaint.photos.length > 0 && (
             <Card className="lg:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base text-orange-600">Fotos Anexadas</CardTitle>
+                <CardTitle className="text-base text-blue-600">Fotos Anexadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -302,7 +341,7 @@ export default function ComplaintDetailsPage() {
                       href={photo.photo}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-orange-400 transition-all cursor-pointer"
+                      className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-400 transition-all cursor-pointer"
                     >
                       <img
                         src={photo.photo}
@@ -336,10 +375,9 @@ export default function ComplaintDetailsPage() {
             </Card>
           )}
 
-          {/* Notas Internas */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Notas Internas</CardTitle>
+              <CardTitle className="text-base text-blue-600">Notas Internas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -355,7 +393,7 @@ export default function ComplaintDetailsPage() {
                     size="sm"
                     onClick={handleNotesUpdate}
                     disabled={isActionLoading}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Salvar Notas Internas
@@ -365,10 +403,9 @@ export default function ComplaintDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Notas de Resolução */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Notas de Resolução</CardTitle>
+              <CardTitle className="text-base text-blue-600">Notas de Resolução</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -384,7 +421,7 @@ export default function ComplaintDetailsPage() {
                     size="sm"
                     onClick={handleNotesUpdate}
                     disabled={isActionLoading}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     Salvar Notas de Resolução
@@ -394,10 +431,9 @@ export default function ComplaintDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Histórico */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-orange-600">Histórico</CardTitle>
+              <CardTitle className="text-base text-blue-600">Histórico</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

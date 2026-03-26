@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConductorFilter(FilterSet):
-    """Custom filter for Conductor model with case-insensitive partial matching"""
+    """Filtro customizado para o model Conductor com busca parcial case-insensitive."""
     name = CharFilter(field_name='name', lookup_expr='icontains')
     cpf = CharFilter(field_name='cpf', lookup_expr='icontains')
     email = CharFilter(field_name='email', lookup_expr='icontains')
@@ -40,12 +40,11 @@ class ConductorFilter(FilterSet):
     license_expiry_date = DateFilter(field_name='license_expiry_date', lookup_expr='exact')
     is_active = BooleanFilter(field_name='is_active')
 
-    # Custom filters that need special handling
     address = CharFilter(method='filter_address')
     gender_display = CharFilter(method='filter_gender_display')
 
     def filter_address(self, queryset, name, value):
-        """Filter by combined address fields"""
+        """Filtra por campos combinados de endereço."""
         if not value:
             return queryset
         return queryset.filter(
@@ -56,12 +55,11 @@ class ConductorFilter(FilterSet):
         )
 
     def filter_gender_display(self, queryset, name, value):
-        """Filter by gender display value (Masculino, Feminino, Outro)"""
+        """Filtra pelo valor de exibição do gênero (Masculino, Feminino, Outro)."""
         if not value:
             return queryset
 
         value_lower = value.lower()
-        # Map display values to database values
         gender_mapping = {
             'masculino': 'M',
             'feminino': 'F',
@@ -71,11 +69,9 @@ class ConductorFilter(FilterSet):
             'o': 'O'
         }
 
-        # Try exact match first
         if value_lower in gender_mapping:
             return queryset.filter(gender=gender_mapping[value_lower])
 
-        # Try partial match on display values
         conditions = Q()
         for display_text, db_value in gender_mapping.items():
             if value_lower in display_text:
@@ -117,7 +113,7 @@ class ConductorListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         conductor = serializer.save(created_by=self.request.user)
-        
+
         log_user_activity(
             user=self.request.user,
             action='conductor_create',
@@ -157,7 +153,7 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         conductor = serializer.save(updated_by=self.request.user)
-        
+
         log_user_activity(
             user=self.request.user,
             action='conductor_update',
@@ -221,7 +217,7 @@ class ConductorSearchView(APIView):
                 Q(cpf__icontains=query) |
                 Q(email__icontains=query) |
                 Q(license_number__icontains=query)
-            ).filter(is_active=True)[:10]  # Limita a 10 resultados
+            ).filter(is_active=True)[:10]
 
             serializer = ConductorListSerializer(conductors, many=True)
             return Response({
@@ -242,26 +238,23 @@ class ConductorStatsView(APIView):
     def get(self, request):
         try:
             from django.utils import timezone
-            
+
             total_conductors = Conductor.objects.count()
             active_conductors = Conductor.objects.filter(is_active=True).count()
             inactive_conductors = total_conductors - active_conductors
-            
-            # Condutores com CNH próxima ao vencimento (30 dias)
+
             thirty_days_from_now = timezone.now().date() + timezone.timedelta(days=30)
             expiring_soon = Conductor.objects.filter(
                 license_expiry_date__lte=thirty_days_from_now,
                 license_expiry_date__gte=timezone.now().date(),
                 is_active=True
             ).count()
-            
-            # Condutores com CNH vencida
+
             expired_licenses = Conductor.objects.filter(
                 license_expiry_date__lt=timezone.now().date(),
                 is_active=True
             ).count()
 
-            # Estatísticas por categoria de CNH
             categories_stats = {}
             categories = ['A', 'B', 'C', 'D', 'E', 'AB', 'AC', 'AD', 'AE']
             for category in categories:
@@ -280,7 +273,7 @@ class ConductorStatsView(APIView):
                 'expired_licenses': expired_licenses,
                 'categories_stats': categories_stats
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             return safe_error_response(
                 message='Falha ao obter estatísticas',
@@ -294,37 +287,33 @@ class CheckDuplicateFieldView(APIView):
 
     def get(self, request):
         """
-        Check if a conductor field value already exists in the database.
-        Used for real-time duplicate validation in forms.
+        Verifica se o valor de um campo já existe no banco de dados.
+        Utilizado para validação de duplicatas em tempo real nos formulários.
 
-        Query parameters:
-        - field: The field to check (cpf, email, license_number)
-        - value: The value to check for duplicates
-        - exclude_id: ID of conductor to exclude from check (for edit mode)
+        Query params:
+        - field: Campo a verificar (cpf, email, license_number)
+        - value: Valor a verificar
+        - exclude_id: ID do condutor a excluir da verificação (modo de edição)
         """
         try:
             field = request.GET.get('field', '').strip()
             value = request.GET.get('value', '').strip()
             exclude_id = request.GET.get('exclude_id')
 
-            # Validate required parameters
             if not field or not value:
                 return Response({
                     'error': 'Parâmetros "field" e "value" são obrigatórios'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Validate field name
             allowed_fields = ['cpf', 'email', 'license_number']
             if field not in allowed_fields:
                 return Response({
                     'error': f'Campo "{field}" não é válido. Campos permitidos: {", ".join(allowed_fields)}'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Build query
             query_kwargs = {field: value}
             query = Conductor.objects.filter(**query_kwargs)
 
-            # Exclude specific conductor if in edit mode
             if exclude_id:
                 try:
                     exclude_id = int(exclude_id)
@@ -334,12 +323,10 @@ class CheckDuplicateFieldView(APIView):
                         'error': 'ID do condutor para exclusão deve ser um número válido'
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if duplicate exists
             duplicate_exists = query.exists()
             duplicate_conductor = None
 
             if duplicate_exists:
-                # Get the first matching conductor for details
                 conductor = query.first()
                 duplicate_conductor = {
                     'id': conductor.id,
@@ -350,7 +337,6 @@ class CheckDuplicateFieldView(APIView):
                     'is_active': conductor.is_active
                 }
 
-            # Prepare response with Portuguese messages
             field_names = {
                 'cpf': 'CPF',
                 'email': 'Email',

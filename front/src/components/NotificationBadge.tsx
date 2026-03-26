@@ -27,10 +27,7 @@ export function NotificationBadge() {
     try {
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
-    } catch (error: any) {
-      // Silencia erros de rede para não bloquear a UI
-      console.warn("Erro ao buscar contador de notificações:", error.message);
-      // Define contador como 0 em caso de erro
+    } catch {
       setUnreadCount(0);
     }
   };
@@ -39,17 +36,13 @@ export function NotificationBadge() {
     try {
       const data = await notificationService.getUnread();
       setNotifications(data);
-    } catch (error: any) {
-      // Silencia erros de rede para não bloquear a UI
-      console.warn("Erro ao buscar notificações:", error.message);
-      // Define array vazio em caso de erro
+    } catch {
       setNotifications([]);
     }
   };
 
   useEffect(() => {
     fetchUnreadCount();
-    // Atualiza o contador a cada 30 segundos
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -65,8 +58,8 @@ export function NotificationBadge() {
       await notificationService.markAsRead(id);
       await fetchUnreadCount();
       await fetchUnreadNotifications();
-    } catch (error) {
-      console.error("Erro ao marcar notificação como lida:", error);
+    } catch {
+      // silencia erro de rede
     }
   };
 
@@ -75,22 +68,19 @@ export function NotificationBadge() {
       await notificationService.markAllAsRead();
       await fetchUnreadCount();
       await fetchUnreadNotifications();
-    } catch (error) {
-      console.error("Erro ao marcar todas como lidas:", error);
+    } catch {
+      // silencia erro de rede
     }
   };
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Marca como lida
     await handleMarkAsRead(notification.id);
 
-    // Redireciona para a página apropriada
     if (notification.notification_type === "driver_request") {
       router.push(`/admin/requests/drivers/${notification.request_id}`);
     } else if (notification.notification_type === "vehicle_request") {
       router.push(`/admin/requests/vehicles/${notification.request_id}`);
     }
-
     setIsOpen(false);
   };
 

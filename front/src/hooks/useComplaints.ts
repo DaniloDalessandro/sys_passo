@@ -17,6 +17,8 @@ export interface Complaint {
   is_anonymous: boolean
   status: 'proposto' | 'em_analise' | 'concluido'
   status_display: string
+  priority: 'baixa' | 'media' | 'alta' | 'urgente'
+  priority_display: string
   created_at: string
   updated_at: string
   reviewed_by?: {
@@ -118,7 +120,6 @@ export function useComplaints() {
         setTotalCount(0)
       }
     } catch (error) {
-      console.error('Erro ao buscar denúncias:', error)
       toast.error('Erro ao carregar denúncias')
       setComplaints([])
       setTotalCount(0)
@@ -137,7 +138,6 @@ export function useComplaints() {
 
       return await response.json()
     } catch (error) {
-      console.error('Erro ao buscar denúncia:', error)
       throw error
     }
   }, [])
@@ -156,7 +156,6 @@ export function useComplaints() {
 
       return await response.json()
     } catch (error) {
-      console.error('Erro ao atualizar status:', error)
       throw error
     }
   }, [])
@@ -176,7 +175,6 @@ export function useComplaints() {
 
       return await response.json()
     } catch (error) {
-      console.error('Erro ao atualizar denúncia:', error)
       throw error
     }
   }, [])
@@ -191,7 +189,6 @@ export function useComplaints() {
         throw new Error('Erro ao excluir denúncia')
       }
     } catch (error) {
-      console.error('Erro ao excluir denúncia:', error)
       throw error
     }
   }, [])
@@ -202,14 +199,12 @@ export function useComplaints() {
 
       if (!response.ok) {
         const error = await response.json()
-        // Usar a mensagem detalhada do backend se disponível
         const errorMessage = error.message || error.error || 'Erro ao consultar protocolo'
         throw new Error(errorMessage)
       }
 
       return await response.json()
     } catch (error) {
-      console.error('Erro ao consultar protocolo:', error)
       throw error
     }
   }, [])

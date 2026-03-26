@@ -1,8 +1,6 @@
 """
-Custom Throttling Classes for Rate Limiting
-
-Provides specialized throttle classes for different types of public endpoints
-to protect against DDoS attacks and API abuse.
+Classes de throttling customizadas para controle de taxa de requisições.
+Protege endpoints públicos contra abuso e ataques DDoS.
 """
 
 from rest_framework.throttling import AnonRateThrottle
@@ -10,39 +8,31 @@ from rest_framework.throttling import AnonRateThrottle
 
 class PublicReadThrottle(AnonRateThrottle):
     """
-    Throttle for public read-only endpoints (GET requests).
-
-    Rate: 100 requests per hour per IP address.
-    Use for public data endpoints that don't modify state.
+    Throttle para endpoints públicos de leitura (GET).
+    Taxa: 100 requisições por hora por IP.
     """
     scope = 'public_read'
 
 
 class PublicWriteThrottle(AnonRateThrottle):
     """
-    Throttle for public write endpoints (POST/PUT/PATCH requests).
-
-    Rate: 20 requests per hour per IP address (more restrictive).
-    Use for public endpoints that create or modify data.
+    Throttle para endpoints públicos de escrita (POST/PUT/PATCH).
+    Taxa: 20 requisições por hora por IP (mais restritivo).
     """
     scope = 'public_write'
 
 
 class AuthThrottle(AnonRateThrottle):
     """
-    Throttle for authentication endpoints.
-
-    Rate: 10 requests per hour per IP address (very restrictive).
-    Use for login, registration, and token endpoints to prevent brute force attacks.
+    Throttle para endpoints de autenticação.
+    Taxa: 30 requisições por hora por IP. Previne ataques de força bruta.
     """
     scope = 'auth'
 
 
 class PasswordResetThrottle(AnonRateThrottle):
     """
-    Throttle for password reset endpoints.
-
-    Rate: 5 requests per hour per IP address (extremely restrictive).
-    Use for password reset request endpoints to prevent abuse.
+    Throttle para endpoints de redefinição de senha.
+    Taxa: 5 requisições por hora por IP.
     """
     scope = 'password_reset'

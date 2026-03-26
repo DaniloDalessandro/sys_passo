@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Funções auxiliares para tratamento de erros e exceções
+Funções auxiliares para tratamento de erros e exceções.
 """
 import logging
 import uuid
@@ -52,7 +51,7 @@ def safe_error_response(message, exception=None, context=None, status_code=statu
 
 def custom_exception_handler(exc, context):
     """
-    Handler customizado para exceções do DRF
+    Handler customizado para exceções do DRF.
 
     Args:
         exc: Exceção lançada
@@ -61,18 +60,14 @@ def custom_exception_handler(exc, context):
     Returns:
         Response: Resposta formatada
     """
-    # Chama o exception handler padrão do DRF primeiro
     response = drf_exception_handler(exc, context)
 
     if response is not None:
-        # Adiciona informações extras ao erro
         error_id = str(uuid.uuid4())[:8].upper()
 
-        # Se a resposta já tem dados, mantém eles
         if isinstance(response.data, dict):
             response.data['error_id'] = error_id
 
-        # Log do erro
         view = context.get('view', None)
         request = context.get('request', None)
 
@@ -80,7 +75,7 @@ def custom_exception_handler(exc, context):
         if view:
             log_message += f" | View: {view.__class__.__name__}"
         if request:
-            log_message += f" | Method: {request.method} | Path: {request.path}"
+            log_message += f" | Método: {request.method} | Caminho: {request.path}"
 
         logger.error(log_message, exc_info=True)
 

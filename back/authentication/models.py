@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class EmailVerification(models.Model):
     """
-    Model to handle email verification tokens
+    Model para gerenciar tokens de verificação de e-mail.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_verifications')
     token = models.CharField(max_length=64, unique=True, db_index=True)
@@ -34,16 +34,16 @@ class EmailVerification(models.Model):
 
     @staticmethod
     def generate_token():
-        """Generate a secure random token"""
+        """Gera um token aleatório seguro."""
         token_length = getattr(settings, 'AUTHENTICATION_TOKEN_LENGTH', 64)
         return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(token_length))
 
     def is_expired(self):
-        """Check if the token has expired"""
+        """Verifica se o token expirou."""
         return timezone.now() > self.expires_at
 
     def is_valid(self):
-        """Check if the token is valid (not used and not expired)"""
+        """Verifica se o token é válido (não utilizado e não expirado)."""
         return not self.is_used and not self.is_expired()
 
     class Meta:
@@ -53,7 +53,7 @@ class EmailVerification(models.Model):
 
 class PasswordResetToken(models.Model):
     """
-    Model to handle password reset tokens
+    Model para gerenciar tokens de redefinição de senha.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
     token = models.CharField(max_length=64, unique=True, db_index=True)
@@ -75,16 +75,16 @@ class PasswordResetToken(models.Model):
 
     @staticmethod
     def generate_token():
-        """Generate a secure random token"""
+        """Gera um token aleatório seguro."""
         token_length = getattr(settings, 'AUTHENTICATION_TOKEN_LENGTH', 64)
         return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(token_length))
 
     def is_expired(self):
-        """Check if the token has expired"""
+        """Verifica se o token expirou."""
         return timezone.now() > self.expires_at
 
     def is_valid(self):
-        """Check if the token is valid (not used and not expired)"""
+        """Verifica se o token é válido (não utilizado e não expirado)."""
         return not self.is_used and not self.is_expired()
 
     class Meta:
@@ -94,7 +94,7 @@ class PasswordResetToken(models.Model):
 
 class UserProfile(models.Model):
     """
-    Extended user profile model to store additional user information
+    Perfil estendido do usuário para armazenar informações adicionais.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     is_email_verified = models.BooleanField(default=False)
@@ -112,20 +112,14 @@ class UserProfile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
-    Create a UserProfile and EmailVerification when a User is created.
-
-    Nota: Não é necessário um signal separado para salvar o profile,
-    pois o Django já gerencia isso automaticamente através do relacionamento OneToOne.
+    Cria UserProfile e EmailVerification ao criar um novo usuário.
     """
     if created:
         try:
-            # Create user profile with explicit defaults
             UserProfile.objects.create(
                 user=instance,
                 is_email_verified=False
             )
-
-            # Create email verification token
             EmailVerification.objects.create(user=instance)
         except Exception as e:
-            logger.error(f"Failed to create profile/verification for user {instance.username}: {e}")
+            logger.error(f"Falha ao criar perfil/verificação para o usuário {instance.username}: {e}")

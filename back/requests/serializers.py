@@ -50,9 +50,6 @@ class VehicleNestedSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-# ========== DRIVER REQUEST SERIALIZERS ==========
-
-
 class DriverRequestCreateSerializer(serializers.ModelSerializer):
     """Serializer para criação de solicitações de motoristas (site público)."""
 
@@ -88,8 +85,6 @@ class DriverRequestCreateSerializer(serializers.ModelSerializer):
             'photo': {'required': False, 'allow_null': True},
             'message': {'required': False, 'allow_null': True},
         }
-
-    # ---- Validações de campos ----
 
     def validate_name(self, value):
         return validate_text_field(value, 'nome')
@@ -172,19 +167,46 @@ class DriverRequestCreateSerializer(serializers.ModelSerializer):
         cleaned = (value or '').strip()
         if not cleaned:
             raise serializers.ValidationError('O número da CNH é obrigatório.')
+
+        if Conductor.objects.filter(license_number=cleaned).exists():
+            raise serializers.ValidationError('Esta CNH já está cadastrada no sistema.')
+
+        if DriverRequest.objects.filter(license_number=cleaned, status='em_analise').exists():
+            raise serializers.ValidationError(
+                'Já existe uma solicitação em análise com esta CNH. Aguarde a aprovação ou reprovação.'
+            )
+
         return cleaned
 
     def validate_phone(self, value):
         phone = (value or '').strip()
-        if len(re.sub(r'[^0-9]', '', phone)) < 10:
-            raise serializers.ValidationError('Telefone inválido. Informe DDD e número.')
+        digits = re.sub(r'[^0-9]', '', phone)
+
+        if len(digits) not in [10, 11]:
+            raise serializers.ValidationError(
+                'Telefone inválido. Use formato (99) 9999-9999 ou (99) 99999-9999.'
+            )
+
+        ddd = int(digits[:2])
+        if ddd < 11 or ddd > 99:
+            raise serializers.ValidationError('DDD inválido. Use um DDD entre 11 e 99.')
+
         return phone
 
     def validate_whatsapp(self, value):
         if value:
             phone = value.strip()
-            if len(re.sub(r'[^0-9]', '', phone)) < 10:
-                raise serializers.ValidationError('WhatsApp inválido. Informe DDD e número.')
+            digits = re.sub(r'[^0-9]', '', phone)
+
+            if len(digits) not in [10, 11]:
+                raise serializers.ValidationError(
+                    'WhatsApp inválido. Use formato (99) 9999-9999 ou (99) 99999-9999.'
+                )
+
+            ddd = int(digits[:2])
+            if ddd < 11 or ddd > 99:
+                raise serializers.ValidationError('DDD inválido. Use um DDD entre 11 e 99.')
+
             return phone
         return value
 
@@ -207,6 +229,7 @@ class DriverRequestListSerializer(serializers.ModelSerializer):
         model = DriverRequest
         fields = [
             'id',
+            'protocol',
             'name',
             'cpf',
             'birth_date',
@@ -257,15 +280,11 @@ class DriverRequestActionSerializer(serializers.Serializer):
     """
     Serializer para ações de aprovação/reprovação de solicitações de motoristas.
 
-    Nota: O motivo da reprovação é opcional, mas recomendado para melhor comunicação
-    com o solicitante.
+    O motivo da reprovação é opcional, mas recomendado para melhor comunicação com o solicitante.
     """
 
     status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)
     rejection_reason = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=2000)
-
-
-# ========== VEHICLE REQUEST SERIALIZERS ==========
 
 
 class VehicleRequestCreateSerializer(serializers.ModelSerializer):
@@ -302,13 +321,11 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_plate(self, value):
-        """
-        Valida e normaliza a placa do veículo.
-        """
+        """Valida e normaliza a placa do veículo."""
         plate_cleaned = value.upper().replace('-', '').replace(' ', '')
 
-        brazilian_pattern = r'^[A-Z]{3}[0-9]{4}$'  # AAA1234
-        mercosul_pattern = r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$'  # AAA1A23
+        brazilian_pattern = r'^[A-Z]{3}[0-9]{4}$'
+        mercosul_pattern = r'^[A-Z]{3}[0-9][A-Z][0-9]{2}$'
 
         if not (re.match(brazilian_pattern, plate_cleaned) or re.match(mercosul_pattern, plate_cleaned)):
             raise serializers.ValidationError(
@@ -323,9 +340,7 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
         return plate_cleaned
 
     def validate_year(self, value):
-        """
-        Valida se o ano está entre 1900 e ano atual + 1.
-        """
+        """Valida se o ano está entre 1900 e ano atual + 1."""
         current_year = datetime.datetime.now().year
 
         if value < 1900 or value > current_year + 1:
@@ -336,9 +351,7 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_fuel_type(self, value):
-        """
-        Valida se o tipo de combustível é válido.
-        """
+        """Valida se o tipo de combustível é válido."""
         valid_fuel_types = ['gasoline', 'ethanol', 'flex', 'diesel', 'electric', 'hybrid']
 
         if value not in valid_fuel_types:
@@ -354,11 +367,7 @@ class VehicleRequestCreateSerializer(serializers.ModelSerializer):
 
 
 class VehicleRequestListSerializer(serializers.ModelSerializer):
-    """
-    Serializer para listagem de solicitações de veículos (admin).
-
-    Inclui dados aninhados do revisor e do veículo criado.
-    """
+    """Serializer para listagem de solicitações de veículos (admin)."""
 
     reviewed_by = UserNestedSerializer(read_only=True)
     vehicle = VehicleNestedSerializer(read_only=True)
@@ -370,6 +379,7 @@ class VehicleRequestListSerializer(serializers.ModelSerializer):
         model = VehicleRequest
         fields = [
             'id',
+            'protocol',
             'plate',
             'brand',
             'model',
@@ -413,8 +423,7 @@ class VehicleRequestActionSerializer(serializers.Serializer):
     """
     Serializer para ações de aprovação/reprovação de solicitações de veículos.
 
-    Nota: O motivo da reprovação é opcional, mas recomendado para melhor comunicação
-    com o solicitante.
+    O motivo da reprovação é opcional, mas recomendado para melhor comunicação com o solicitante.
     """
 
     status = serializers.ChoiceField(choices=['aprovado', 'reprovado'], required=True)

@@ -66,7 +66,6 @@ export function NavUser({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
 
-  // Form states
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -75,23 +74,20 @@ export function NavUser({
   const [confirmPassword, setConfirmPassword] = useState("")
 
   const handleLogout = () => {
-    logout() // USANDO FUNÇÃO DE LOGOUT DO CONTEXTO
+    logout()
     router.push("/login")
   }
 
   const handleOpenAccountDialog = async () => {
-    // FIX: Fecha dropdown ANTES de abrir dialog
     setIsDropdownOpen(false)
 
-    // Pequeno delay para animação do dropdown fechar
+    // Aguarda animação do dropdown fechar
     await new Promise(resolve => setTimeout(resolve, 100))
 
     setIsLoadingProfile(true)
     setIsAccountDialogOpen(true)
 
-    // Load user data from API
     try {
-      // O interceptor irá adicionar o cabeçalho de autorização automaticamente
       const response = await fetch(buildApiUrl("api/auth/profile/"))
 
       if (response.ok) {
@@ -108,8 +104,7 @@ export function NavUser({
       } else {
         toast.error("Erro ao carregar dados da conta")
       }
-    } catch (error) {
-      console.error("Error loading user data:", error)
+    } catch {
       toast.error("Erro ao conectar com o servidor")
     } finally {
       setIsLoadingProfile(false)
@@ -124,7 +119,6 @@ export function NavUser({
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           first_name: firstName,
@@ -144,13 +138,12 @@ export function NavUser({
         toast.success("Dados atualizados com sucesso!")
         setIsAccountDialogOpen(false)
 
-        window.location.reload() // Mantido por enquanto para garantir a atualização da UI
+        window.location.reload()
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || "Erro ao atualizar dados")
       }
-    } catch (error) {
-      console.error("Error updating user data:", error)
+    } catch {
       toast.error("Erro ao conectar com o servidor")
     } finally {
       setIsSubmitting(false)
@@ -180,7 +173,6 @@ export function NavUser({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // O cabeçalho de autorização é adicionado pelo interceptor
         },
         body: JSON.stringify({
           old_password: oldPassword,
@@ -220,8 +212,7 @@ export function NavUser({
           toast.error(errorData.error || "Erro ao alterar senha")
         }
       }
-    } catch (error) {
-      console.error("Error changing password:", error)
+    } catch {
       toast.error("Erro ao conectar com o servidor")
     } finally {
       setIsSubmitting(false)
@@ -313,7 +304,6 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
 
-      {/* Account Dialog */}
       <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
         <DialogContent className="w-[min(95vw,520px)] md:w-[min(90vw,600px)] max-h-[85vh] overflow-y-auto px-5 py-6 sm:rounded-2xl">
           <DialogHeader>

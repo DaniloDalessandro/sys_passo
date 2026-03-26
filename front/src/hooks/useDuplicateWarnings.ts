@@ -88,8 +88,7 @@ export function useDuplicateWarnings(excludeId?: number) {
               isLoading: false
             }
           }));
-        } catch (error) {
-          console.error(`Error checking duplicate for ${field}:`, error);
+        } catch {
           setWarnings(prev => ({
             ...prev,
             [field]: { exists: false, isLoading: false }
@@ -100,7 +99,6 @@ export function useDuplicateWarnings(excludeId?: number) {
     [checkDuplicateField, excludeId]
   );
 
-  // Function to clear warnings for a specific field
   const clearWarning = useCallback((field: 'cpf' | 'email' | 'license_number') => {
     if (timeoutRefs.current[field]) {
       clearTimeout(timeoutRefs.current[field]);

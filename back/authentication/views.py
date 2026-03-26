@@ -39,20 +39,19 @@ from .utils import (
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
-    Custom JWT login view with additional user data
+    View de login JWT com dados adicionais do usuário.
     """
     serializer_class = CustomTokenObtainPairSerializer
-    
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        
+
         if response.status_code == 200:
-            # Log successful login
             try:
                 serializer = self.get_serializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
                 user = serializer.user
-                
+
                 log_user_activity(
                     user=user,
                     action='login',
@@ -60,16 +59,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     details={'user_agent': get_user_agent(request)}
                 )
             except Exception:
-                pass  # Don't fail the login if logging fails
-                
+                pass
+
         return response
 
 
 class UserRegistrationView(APIView):
     """
-    Register a new user account with JWT tokens
-
-    Rate Limit: 10 requests/hour per IP (prevents automated account creation)
+    Cadastro de nova conta de usuário com tokens JWT.
     """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [AuthThrottle]
@@ -79,33 +76,27 @@ class UserRegistrationView(APIView):
         if serializer.is_valid():
             try:
                 with transaction.atomic():
-                    # Create user
                     user = serializer.save()
-                    
-                    # Generate JWT tokens
+
                     refresh = RefreshToken.for_user(user)
                     access_token = refresh.access_token
-                    
-                    # Get or create email verification token (created by signal)
+
                     email_verification = user.email_verifications.filter(is_used=False).first()
-                    
-                    # Send verification email
+
                     if email_verification:
                         send_email_verification(user, email_verification, request)
-                    
-                    # Log registration
+
                     log_user_activity(
                         user=user,
                         action='register',
                         ip_address=get_client_ip(request),
                         details={'user_agent': get_user_agent(request)}
                     )
-                    
-                    # Serialize user data
+
                     user_serializer = UserSerializer(user)
-                    
+
                     return Response({
-                        'message': 'User registered successfully. Please check your email to verify your account.',
+                        'message': 'Usuário cadastrado com sucesso. Verifique seu e-mail para ativar a conta.',
                         'user': user_serializer.data,
                         'tokens': {
                             'access': str(access_token),
@@ -113,23 +104,23 @@ class UserRegistrationView(APIView):
                         },
                         'email_verification_sent': bool(email_verification)
                     }, status=status.HTTP_201_CREATED)
-                    
+
             except Exception as e:
                 return safe_error_response(
                     message='Falha ao criar usuário',
                     exception=e,
                     context={'action': 'user_registration'}
                 )
-        
+
         return Response({
-            'error': 'Registration failed',
+            'error': 'Falha no cadastro',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLogoutView(APIView):
     """
-    Logout user and blacklist refresh token
+    Logout do usuário e invalidação do refresh token.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -137,11 +128,9 @@ class UserLogoutView(APIView):
         try:
             refresh_token = request.data.get('refresh')
             if refresh_token:
-                # Blacklist the refresh token
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-            
-            # Log logout
+
             log_user_activity(
                 user=request.user,
                 action='logout',
@@ -150,7 +139,7 @@ class UserLogoutView(APIView):
             )
             
             return Response({
-                'message': 'Logout successful'
+                'message': 'Logout realizado com sucesso'
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
@@ -164,42 +153,35 @@ class UserLogoutView(APIView):
 
 class UserProfileView(RetrieveUpdateAPIView):
     """
-    Retrieve and update user profile information
+    Consulta e atualização de informações do perfil do usuário.
     """
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return UserSerializer
         return UserUpdateSerializer
-    
+
     def get_object(self):
         return self.request.user
 
     def get(self, request, *args, **kwargs):
-        """
-        Get user profile information
-        """
         serializer = self.get_serializer(request.user)
         return Response({
             'user': serializer.data
         }, status=status.HTTP_200_OK)
 
     def patch(self, request, *args, **kwargs):
-        """
-        Update user profile information
-        """
         serializer = self.get_serializer(
-            request.user, 
-            data=request.data, 
+            request.user,
+            data=request.data,
             partial=True,
             context={'request': request}
         )
-        
+
         if serializer.is_valid():
             serializer.save()
-            
-            # Log profile update
+
             log_user_activity(
                 user=request.user,
                 action='profile_update',
@@ -208,19 +190,19 @@ class UserProfileView(RetrieveUpdateAPIView):
             )
             
             return Response({
-                'message': 'Profile updated successfully',
+                'message': 'Perfil atualizado com sucesso',
                 'user': UserSerializer(request.user).data
             }, status=status.HTTP_200_OK)
-        
+
         return Response({
-            'error': 'Profile update failed',
+            'error': 'Falha na atualização do perfil',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordChangeView(APIView):
     """
-    Change user password
+    Alteração de senha do usuário.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -229,15 +211,12 @@ class PasswordChangeView(APIView):
             data=request.data,
             context={'request': request}
         )
-        
+
         if serializer.is_valid():
             try:
-                # Change password
                 user = serializer.save()
-                
-                # Blacklist all existing refresh tokens for this user
-                # This forces re-authentication on all devices
-                # Otimizado: usa bulk_create em vez de loop
+
+                # Invalida todos os refresh tokens existentes para forçar re-autenticação em todos os dispositivos
                 from django.db import IntegrityError
                 outstanding_tokens = user.outstandingtoken_set.all()
                 blacklist_entries = [
@@ -247,24 +226,20 @@ class PasswordChangeView(APIView):
                 try:
                     BlacklistedToken.objects.bulk_create(
                         blacklist_entries,
-                        ignore_conflicts=True  # Ignora se já existe
+                        ignore_conflicts=True
                     )
                 except (IntegrityError, Exception) as e:
-                    # Fallback para método antigo se bulk_create falhar
                     for token in outstanding_tokens:
                         try:
                             BlacklistedToken.objects.get_or_create(token=token)
                         except Exception:
                             pass
-                
-                # Generate new tokens
+
                 refresh = RefreshToken.for_user(user)
                 access_token = refresh.access_token
-                
-                # Send notification (optional)
+
                 send_password_change_notification(user, request)
-                
-                # Log password change
+
                 log_user_activity(
                     user=user,
                     action='password_change',
@@ -273,31 +248,29 @@ class PasswordChangeView(APIView):
                 )
                 
                 return Response({
-                    'message': 'Password changed successfully',
+                    'message': 'Senha alterada com sucesso',
                     'tokens': {
                         'access': str(access_token),
                         'refresh': str(refresh)
                     }
                 }, status=status.HTTP_200_OK)
-                
+
             except Exception as e:
                 return safe_error_response(
                     message='Falha ao alterar senha',
                     exception=e,
                     context={'action': 'password_change', 'user': request.user.username}
                 )
-        
+
         return Response({
-            'error': 'Password change failed',
+            'error': 'Falha na alteração de senha',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetRequestView(APIView):
     """
-    Request password reset - send email with reset token
-
-    Rate Limit: 5 requests/hour per IP (prevents password reset abuse)
+    Solicitação de redefinição de senha via e-mail.
     """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [PasswordResetThrottle]
@@ -308,21 +281,17 @@ class PasswordResetRequestView(APIView):
             try:
                 email = serializer.validated_data['email']
                 user = User.objects.get(email=email)
-                
-                # Invalidate any existing password reset tokens for this user
+
                 PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
-                
-                # Create new password reset token
+
                 reset_token = PasswordResetToken.objects.create(
                     user=user,
                     ip_address=get_client_ip(request),
                     user_agent=get_user_agent(request)
                 )
-                
-                # Send password reset email
+
                 send_password_reset_email(user, reset_token, request)
-                
-                # Log password reset request
+
                 log_user_activity(
                     user=user,
                     action='password_reset_request',
@@ -331,13 +300,13 @@ class PasswordResetRequestView(APIView):
                 )
                 
                 return Response({
-                    'message': 'Password reset email sent successfully. Please check your email.'
+                    'message': 'E-mail de redefinição de senha enviado. Verifique sua caixa de entrada.'
                 }, status=status.HTTP_200_OK)
-                
+
             except User.DoesNotExist:
-                # For security, don't reveal that the email doesn't exist
+                # Resposta genérica para prevenir enumeração de contas
                 return Response({
-                    'message': 'If an account with this email exists, a password reset link has been sent.'
+                    'message': 'Se existir uma conta com este e-mail, um link de redefinição foi enviado.'
                 }, status=status.HTTP_200_OK)
             except Exception as e:
                 return safe_error_response(
@@ -347,16 +316,14 @@ class PasswordResetRequestView(APIView):
                 )
         
         return Response({
-            'error': 'Invalid email address',
+            'error': 'Endereço de e-mail inválido',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetConfirmView(APIView):
     """
-    Confirm password reset with token and set new password
-
-    Rate Limit: 10 requests/hour per IP (prevents token brute force)
+    Confirmação de redefinição de senha com token e nova senha.
     """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [AuthThrottle]
@@ -365,11 +332,8 @@ class PasswordResetConfirmView(APIView):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                # Reset password and mark token as used
                 user = serializer.save()
 
-                # Blacklist all existing refresh tokens for this user
-                # Otimizado: usa bulk_create
                 from django.db import IntegrityError
                 outstanding_tokens = user.outstandingtoken_set.all()
                 blacklist_entries = [
@@ -387,8 +351,7 @@ class PasswordResetConfirmView(APIView):
                             BlacklistedToken.objects.get_or_create(token=token)
                         except Exception:
                             pass
-                
-                # Log password reset
+
                 log_user_activity(
                     user=user,
                     action='password_reset_confirm',
@@ -397,7 +360,7 @@ class PasswordResetConfirmView(APIView):
                 )
                 
                 return Response({
-                    'message': 'Password reset successfully. You can now log in with your new password.'
+                    'message': 'Senha redefinida com sucesso. Você já pode fazer login com a nova senha.'
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
@@ -408,16 +371,14 @@ class PasswordResetConfirmView(APIView):
                 )
         
         return Response({
-            'error': 'Password reset confirmation failed',
+            'error': 'Falha na confirmação de redefinição de senha',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmailVerificationView(APIView):
     """
-    Verify user email with verification token
-
-    Rate Limit: 10 requests/hour per IP (prevents token brute force)
+    Verificação de e-mail do usuário com token.
     """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [AuthThrottle]
@@ -426,10 +387,8 @@ class EmailVerificationView(APIView):
         serializer = EmailVerificationSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                # Verify email and mark token as used
                 user = serializer.save()
-                
-                # Log email verification
+
                 log_user_activity(
                     user=user,
                     action='email_verification',
@@ -438,7 +397,7 @@ class EmailVerificationView(APIView):
                 )
                 
                 return Response({
-                    'message': 'Email verified successfully! Your account is now fully activated.',
+                    'message': 'E-mail verificado com sucesso! Sua conta está ativa.',
                     'user': UserSerializer(user).data
                 }, status=status.HTTP_200_OK)
                 
@@ -450,16 +409,14 @@ class EmailVerificationView(APIView):
                 )
         
         return Response({
-            'error': 'Email verification failed',
+            'error': 'Falha na verificação de e-mail',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ResendEmailVerificationView(APIView):
     """
-    Resend email verification token
-
-    Rate Limit: 5 requests/hour per IP (prevents email spam)
+    Reenvio do token de verificação de e-mail.
     """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [PasswordResetThrottle]
@@ -468,18 +425,14 @@ class ResendEmailVerificationView(APIView):
         serializer = ResendEmailVerificationSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                user = serializer.validated_data['email']  # This is actually the user object
-                
-                # Invalidate existing verification tokens
+                user = serializer.validated_data['email']  # campo 'email' retorna o objeto User
+
                 EmailVerification.objects.filter(user=user, is_used=False).update(is_used=True)
-                
-                # Create new verification token
+
                 verification_token = EmailVerification.objects.create(user=user)
-                
-                # Send verification email
+
                 send_email_verification(user, verification_token, request)
-                
-                # Log resend verification
+
                 log_user_activity(
                     user=user,
                     action='email_verification_resend',
@@ -488,7 +441,7 @@ class ResendEmailVerificationView(APIView):
                 )
                 
                 return Response({
-                    'message': 'Verification email sent successfully. Please check your email.'
+                    'message': 'E-mail de verificação reenviado. Verifique sua caixa de entrada.'
                 }, status=status.HTTP_200_OK)
                 
             except Exception as e:
@@ -499,17 +452,16 @@ class ResendEmailVerificationView(APIView):
                 )
         
         return Response({
-            'error': 'Invalid email address',
+            'error': 'Endereço de e-mail inválido',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Function-based views for simple operations
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def user_info(request):
     """
-    Get current user information
+    Retorna as informações do usuário autenticado.
     """
     serializer = UserSerializer(request.user)
     return Response({
@@ -521,25 +473,23 @@ def user_info(request):
 @permission_classes([permissions.IsAuthenticated])
 def delete_account(request):
     """
-    Delete user account
+    Exclusão da conta do usuário autenticado.
     """
     try:
         user = request.user
         username = user.username
-        
-        # Log account deletion before deleting
+
         log_user_activity(
             user=user,
             action='account_deletion',
             ip_address=get_client_ip(request),
             details={'user_agent': get_user_agent(request)}
         )
-        
-        # Delete user (this will cascade delete related objects)
+
         user.delete()
-        
+
         return Response({
-            'message': f'Account for {username} deleted successfully'
+            'message': f'Conta de {username} excluída com sucesso'
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
@@ -554,12 +504,11 @@ def delete_account(request):
 @permission_classes([permissions.IsAuthenticated])
 def verify_token(request):
     """
-    Verify JWT token and return user info
+    Valida o token JWT e retorna informações do usuário.
     """
     try:
-        # If we get here, the token is valid (checked by authentication)
         user_serializer = UserSerializer(request.user)
-        
+
         return Response({
             'valid': True,
             'user': user_serializer.data,
@@ -579,9 +528,7 @@ def verify_token(request):
 @throttle_classes([PublicReadThrottle])
 def auth_status(request):
     """
-    Check authentication status and configuration
-
-    Rate Limit: 100 requests/hour per IP
+    Retorna o status e configurações do sistema de autenticação.
     """
     return Response({
         'authentication_type': 'JWT',

@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react"
 import { authFetch } from "@/lib/api-client"
 
-// Interfaces permanecem as mesmas...
 export interface Vehicle {
   id: number
   modelo: string
@@ -70,7 +69,6 @@ export interface ConductorFormData {
 
 const API_BASE_URL = "http://localhost:8000/api"
 
-// Parâmetros para a busca na API
 interface FetchParams {
   page?: number
   pageSize?: number
@@ -78,7 +76,6 @@ interface FetchParams {
   ordering?: string
 }
 
-// Interface para estatísticas de condutores
 export interface ConductorStats {
   total_conductors: number
   active_conductors: number
@@ -107,9 +104,7 @@ export function useConductors() {
         page_size: pageSize.toString(),
       })
 
-      // Adiciona filtros aos parâmetros da query
       Object.entries(filters).forEach(([key, value]) => {
-        // Permite valores booleanos como string ('true', 'false')
         if (value !== undefined && value !== null && value !== '') {
           queryParams.append(key, value.toString())
         }
@@ -120,7 +115,6 @@ export function useConductors() {
       }
 
       const url = `${API_BASE_URL}/conductors/?${queryParams.toString()}`
-      console.log('URL da requisição:', url)
       const response = await authFetch(url)
 
       if (!response.ok) {
@@ -128,11 +122,6 @@ export function useConductors() {
       }
 
       const data = await response.json()
-      console.log('Resposta da API:', {
-        count: data.count,
-        resultsLength: data.results?.length,
-        firstResult: data.results?.[0]
-      })
       setConductors(data.results || [])
       setTotalCount(data.count || 0)
     } catch (err) {
@@ -249,8 +238,7 @@ export function useConductors() {
         throw new Error("Erro ao verificar duplicatas")
       }
       return await response.json()
-    } catch (err) {
-      console.error("Error checking duplicate field:", err)
+    } catch {
       return { exists: false }
     }
   }
@@ -267,7 +255,6 @@ export function useConductors() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       setError(errorMessage)
-      console.error("Error fetching stats:", err)
     }
   }, [])
 

@@ -1,676 +1,94 @@
-# Sys Passo (ViaLumiar)
+# Sys Passo — ViaLumiar
 
-Sistema completo de gerenciamento de condutores, veículos, solicitações e denúncias com API REST Django e interface Next.js.
+Sistema de gerenciamento de condutores, veículos, solicitações e denúncias.
 
-## 📋 Índice
+**Stack:** Django 5.2 + DRF + JWT + Daphne · Next.js 15 + React 19 + TypeScript + Tailwind
 
-- [Stack Tecnológica](#-stack-tecnológica)
-- [Pré-requisitos](#-pré-requisitos)
-- [🐳 Opção 1: Instalação com Docker (Recomendado)](#-opção-1-instalação-com-docker-recomendado)
-- [💻 Opção 2: Instalação Manual](#-opção-2-instalação-manual)
-- [Configuração](#-configuração)
-- [Executando o Projeto](#-executando-o-projeto)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [API Endpoints](#-api-endpoints)
-- [Segurança](#-segurança)
-- [Contribuindo](#-contribuindo)
+---
 
-## 🚀 Stack Tecnológica
+## Subir com Docker
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+| Serviço  | URL                          |
+|----------|------------------------------|
+| Frontend | http://localhost:3002         |
+| API      | http://localhost:8001/api/   |
+| Admin    | http://localhost:8001/admin/ |
+
+Criar superusuário:
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
+
+---
+
+## Desenvolvimento local
 
 ### Backend
-- **Django 5.2.5** - Framework web Python
-- **Django REST Framework 3.15.2** - API REST
-- **JWT (Simple JWT)** - Autenticação com tokens
-- **SQLite/PostgreSQL** - Banco de dados
-- **Celery 5.3.4** - Tarefas assíncronas (opcional)
-- **Redis 5.0.1** - Cache e broker Celery
-- **Gunicorn** - Servidor WSGI para produção
+```bash
+cd back
+.\venv\Scripts\python.exe manage.py migrate
+.\venv\Scripts\python.exe manage.py runserver
+```
 
 ### Frontend
-- **Next.js 15.3.2** - Framework React com App Router
-- **React 19** - Biblioteca UI
-- **TypeScript** - Tipagem estática
-- **Tailwind CSS 4** - Estilização
-- **shadcn/ui** - Componentes UI
-- **React Hook Form + Zod** - Formulários e validação
-- **Axios** - Cliente HTTP
-
-## 📦 Pré-requisitos
-
-### Para Docker (Recomendado)
-- **Docker** e **Docker Compose** instalados
-- **Git** instalado
-
-### Para Instalação Manual
-- **Python 3.12+** instalado
-- **Node.js 18+** e npm instalado
-- **Git** instalado
-- **PostgreSQL** (recomendado) ou SQLite
-- **Redis** (opcional, para Celery)
-
----
-
-## 🐳 Opção 1: Instalação com Docker (Recomendado)
-
-A forma mais rápida e fácil de executar o projeto completo com todos os serviços.
-
-### 1️⃣ Clone o Repositório
-
 ```bash
-git clone <url-do-repositorio>
-cd sys_passo
-```
-
-### 2️⃣ Configure as Variáveis de Ambiente
-
-```bash
-# Copie o arquivo de exemplo
-cp .env.example .env
-
-# Edite o .env e configure:
-# - DJANGO_SECRET_KEY (gere uma chave segura)
-# - DB_PASSWORD (senha do PostgreSQL)
-# - Outros valores conforme necessário
-```
-
-### 3️⃣ Inicie os Serviços
-
-```bash
-# Iniciar todos os serviços (build na primeira vez)
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
-
-# Parar os serviços
-docker-compose down
-
-# Parar e remover volumes (CUIDADO: apaga dados)
-docker-compose down -v
-```
-
-### 4️⃣ Criar Superusuário (Admin)
-
-```bash
-# Executar comando no container do backend
-docker-compose exec backend python manage.py createsuperuser
-```
-
-### 5️⃣ Acessar a Aplicação
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **Admin Django:** http://localhost:8000/admin/
-
-### 📦 Serviços Incluídos
-
-| Serviço | Container | Porta | Descrição |
-|---------|-----------|-------|-----------|
-| Frontend | syspasso_frontend | 3000 | Next.js UI |
-| Backend | syspasso_backend | 8000 | Django API |
-| PostgreSQL | syspasso_db | 5432 | Banco de dados |
-| Redis | syspasso_redis | 6379 | Cache & Celery |
-| Celery Worker | syspasso_celery | - | Tarefas assíncronas |
-| Celery Beat | syspasso_celery_beat | - | Agendador |
-
-### 🔧 Comandos Úteis Docker
-
-```bash
-# Ver status dos containers
-docker-compose ps
-
-# Acessar shell do backend
-docker-compose exec backend python manage.py shell
-
-# Acessar bash do backend
-docker-compose exec backend sh
-
-# Ver logs de um serviço específico
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Rebuild de um serviço
-docker-compose up -d --build backend
-
-# Executar migrações
-docker-compose exec backend python manage.py migrate
-
-# Coletar arquivos estáticos
-docker-compose exec backend python manage.py collectstatic --noinput
-
-# Backup do banco de dados
-docker-compose exec db pg_dump -U postgres syspasso > backup.sql
-
-# Restaurar banco de dados
-docker-compose exec -T db psql -U postgres syspasso < backup.sql
-```
-
----
-
-## 💻 Opção 2: Instalação Manual
-
-### 1️⃣ Clone o Repositório
-
-```bash
-git clone <url-do-repositorio>
-cd sys_passo
-```
-
-### 2️⃣ Configuração do Backend (Django)
-
-```bash
-# Navegue para a pasta back
-cd back
-
-# Crie e ative o ambiente virtual
-python -m venv venv
-
-# Windows
-.\venv\Scripts\activate
-
-# Linux/macOS
-source venv/bin/activate
-
-# Instale as dependências
-pip install -r requirements.txt
-
-# Crie o arquivo .env baseado no exemplo
-cp .env.example .env
-
-# Gere uma SECRET_KEY segura
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-# Cole a chave gerada no arquivo .env
-
-# Execute as migrações
-python manage.py migrate
-
-# Crie um superusuário (admin)
-python manage.py createsuperuser
-
-# Volte para a raiz do projeto
-cd ..
-```
-
-### 3️⃣ Configuração do Frontend (Next.js)
-
-```bash
-# Navegue para a pasta front
 cd front
-
-# Instale as dependências
 npm install
-
-# Crie o arquivo de ambiente
-cp .env.example .env.local
-
-# Edite .env.local e configure:
-# NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-
-# Volte para a raiz do projeto
-cd ..
+cp .env.example .env.local   # ajuste NEXT_PUBLIC_API_BASE_URL
+npm run dev
 ```
 
-## ⚙️ Configuração
+---
 
-### Backend (.env)
+## Variáveis de ambiente
 
-Edite `back/.env` com suas configurações:
+Gere uma `SECRET_KEY` segura:
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
 
+**`.env` (raiz — Docker)**
 ```env
-# Segurança
-DJANGO_SECRET_KEY=sua-chave-secreta-gerada
-
-# Ambiente
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# CORS
-CSRF_TRUSTED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-
-# Banco de Dados (SQLite por padrão)
-# Para PostgreSQL, descomente e configure:
-# DB_NAME=syspasso
-# DB_USER=postgres
-# DB_PASSWORD=senha
-# DB_HOST=localhost
-# DB_PORT=5432
-
-# Redis e Celery (opcional)
-# CELERY_BROKER_URL=redis://localhost:6379/0
-# CELERY_RESULT_BACKEND=redis://localhost:6379/0
+DJANGO_SECRET_KEY=<chave gerada acima>
+DEBUG=False
+DB_PASSWORD=senha-segura
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8001
 ```
 
-### Frontend (.env.local)
+**`back/.env` (dev local)**
+```env
+DJANGO_SECRET_KEY=<chave gerada acima>
+DEBUG=True
+DB_HOST=localhost
+DB_PASSWORD=postgres
+```
 
-Edite `front/.env.local`:
-
+**`front/.env.local` (dev local)**
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-## 🏃 Executando o Projeto
-
-### Iniciar Backend
-
-```bash
-cd back
-
-# Ative o ambiente virtual
-.\venv\Scripts\activate  # Windows
-# ou
-source venv/bin/activate  # Linux/macOS
-
-# Inicie o servidor Django
-python manage.py runserver
-
-# Servidor rodando em: http://127.0.0.1:8000
-# Admin Django em: http://127.0.0.1:8000/admin/
-```
-
-### Iniciar Frontend
-
-```bash
-# Em outro terminal
-cd front
-
-# Modo desenvolvimento com Turbopack
-npm run dev
-
-# Aplicação rodando em: http://localhost:3000
-```
-
-### Celery (Opcional)
-
-Se você usar tarefas assíncronas:
-
-```bash
-# Em outro terminal
-cd back
-.\venv\Scripts\activate
-
-# Inicie o worker Celery
-celery -A core worker -l info
-
-# Inicie o beat (agendador)
-celery -A core beat -l info
-```
-
-## 📁 Estrutura do Projeto
-
-```
-sys_passo/
-├── back/                       # Backend Django
-│   ├── core/                   # Configurações principais
-│   │   ├── settings.py         # Configurações Django
-│   │   ├── urls.py             # Rotas principais
-│   │   ├── middleware.py       # Middlewares customizados
-│   │   ├── pagination.py       # Paginação customizada
-│   │   └── throttling.py       # Rate limiting
-│   ├── authentication/         # Sistema de autenticação JWT
-│   ├── conductors/             # Gerenciamento de condutores
-│   ├── vehicles/               # Gerenciamento de veículos
-│   ├── requests/               # Solicitações de cadastro
-│   ├── complaints/             # Sistema de denúncias
-│   ├── sitehome/               # Configuração do site
-│   ├── notifications/          # Notificações em tempo real
-│   ├── media/                  # Arquivos de upload
-│   ├── logs/                   # Logs da aplicação
-│   ├── manage.py               # CLI Django
-│   ├── requirements.txt        # Dependências Python
-│   └── .env.example            # Template de variáveis de ambiente
-│
-├── front/                      # Frontend Next.js
-│   ├── src/
-│   │   ├── app/                # Pages (App Router)
-│   │   ├── components/         # Componentes React/shadcn
-│   │   ├── contexts/           # Contextos (Auth, Interceptor)
-│   │   ├── hooks/              # Hooks customizados
-│   │   ├── lib/                # Utilitários
-│   │   ├── services/           # Camada de API
-│   │   └── types/              # Definições TypeScript
-│   ├── public/                 # Arquivos estáticos
-│   ├── package.json            # Dependências Node
-│   ├── next.config.mjs         # Configuração Next.js
-│   ├── tailwind.config.ts      # Configuração Tailwind
-│   └── .env.local.example      # Template de variáveis de ambiente
-│
-├── .gitignore                  # Arquivos ignorados pelo Git
-├── CLAUDE.md                   # Instruções para Claude Code
-├── SECURITY.md                 # Política de segurança
-└── README.md                   # Este arquivo
-```
-
-## 🔌 API Endpoints
-
-### Autenticação
-- `POST /api/auth/login/` - Login com JWT
-- `POST /api/auth/register/` - Registro de usuário
-- `POST /api/auth/token/refresh/` - Renovar token
-- `POST /api/auth/logout/` - Logout (blacklist token)
-- `POST /api/auth/password-reset/` - Solicitar reset de senha
-- `POST /api/auth/password-reset-confirm/` - Confirmar reset
-
-### Condutores
-- `GET /api/conductors/` - Listar condutores
-- `POST /api/conductors/` - Criar condutor
-- `GET /api/conductors/{id}/` - Detalhar condutor
-- `PATCH /api/conductors/{id}/` - Atualizar condutor
-- `DELETE /api/conductors/{id}/` - Deletar condutor
-
-### Veículos
-- `GET /api/vehicles/` - Listar veículos
-- `POST /api/vehicles/` - Criar veículo
-- `GET /api/vehicles/{id}/` - Detalhar veículo
-- `PATCH /api/vehicles/{id}/` - Atualizar veículo
-- `DELETE /api/vehicles/{id}/` - Deletar veículo
-- `GET /api/vehicles/search/?search={placa}` - Buscar por placa (público)
-- `GET /api/vehicles/plate/{placa}/` - Detalhes por placa (público)
-
-### Solicitações
-- `POST /api/requests/drivers/` - Criar solicitação de motorista (público)
-- `GET /api/requests/drivers/` - Listar solicitações (autenticado)
-- `POST /api/requests/drivers/{id}/approve/` - Aprovar solicitação
-- `POST /api/requests/drivers/{id}/reject/` - Reprovar solicitação
-
-### Denúncias
-- `POST /api/complaints/` - Criar denúncia (público)
-- `GET /api/complaints/` - Listar denúncias (autenticado)
-- `GET /api/complaints/{id}/` - Detalhar denúncia
-- `PATCH /api/complaints/{id}/` - Atualizar denúncia
-- `POST /api/complaints/{id}/change_status/` - Alterar status
-
-### Configuração do Site
-- `GET /api/site/configuration/` - Obter configurações (público)
-- `GET /api/site/configuration/current/` - Configuração atual
-
-## 🔒 Segurança
-
-### Rate Limiting
-
-O projeto implementa rate limiting para proteger contra ataques DDoS e abuso:
-
-| Endpoint | Limite | Descrição |
-|----------|--------|-----------|
-| Leitura pública | 100/hora | Busca de veículos, configurações |
-| Escrita pública | 20/hora | Solicitações, denúncias |
-| Autenticação | 10/hora | Login, registro |
-| Reset de senha | 5/hora | Solicitação de reset |
-
-### Boas Práticas Implementadas
-
-✅ **SECRET_KEY** não commitada no Git
-✅ **JWT** com refresh tokens e blacklist
-✅ **CORS** configurado corretamente
-✅ **CSRF** protection ativo
-✅ **Rate limiting** em endpoints públicos
-✅ **Validação de entrada** em todos os endpoints
-✅ **HTTPS** enforced em produção
-✅ **Media files** com validação de tipo
-
-### Variáveis de Ambiente Sensíveis
-
-**NUNCA commite:**
-- `.env` (backend)
-- `.env.local` (frontend)
-- `db.sqlite3` (banco de dados)
-- `media/` (uploads de usuários)
-
-Use sempre os arquivos `.env.example` como template.
-
-## 🧪 Testes
-
-### Backend
-
-```bash
-cd back
-python manage.py test                    # Todos os testes
-python manage.py test conductors         # App específica
-python manage.py test --keepdb           # Manter banco de testes
-```
-
-### Frontend
-
-```bash
-cd front
-npm run lint                             # ESLint
-npm run build                            # Build de produção
-```
-
-## 📝 Scripts Úteis
-
-### Backend
-
-```bash
-# Verificar problemas
-python manage.py check
-
-# Criar migrações
-python manage.py makemigrations
-
-# Aplicar migrações
-python manage.py migrate
-
-# Criar superusuário
-python manage.py createsuperuser
-
-# Coletar arquivos estáticos
-python manage.py collectstatic
-
-# Shell Django
-python manage.py shell
-
-# Atualizar dependências
-pip freeze > requirements.txt
-```
-
-### Frontend
-
-```bash
-# Build de produção
-npm run build
-
-# Iniciar servidor de produção
-npm start
-
-# Limpar cache
-npm run clean
-
-# Adicionar componente shadcn
-npx shadcn-ui@latest add [component]
-```
-
-## 🚀 Deploy em Produção
-
-### 🐳 Opção 1: Deploy com Docker (Recomendado)
-
-1. **Configure as variáveis de ambiente no servidor:**
-
-```bash
-# Copie .env.example para .env
-cp .env.example .env
-
-# Edite .env com valores de produção
-nano .env
-```
-
-Configure valores de produção:
-```env
-DJANGO_SECRET_KEY=sua-chave-super-segura-aqui
-DEBUG=False
-ALLOWED_HOSTS=api.seu-dominio.com,seu-dominio.com
-DB_PASSWORD=senha-forte-do-postgres
-NEXT_PUBLIC_API_BASE_URL=https://api.seu-dominio.com
-CSRF_TRUSTED_ORIGINS=https://seu-dominio.com,https://api.seu-dominio.com
-```
-
-2. **Inicie os serviços:**
-
-```bash
-# Build e start em modo produção
-docker-compose up -d --build
-
-# Verificar logs
-docker-compose logs -f
-
-# Criar superusuário
-docker-compose exec backend python manage.py createsuperuser
-```
-
-3. **Configure Nginx como reverse proxy:**
-
-```nginx
-# /etc/nginx/sites-available/syspasso
-
-# Backend API
-server {
-    listen 80;
-    server_name api.seu-dominio.com;
-
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location /media/ {
-        alias /caminho/para/sys_passo/back/media/;
-    }
-
-    location /static/ {
-        alias /caminho/para/sys_passo/back/staticfiles/;
-    }
-}
-
-# Frontend
-server {
-    listen 80;
-    server_name seu-dominio.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-4. **Configure SSL com Let's Encrypt:**
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d seu-dominio.com -d api.seu-dominio.com
-```
-
-5. **Configure backups automáticos:**
-
-```bash
-# Script de backup (cron diário)
-#!/bin/bash
-docker-compose exec -T db pg_dump -U postgres syspasso > /backups/syspasso_$(date +%Y%m%d).sql
-```
-
-### 📦 Opção 2: Deploy Manual (Tradicional)
-
-#### Backend
-
-1. **Configure variáveis de ambiente:**
-   - `DEBUG=False`
-   - `ALLOWED_HOSTS=seu-dominio.com`
-   - `DJANGO_SECRET_KEY=nova-chave-forte`
-   - Configure PostgreSQL
-
-2. **Migrações e static files:**
-   ```bash
-   python manage.py migrate
-   python manage.py collectstatic --noinput
-   ```
-
-3. **Use Gunicorn com systemd:**
-
-```ini
-# /etc/systemd/system/syspasso.service
-[Unit]
-Description=Sys Passo Django Backend
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/var/www/syspasso/back
-Environment="PATH=/var/www/syspasso/back/venv/bin"
-ExecStart=/var/www/syspasso/back/venv/bin/gunicorn \
-    --workers 4 \
-    --bind 0.0.0.0:8000 \
-    core.wsgi:application
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable syspasso
-sudo systemctl start syspasso
-```
-
-#### Frontend
-
-1. **Build de produção:**
-   ```bash
-   npm run build
-   npm start
-   ```
-
-2. **Ou use PM2:**
-   ```bash
-   npm install -g pm2
-   pm2 start npm --name "syspasso-frontend" -- start
-   pm2 save
-   pm2 startup
-   ```
-
-3. **Ou deploy na Vercel:**
-   ```bash
-   vercel deploy --prod
-   ```
-
-## 🤝 Contribuindo
-
-1. Faça fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/NovaFeature`)
-3. Commit suas mudanças (`git commit -m 'feat: adiciona NovaFeature'`)
-4. Push para a branch (`git push origin feature/NovaFeature`)
-5. Abra um Pull Request
-
-### Convenções de Commit
-
-Seguimos [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` Nova funcionalidade
-- `fix:` Correção de bug
-- `docs:` Documentação
-- `style:` Formatação
-- `refactor:` Refatoração
-- `test:` Testes
-- `chore:` Manutenção
-
-## 📄 Licença
-
-Este projeto é proprietário. Todos os direitos reservados.
-
-## 👥 Equipe
-
-Desenvolvido para ViaLumiar.
+> Copie os `.env.example` de cada pasta como ponto de partida.
 
 ---
 
-**Documentação adicional:**
-- [CLAUDE.md](./CLAUDE.md) - Instruções para Claude Code
-- [SECURITY.md](./back/SECURITY.md) - Política de segurança
+## Endpoints principais
 
-**Suporte:**
-- Issues: Use a aba Issues do GitHub
-- Documentação da API: http://127.0.0.1:8000/swagger/ (em desenvolvimento)
+| Recurso       | Endpoint                        |
+|---------------|---------------------------------|
+| Login         | `POST /api/auth/login/`         |
+| Token refresh | `POST /api/auth/token/refresh/` |
+| Condutores    | `/api/conductors/`              |
+| Veículos      | `/api/vehicles/`                |
+| Solicitações  | `/api/requests/drivers/`        |
+| Denúncias     | `/api/complaints/`              |
+| Config site   | `/api/site/configuration/`      |
+
+---
+
+Desenvolvido para ViaLumiar.

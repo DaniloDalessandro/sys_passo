@@ -1,18 +1,36 @@
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-interface Props {
+interface ComplaintPriorityBadgeProps {
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  className?: string;
 }
 
-export function ComplaintPriorityBadge({ priority }: Props) {
-  const config = {
-    baixa: { label: 'Baixa', className: 'bg-gray-400 hover:bg-gray-500' },
-    media: { label: 'Média', className: 'bg-blue-400 hover:bg-blue-500' },
-    alta: { label: 'Alta', className: 'bg-orange-500 hover:bg-orange-600' },
-    urgente: { label: 'Urgente', className: 'bg-red-600 hover:bg-red-700' },
+export function ComplaintPriorityBadge({ priority, className }: ComplaintPriorityBadgeProps) {
+  const priorityConfig = {
+    baixa: {
+      label: 'Baixa',
+      className: 'bg-gray-400 hover:bg-gray-500 text-white',
+    },
+    media: {
+      label: 'Média',
+      className: 'bg-yellow-500 hover:bg-yellow-600 text-white',
+    },
+    alta: {
+      label: 'Alta',
+      className: 'bg-orange-500 hover:bg-orange-600 text-white',
+    },
+    urgente: {
+      label: 'Urgente',
+      className: 'bg-red-600 hover:bg-red-700 text-white',
+    },
   };
 
-  const { label, className } = config[priority];
+  const config = priorityConfig[priority] || priorityConfig.baixa;
 
-  return <Badge className={className}>{label}</Badge>;
+  return (
+    <Badge className={cn(config.className, className)}>
+      {config.label}
+    </Badge>
+  );
 }

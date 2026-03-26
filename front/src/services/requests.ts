@@ -1,6 +1,5 @@
 import { buildApiUrl } from "@/lib/api-client"
 
-// Types
 export interface DriverRequest {
   id: number;
   name: string;
@@ -84,11 +83,9 @@ export interface RequestFilters {
   search?: string;
 }
 
-// API Functions with authentication
 async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
-  // Verifica se está no contexto do cliente (browser)
   if (typeof window === 'undefined') {
-    throw new Error('fetchWithAuth can only be called on the client side');
+    throw new Error('fetchWithAuth só pode ser chamado no lado do cliente');
   }
 
   const token = localStorage.getItem('access_token');
@@ -106,7 +103,6 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   });
 
   if (response.status === 401) {
-    // Token expired - remove tokens and redirect to login
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
@@ -117,7 +113,6 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   return response;
 }
 
-// Driver Requests
 export async function getDriverRequests(filters?: RequestFilters): Promise<DriverRequest[]> {
   const params = new URLSearchParams();
   if (filters?.status) params.append('status', filters.status);
@@ -130,10 +125,6 @@ export async function getDriverRequests(filters?: RequestFilters): Promise<Drive
 
   const data = await response.json();
 
-  // Garantir que sempre retorne um array
-  // Se a API retornar {results: [...]} use data.results
-  // Se retornar um array direto, use data
-  // Se for qualquer outra coisa, retorne array vazio
   if (Array.isArray(data)) {
     return data;
   } else if (data && Array.isArray(data.results)) {
@@ -141,7 +132,6 @@ export async function getDriverRequests(filters?: RequestFilters): Promise<Drive
   } else if (data && data.success && Array.isArray(data.data)) {
     return data.data;
   } else {
-    console.error('Unexpected API response format for driver requests:', data);
     return [];
   }
 }
@@ -191,7 +181,6 @@ export async function markDriverRequestAsViewed(id: number): Promise<void> {
   }
 }
 
-// Vehicle Requests
 export async function getVehicleRequests(filters?: RequestFilters): Promise<VehicleRequest[]> {
   const params = new URLSearchParams();
   if (filters?.status) params.append('status', filters.status);
@@ -204,10 +193,6 @@ export async function getVehicleRequests(filters?: RequestFilters): Promise<Vehi
 
   const data = await response.json();
 
-  // Garantir que sempre retorne um array
-  // Se a API retornar {results: [...]} use data.results
-  // Se retornar um array direto, use data
-  // Se for qualquer outra coisa, retorne array vazio
   if (Array.isArray(data)) {
     return data;
   } else if (data && Array.isArray(data.results)) {
@@ -215,7 +200,6 @@ export async function getVehicleRequests(filters?: RequestFilters): Promise<Vehi
   } else if (data && data.success && Array.isArray(data.data)) {
     return data.data;
   } else {
-    console.error('Unexpected API response format for vehicle requests:', data);
     return [];
   }
 }

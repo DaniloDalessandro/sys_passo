@@ -7,7 +7,7 @@ import {
   Truck,
   HelpCircle,
   Car,
-  Globe,
+  ExternalLink,
   ClipboardList,
   AlertTriangle,
 } from "lucide-react"
@@ -28,7 +28,7 @@ interface NavItem {
   url: string
   icon: React.ComponentType<{ className?: string }>
   isActive?: boolean
-  external?: boolean // Indica se o link abre em nova aba
+  external?: boolean
   items?: {
     title: string
     url: string
@@ -39,7 +39,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthContext()
   const pathname = usePathname()
 
-  // Itens de navegação baseados apenas nas páginas que realmente existem
   const navItems: NavItem[] = React.useMemo(() => [
     {
       title: "Dashboard",
@@ -74,9 +73,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Site",
       url: "/sitehome",
-      icon: Globe,
+      icon: ExternalLink,
       isActive: pathname.startsWith("/sitehome"),
-      external: true, // Abre em nova aba
+      external: true,
     },
     {
       title: "Ajuda",

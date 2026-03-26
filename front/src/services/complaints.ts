@@ -1,9 +1,8 @@
 import { buildApiUrl } from "@/lib/api-client"
 
 async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
-  // Verifica se está no contexto do cliente (browser)
   if (typeof window === 'undefined') {
-    throw new Error('fetchWithAuth can only be called on the client side');
+    throw new Error('fetchWithAuth só pode ser chamado no lado do cliente');
   }
 
   const token = localStorage.getItem('access_token');
@@ -21,7 +20,6 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
   });
 
   if (response.status === 401) {
-    // Token expired - remove tokens and redirect to login
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
@@ -34,6 +32,7 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
 
 export interface Complaint {
   id: number;
+  protocol: string;
   vehicle_plate: string;
   complaint_type: string;
   complaint_type_display: string;
@@ -44,7 +43,7 @@ export interface Complaint {
   complainant_email?: string;
   complainant_phone?: string;
   is_anonymous: boolean;
-  status: 'pendente' | 'em_analise' | 'resolvida' | 'arquivada';
+  status: 'proposto' | 'em_analise' | 'concluido';
   status_display: string;
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
   priority_display: string;
@@ -63,7 +62,15 @@ export interface Complaint {
     plate: string;
     brand: string;
     model: string;
+    year: number;
+    color: string;
   };
+  photos?: Array<{
+    id: number;
+    photo: string;
+    uploaded_at: string;
+    order: number;
+  }>;
 }
 
 export interface ComplaintFilters {
@@ -90,7 +97,6 @@ export async function getComplaints(filters?: ComplaintFilters): Promise<Complai
   } else if (data && Array.isArray(data.results)) {
     return data.results;
   } else {
-    console.error('Unexpected API response format:', data);
     return [];
   }
 }

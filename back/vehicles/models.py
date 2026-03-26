@@ -39,7 +39,7 @@ class Vehicle(models.Model):
     # Status e relacionamentos
     conductors = models.ManyToManyField('conductors.Conductor', blank=True, related_name='vehicles', verbose_name='Condutores')
     status = models.CharField(max_length=20, choices=[
-        ('ativo', 'Ativo'),        
+        ('ativo', 'Ativo'),
         ('inativo', 'Inativo'),
     ], default='ativo', verbose_name='Status')
     is_active = models.BooleanField(default=True, verbose_name='Ativo')

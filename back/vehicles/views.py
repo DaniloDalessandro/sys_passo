@@ -11,7 +11,7 @@ from .serializers import VehicleSerializer
 
 
 class VehicleFilter(FilterSet):
-    """Custom filter for Vehicle model with case-insensitive partial matching"""
+    """Filtro customizado para o model Vehicle com busca parcial case-insensitive."""
     placa = CharFilter(field_name='plate', lookup_expr='icontains')
     marca = CharFilter(field_name='brand', lookup_expr='icontains')
     modelo = CharFilter(field_name='model', lookup_expr='icontains')
@@ -37,7 +37,7 @@ class VehicleFilter(FilterSet):
 
 class VehicleViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows vehicles to be viewed or edited.
+    ViewSet para gerenciar veículos.
     """
     queryset = Vehicle.objects.select_related('created_by', 'updated_by').order_by('-created_at')
     serializer_class = VehicleSerializer
@@ -59,33 +59,25 @@ class VehicleViewSet(viewsets.ModelViewSet):
 @permission_classes([permissions.IsAuthenticated])
 def vehicle_stats(request):
     """
-    API endpoint que retorna estatísticas dos veículos.
+    Retorna estatísticas dos veículos.
     """
     try:
         current_year = timezone.now().year
 
-        # Total de veículos
         total_vehicles = Vehicle.objects.count()
-
-        # Veículos ativos
         active_vehicles = Vehicle.objects.filter(is_active=True).count()
-
-        # Veículos inativos
         inactive_vehicles = total_vehicles - active_vehicles
 
-        # Veículos com mais de 10 anos
         old_vehicles = Vehicle.objects.filter(
             year__lte=current_year - 10,
             is_active=True
         ).count()
 
-        # Frota eletrificada (elétricos + híbridos)
         electric_vehicles = Vehicle.objects.filter(
             fuel_type__in=['electric', 'hybrid'],
             is_active=True
         ).count()
 
-        # Estatísticas por categoria
         categories_stats = {}
         categories = ['Van', 'Caminhão', 'Ônibus', 'Carreta', 'Carro']
         for category in categories:
@@ -96,7 +88,6 @@ def vehicle_stats(request):
             if count > 0:
                 categories_stats[category] = count
 
-        # Estatísticas por tipo de combustível
         fuel_type_stats = {}
         fuel_types = ['gasoline', 'ethanol', 'diesel', 'flex', 'electric', 'hybrid']
         for fuel_type in fuel_types:
@@ -130,10 +121,7 @@ def vehicle_stats(request):
 @throttle_classes([PublicReadThrottle])
 def search_vehicles_by_plate(request):
     """
-    API endpoint público para buscar veículos por placa (autocomplete).
-    Retorna apenas dados básicos: placa, marca, modelo
-
-    Rate Limit: 100 requests/hour per IP
+    Busca veículos por placa para autocomplete. Retorna apenas dados básicos.
     """
     search_query = request.GET.get('search', '').strip().upper()
 
@@ -141,11 +129,10 @@ def search_vehicles_by_plate(request):
         return Response([], status=status.HTTP_200_OK)
 
     try:
-        # Buscar veículos ativos que começam com a placa digitada
         vehicles = Vehicle.objects.filter(
             plate__icontains=search_query,
             is_active=True
-        ).values('plate', 'brand', 'model', 'color')[:10]  # Limitar a 10 resultados
+        ).values('plate', 'brand', 'model', 'color')[:10]
 
         return Response(list(vehicles), status=status.HTTP_200_OK)
 
@@ -162,15 +149,11 @@ def search_vehicles_by_plate(request):
 @throttle_classes([PublicReadThrottle])
 def get_vehicle_by_plate(request, plate):
     """
-    API endpoint público para buscar dados completos de um veículo por placa.
-    Retorna dados do veículo e do motorista atual vinculado.
-
-    Rate Limit: 100 requests/hour per IP
+    Retorna dados completos de um veículo por placa, incluindo o condutor ativo vinculado.
     """
     try:
         plate = plate.strip().upper()
 
-        # Buscar veículo pela placa
         vehicle = Vehicle.objects.filter(
             plate__iexact=plate,
             is_active=True
@@ -181,7 +164,6 @@ def get_vehicle_by_plate(request, plate):
                 'error': 'Veículo não encontrado'
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Dados básicos do veículo
         vehicle_data = {
             'plate': vehicle.plate,
             'brand': vehicle.brand,
@@ -195,7 +177,16 @@ def get_vehicle_by_plate(request, plate):
             'renavam': vehicle.renavam,
         }
 
-        # Buscar motorista ativo vinculado ao veículo
+        photos = []
+        for i in range(1, 6):
+            photo_field = getattr(vehicle, f'photo_{i}', None)
+            if photo_field and photo_field.name:
+                photos.append({
+                    'id': i,
+                    'url': request.build_absolute_uri(photo_field.url),
+                })
+        vehicle_data['photos'] = photos
+
         current_conductor = vehicle.conductors.filter(is_active=True).first()
 
         if current_conductor:

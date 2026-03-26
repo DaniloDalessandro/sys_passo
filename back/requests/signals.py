@@ -1,6 +1,3 @@
-"""
-Sinais para enviar notificações WebSocket quando novas solicitações são criadas.
-"""
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
@@ -16,19 +13,15 @@ logger = logging.getLogger(__name__)
 def notify_new_driver_request(sender, instance, created, **kwargs):
     """
     Envia notificação WebSocket quando uma nova solicitação de motorista é criada.
+    Executado apenas na criação (created=True) para evitar loops em updates.
     """
-    # IMPORTANTE: Apenas quando é criado E status é 'em_analise'
-    # Evita loop infinito em updates subsequentes
     if created and instance.status == 'em_analise':
         try:
             channel_layer = get_channel_layer()
-
             logger.info(f'Enviando notificação WebSocket para nova solicitação de motorista: {instance.id}')
 
-            # Formata protocolo (ID com zeros à esquerda)
             protocol = f'#{instance.id:05d}'
 
-            # Envia mensagem para o grupo de notificações
             async_to_sync(channel_layer.group_send)(
                 'requests_notifications',
                 {
@@ -60,19 +53,15 @@ def notify_new_driver_request(sender, instance, created, **kwargs):
 def notify_new_vehicle_request(sender, instance, created, **kwargs):
     """
     Envia notificação WebSocket quando uma nova solicitação de veículo é criada.
+    Executado apenas na criação (created=True) para evitar loops em updates.
     """
-    # IMPORTANTE: Apenas quando é criado E status é 'em_analise'
-    # Evita loop infinito em updates subsequentes
     if created and instance.status == 'em_analise':
         try:
             channel_layer = get_channel_layer()
-
             logger.info(f'Enviando notificação WebSocket para nova solicitação de veículo: {instance.id}')
 
-            # Formata protocolo (ID com zeros à esquerda)
             protocol = f'#{instance.id:05d}'
 
-            # Envia mensagem para o grupo de notificações
             async_to_sync(channel_layer.group_send)(
                 'requests_notifications',
                 {

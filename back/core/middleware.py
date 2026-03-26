@@ -1,7 +1,6 @@
 """
-Custom middleware for handling encoding and request processing.
+Middleware customizado para tratamento de encoding e processamento de requisições.
 """
-import json
 import logging
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
@@ -13,26 +12,20 @@ logger = logging.getLogger(__name__)
 
 class EncodingMiddleware(MiddlewareMixin):
     """
-    Middleware to handle UTF-8 encoding issues and ensure proper JSON parsing.
+    Middleware para tratar problemas de encoding UTF-8 e garantir parsing correto do JSON.
     """
 
     def process_request(self, request):
-        """
-        Process incoming request to handle encoding issues.
-        """
-        # Set content type encoding to UTF-8 if not specified
         if request.content_type and 'charset' not in request.content_type:
             if request.content_type.startswith('application/json'):
                 request.META['CONTENT_TYPE'] = 'application/json; charset=utf-8'
 
-        # Handle potential encoding issues in request body
         if hasattr(request, '_body') and request._body:
             try:
-                # Try to decode as UTF-8
                 if isinstance(request._body, bytes):
                     request._body.decode('utf-8')
             except UnicodeDecodeError as e:
-                logger.error(f"UTF-8 decoding error in request body: {e}")
+                logger.error(f"Erro de decodificação UTF-8 no corpo da requisição: {e}")
                 return JsonResponse({
                     'error': 'Erro de codificação de caracteres',
                     'message': 'Por favor, verifique se o texto contém apenas caracteres válidos em UTF-8.',
@@ -42,11 +35,8 @@ class EncodingMiddleware(MiddlewareMixin):
         return None
 
     def process_exception(self, request, exception):
-        """
-        Process exceptions to catch encoding-related errors.
-        """
         if isinstance(exception, UnicodeDecodeError):
-            logger.error(f"Unicode decode error: {exception}")
+            logger.error(f"Erro de decodificação Unicode: {exception}")
             return JsonResponse({
                 'error': 'Erro de codificação de caracteres',
                 'message': 'Problema na codificação dos dados enviados.',

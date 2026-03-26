@@ -54,7 +54,6 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        """Retorna o serializer apropriado baseado na ação"""
         if self.action == 'create':
             return DriverRequestCreateSerializer
         elif self.action in ['approve', 'reject']:
@@ -62,35 +61,19 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
         return DriverRequestListSerializer
 
     def get_permissions(self):
-        """
-        Define permissões baseadas na ação.
-
-        - create: AllowAny (para site público)
-        - Demais ações: IsAuthenticated
-        """
+        """Criação é pública; demais ações requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def get_throttles(self):
-        """
-        Define throttling baseado na ação.
-
-        - create: PublicWriteThrottle (20 requests/hour) - protege contra spam
-        - Demais ações: Sem throttle (usuários autenticados)
-        """
+        """Aplica throttle apenas na criação para prevenir spam."""
         if self.action == 'create':
             return [PublicWriteThrottle()]
         return []
 
     def create(self, request, *args, **kwargs):
-        """
-        Cria uma nova solicitação de motorista.
-
-        Endpoint público para receber solicitações do site.
-
-        Rate Limit: 20 requests/hour per IP
-        """
+        """Cria solicitação de motorista. Endpoint público com rate limit."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -114,14 +97,9 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def mark_as_viewed(self, request, pk=None):
-        """
-        Marca uma solicitação como visualizada.
-
-        Registra a data e hora da primeira visualização.
-        """
+        """Registra a data da primeira visualização da solicitação."""
         driver_request = self.get_object()
 
-        # Marca como visualizada apenas se ainda não foi visualizada
         if not driver_request.viewed_at:
             driver_request.viewed_at = timezone.now()
             driver_request.save(update_fields=['viewed_at'])
@@ -138,32 +116,21 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
-        """
-        Aprova uma solicitação de motorista e cria o condutor.
-
-        Processo:
-        1. Valida se a solicitação está em análise
-        2. Cria o condutor com os dados da solicitação
-        3. Atualiza status da solicitação para 'aprovado'
-        4. Registra usuário revisor e data de revisão
-        """
+        """Aprova a solicitação de motorista e cria o condutor correspondente."""
         driver_request = self.get_object()
 
-        # Verificar se a solicitação está em análise
         if driver_request.status != 'em_analise':
             return Response(
                 {'error': f'Esta solicitação já foi {driver_request.get_status_display().lower()}.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar se já existe um condutor com este CPF
         if Conductor.objects.filter(cpf=driver_request.cpf).exists():
             return Response(
                 {'error': 'Já existe um condutor cadastrado com este CPF.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validar campos obrigatórios antes de aprovar
         if not driver_request.birth_date:
             return Response(
                 {'error': 'Data de nascimento não informada na solicitação. Complete os dados antes de aprovar.'},
@@ -176,10 +143,8 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Usar transação atômica para garantir consistência
         try:
             with transaction.atomic():
-                # Criar o condutor com dados da solicitação
                 conductor = Conductor.objects.create(
                     name=driver_request.name,
                     cpf=driver_request.cpf,
@@ -192,22 +157,18 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
                     nationality=driver_request.nationality or 'Brasileira',
                     is_active=True,
                     created_by=request.user,
-                    # Usar dados reais da solicitação
                     birth_date=driver_request.birth_date,
                     license_expiry_date=driver_request.license_expiry_date,
-                    # Endereço (usar da solicitação ou valores vazios)
                     street=driver_request.street or '',
                     number=driver_request.number or '',
                     neighborhood=driver_request.neighborhood or '',
                     city=driver_request.city or '',
                     reference_point=driver_request.reference_point or '',
-                    # Documentos (se disponíveis)
                     document=driver_request.document,
                     cnh_digital=driver_request.cnh_digital,
                     photo=driver_request.photo,
                 )
 
-                # Atualizar a solicitação
                 driver_request.status = 'aprovado'
                 driver_request.reviewed_at = timezone.now()
                 driver_request.reviewed_by = request.user
@@ -237,30 +198,19 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def reject(self, request, pk=None):
-        """
-        Reprova uma solicitação de motorista.
-
-        Processo:
-        1. Valida se a solicitação está em análise
-        2. Valida se o motivo da reprovação foi informado
-        3. Atualiza status da solicitação para 'reprovado'
-        4. Registra motivo, usuário revisor e data de revisão
-        """
+        """Reprova a solicitação de motorista."""
         driver_request = self.get_object()
 
-        # Verificar se a solicitação está em análise
         if driver_request.status != 'em_analise':
             return Response(
                 {'error': f'Esta solicitação já foi {driver_request.get_status_display().lower()}.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validar dados da reprovação
         serializer = DriverRequestActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
-            # Atualizar a solicitação
             driver_request.status = 'reprovado'
             driver_request.rejection_reason = serializer.validated_data.get('rejection_reason')
             driver_request.reviewed_at = timezone.now()
@@ -366,7 +316,6 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        """Retorna o serializer apropriado baseado na ação"""
         if self.action == 'create':
             return VehicleRequestCreateSerializer
         elif self.action in ['approve', 'reject']:
@@ -374,22 +323,13 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
         return VehicleRequestListSerializer
 
     def get_permissions(self):
-        """
-        Define permissões baseadas na ação.
-
-        - create: AllowAny (para site público)
-        - Demais ações: IsAuthenticated
-        """
+        """Criação é pública; demais ações requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
-        """
-        Cria uma nova solicitação de veículo.
-
-        Endpoint público para receber solicitações do site.
-        """
+        """Cria solicitação de veículo. Endpoint público."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -413,14 +353,9 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def mark_as_viewed(self, request, pk=None):
-        """
-        Marca uma solicitação como visualizada.
-
-        Registra a data e hora da primeira visualização.
-        """
+        """Registra a data da primeira visualização da solicitação."""
         vehicle_request = self.get_object()
 
-        # Marca como visualizada apenas se ainda não foi visualizada
         if not vehicle_request.viewed_at:
             vehicle_request.viewed_at = timezone.now()
             vehicle_request.save(update_fields=['viewed_at'])
@@ -437,32 +372,21 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approve(self, request, pk=None):
-        """
-        Aprova uma solicitação de veículo e cria o veículo.
-
-        Processo:
-        1. Valida se a solicitação está em análise
-        2. Cria o veículo com os dados da solicitação
-        3. Atualiza status da solicitação para 'aprovado'
-        4. Registra usuário revisor e data de revisão
-        """
+        """Aprova a solicitação de veículo e cria o veículo correspondente."""
         vehicle_request = self.get_object()
 
-        # Verificar se a solicitação está em análise
         if vehicle_request.status != 'em_analise':
             return Response(
                 {'error': f'Esta solicitação já foi {vehicle_request.get_status_display().lower()}.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar se já existe um veículo com esta placa
         if Vehicle.objects.filter(plate=vehicle_request.plate).exists():
             return Response(
                 {'error': 'Já existe um veículo cadastrado com esta placa.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validar se chassis e renavam foram informados (são únicos no banco)
         if not vehicle_request.chassis_number:
             return Response(
                 {'error': 'Número do chassi não informado na solicitação. Complete os dados antes de aprovar.'},
@@ -475,7 +399,6 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar se já existe veículo com o chassis ou renavam informados
         if Vehicle.objects.filter(chassis_number=vehicle_request.chassis_number).exists():
             return Response(
                 {'error': 'Já existe um veículo cadastrado com este número de chassi.'},
@@ -488,10 +411,8 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Usar transação atômica para garantir consistência
         try:
             with transaction.atomic():
-                # Criar o veículo com dados da solicitação
                 vehicle = Vehicle.objects.create(
                     plate=vehicle_request.plate,
                     brand=vehicle_request.brand,
@@ -501,12 +422,10 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                     fuel_type=vehicle_request.fuel_type,
                     is_active=True,
                     created_by=request.user,
-                    # Usar dados reais da solicitação
                     chassis_number=vehicle_request.chassis_number,
                     renavam=vehicle_request.renavam,
                     category=vehicle_request.category,
                     passenger_capacity=vehicle_request.passenger_capacity,
-                    # Fotos (se disponíveis)
                     photo_1=vehicle_request.photo_1,
                     photo_2=vehicle_request.photo_2,
                     photo_3=vehicle_request.photo_3,
@@ -514,7 +433,6 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
                     photo_5=vehicle_request.photo_5,
                 )
 
-                # Atualizar a solicitação
                 vehicle_request.status = 'aprovado'
                 vehicle_request.reviewed_at = timezone.now()
                 vehicle_request.reviewed_by = request.user
@@ -544,30 +462,19 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def reject(self, request, pk=None):
-        """
-        Reprova uma solicitação de veículo.
-
-        Processo:
-        1. Valida se a solicitação está em análise
-        2. Valida se o motivo da reprovação foi informado
-        3. Atualiza status da solicitação para 'reprovado'
-        4. Registra motivo, usuário revisor e data de revisão
-        """
+        """Reprova a solicitação de veículo."""
         vehicle_request = self.get_object()
 
-        # Verificar se a solicitação está em análise
         if vehicle_request.status != 'em_analise':
             return Response(
                 {'error': f'Esta solicitação já foi {vehicle_request.get_status_display().lower()}.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Validar dados da reprovação
         serializer = VehicleRequestActionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
-            # Atualizar a solicitação
             vehicle_request.status = 'reprovado'
             vehicle_request.rejection_reason = serializer.validated_data.get('rejection_reason')
             vehicle_request.reviewed_at = timezone.now()

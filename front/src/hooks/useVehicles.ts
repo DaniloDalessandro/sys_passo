@@ -112,7 +112,6 @@ export function useVehicles() {
       }
 
       const url = `${API_BASE_URL}/vehicles/?${queryParams.toString()}`
-      console.log('URL da requisição:', url)
       const response = await authFetch(url)
 
       if (!response.ok) {
@@ -120,11 +119,6 @@ export function useVehicles() {
       }
 
       const data = await response.json()
-      console.log('Resposta da API:', {
-        count: data.count,
-        resultsLength: data.results?.length,
-        firstResult: data.results?.[0]
-      })
       setVehicles(data.results || [])
       setTotalCount(data.count || 0)
     } catch (err) {
@@ -244,7 +238,6 @@ export function useVehicles() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Erro desconhecido"
       setError(errorMessage)
-      console.error("Error fetching stats:", err)
     }
   }, [])
 

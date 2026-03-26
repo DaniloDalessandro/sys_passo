@@ -7,9 +7,8 @@ class Complaint(models.Model):
     """
     Model para armazenar denúncias feitas pelo site público.
 
-    Este model gerencia denúncias de irregularidades relacionadas a veículos,
-    permitindo que o público faça denúncias e que administradores gerenciem
-    o fluxo de análise e resolução.
+    Gerencia denúncias de irregularidades relacionadas a veículos, permitindo
+    que o público registre ocorrências e que administradores conduzam a análise.
     """
 
     STATUS_CHOICES = [
@@ -31,7 +30,6 @@ class Complaint(models.Model):
         ('outros', 'Outros'),
     ]
 
-    # Dados da denúncia
     protocol = models.CharField(
         max_length=12,
         unique=True,
@@ -73,8 +71,25 @@ class Complaint(models.Model):
         verbose_name='Data da Ocorrência',
         help_text='Data em que o fato ocorreu'
     )
-
-    # Dados opcionais do denunciante
+    occurrence_location = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='Local da Ocorrência',
+        help_text='Endereço ou local onde ocorreu o fato denunciado'
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=[
+            ('baixa', 'Baixa'),
+            ('media', 'Média'),
+            ('alta', 'Alta'),
+            ('urgente', 'Urgente'),
+        ],
+        default='media',
+        verbose_name='Prioridade',
+        help_text='Nível de prioridade da denúncia'
+    )
     complainant_name = models.CharField(
         max_length=150,
         blank=True,
@@ -100,8 +115,6 @@ class Complaint(models.Model):
         verbose_name='Denúncia Anônima',
         help_text='Indica se a denúncia foi feita anonimamente'
     )
-
-    # Status e gestão
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -110,8 +123,6 @@ class Complaint(models.Model):
         help_text='Status atual da denúncia',
         db_index=True
     )
-
-    # Auditoria
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Data da Denúncia',
@@ -137,8 +148,6 @@ class Complaint(models.Model):
         verbose_name='Data da Avaliação',
         help_text='Data e hora em que a denúncia foi avaliada'
     )
-
-    # Resposta/Resolução
     admin_notes = models.TextField(
         blank=True,
         null=True,
@@ -160,25 +169,23 @@ class Complaint(models.Model):
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['vehicle_plate']),
             models.Index(fields=['complaint_type']),
+            models.Index(fields=['vehicle_plate', 'status']),
+            models.Index(fields=['complaint_type', 'status']),
+            models.Index(fields=['is_anonymous', 'status']),
+            models.Index(fields=['priority', '-created_at']),
         ]
 
     def __str__(self):
         return f"Denúncia #{self.id} - {self.vehicle_plate} - {self.get_complaint_type_display()}"
 
     def _generate_protocol(self):
-        """
-        Gera protocolo automaticamente no formato CMP-YYYYNNNN.
-
-        Returns:
-            str: Protocolo único no formato CMP-ano + 4 dígitos sequenciais
-        """
+        """Gera protocolo único no formato CMP-YYYYNNNN."""
         from django.utils import timezone
         from django.db.models import Max
 
         current_year = timezone.now().year
         year_prefix = f"CMP-{current_year}"
 
-        # Buscar o último protocolo do ano atual
         last_complaint = Complaint.objects.filter(
             protocol__startswith=year_prefix
         ).aggregate(Max('protocol'))
@@ -186,58 +193,44 @@ class Complaint(models.Model):
         last_protocol = last_complaint['protocol__max']
 
         if last_protocol:
-            # Extrair o número sequencial do último protocolo
-            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
+            last_number = int(last_protocol[-4:])
             new_number = last_number + 1
         else:
-            # Primeiro protocolo do ano
             new_number = 1
 
-        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
-        protocol = f"{year_prefix}{new_number:04d}"
-
-        return protocol
+        return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
         """
-        Override do método save para:
-        1. Gerar protocolo automaticamente se não existir
-        2. Tentar associar veículo automaticamente pela placa
-        3. Normalizar placa para uppercase
-        4. Determinar se é denúncia anônima
+        Gera protocolo automaticamente, associa veículo pela placa,
+        normaliza a placa e determina se a denúncia é anônima.
         """
-        # Gerar protocolo se não existir
         if not self.protocol:
             self.protocol = self._generate_protocol()
 
-        # Tentar associar veículo automaticamente pela placa
         if not self.vehicle and self.vehicle_plate:
             try:
                 self.vehicle = Vehicle.objects.get(plate__iexact=self.vehicle_plate.strip())
             except Vehicle.DoesNotExist:
                 pass
 
-        # Normalizar placa (uppercase, sem espaços)
         if self.vehicle_plate:
             self.vehicle_plate = self.vehicle_plate.upper().strip().replace(' ', '')
 
-        # Determinar se é denúncia anônima
         if not self.complainant_name and not self.complainant_email and not self.complainant_phone:
             self.is_anonymous = True
 
         super().save(*args, **kwargs)
 
     def clean(self):
-        """Validações customizadas do modelo"""
+        """Validações customizadas do modelo."""
         from django.core.exceptions import ValidationError
 
-        # Validar descrição mínima
         if self.description and len(self.description) < 20:
             raise ValidationError({
                 'description': 'A descrição deve ter pelo menos 20 caracteres.'
             })
 
-        # Validar placa
         if self.vehicle_plate:
             plate_clean = self.vehicle_plate.upper().strip().replace(' ', '')
             if len(plate_clean) < 7:
@@ -249,7 +242,6 @@ class Complaint(models.Model):
 class ComplaintPhoto(models.Model):
     """
     Model para armazenar fotos anexadas às denúncias.
-
     Cada denúncia pode ter até 5 fotos associadas.
     """
 

@@ -127,19 +127,12 @@ export default function DriverRequestDetailsPage() {
         throw new Error('Erro ao carregar PDF');
       }
 
-      // Get PDF as blob
       const blob = await response.blob();
-
-      // Create object URL and open in new tab
       const blobUrl = URL.createObjectURL(blob);
       window.open(blobUrl, '_blank');
-
-      // Clean up after a delay
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-
       toast.success('PDF aberto em nova aba');
-    } catch (error: any) {
-      console.error('Error opening PDF:', error);
+    } catch {
       toast.error('Erro ao abrir PDF');
     }
   }
@@ -163,8 +156,8 @@ export default function DriverRequestDetailsPage() {
       if (!data.viewed_at) {
         try {
           await markDriverRequestAsViewed(Number(id))
-        } catch (error) {
-          console.error('Error marking as viewed:', error)
+        } catch {
+          // silencia erro ao marcar como visualizado
         }
       }
     } catch (error: any) {

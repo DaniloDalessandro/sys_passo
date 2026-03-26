@@ -1,1 +1,0 @@
-# Complaints app initialization

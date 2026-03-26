@@ -32,7 +32,6 @@ export default function DashboardPage() {
       setStats(statsData)
       setCharts(chartsData)
     } catch (error) {
-      console.error("Erro ao carregar dashboard:", error)
       toast({
         title: "Erro ao carregar dashboard",
         description: error instanceof Error ? error.message : "Erro desconhecido",
@@ -70,16 +69,13 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Visão geral do sistema ViaLumiar</p>
       </div>
 
-      {/* Estatísticas Principais */}
       <StatsOverview stats={stats} />
 
-      {/* Gráficos Principais */}
       <div className="grid gap-6 lg:grid-cols-2">
         <MonthlyRegistrationsChart data={charts.monthlyRegistrations} />
         <CategoryDistributionChart data={charts.categoryDistribution} />
       </div>
 
-      {/* Gráfico de Status de Solicitações - Largura Total */}
       <div className="w-full">
         <RequestsStatusChart data={charts.requestsStatus} />
       </div>

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 
 class VehicleDetailSerializer(serializers.Serializer):
-    """Serializer for vehicle details in conductor view"""
+    """Serializer para dados básicos do veículo no contexto do condutor."""
     id = serializers.IntegerField()
     modelo = serializers.CharField(source='model')
     marca = serializers.CharField(source='brand')
@@ -17,18 +17,15 @@ class VehicleDetailSerializer(serializers.Serializer):
 
 def validate_text_field(value, field_name):
     """
-    Validates that text field contains only valid UTF-8 characters.
+    Valida que o campo de texto contém apenas caracteres UTF-8 válidos.
+    Normaliza via NFC para consistência de encoding.
     """
     if not value:
         return value
 
     try:
-        # Normalize text to ensure proper encoding
         normalized = unicodedata.normalize('NFC', str(value))
-
-        # Check if the text can be properly encoded/decoded
         normalized.encode('utf-8').decode('utf-8')
-
         return normalized.strip()
     except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError):
         raise serializers.ValidationError(
@@ -39,17 +36,14 @@ def validate_text_field(value, field_name):
 
 class ConductorBaseSerializer(serializers.ModelSerializer):
     def validate_cpf(self, value):
-        # Remove caracteres não numéricos
         cpf = ''.join(filter(str.isdigit, value))
-        
-        # Verifica se tem 11 dígitos
+
         if len(cpf) != 11:
             raise serializers.ValidationError("CPF deve ter 11 dígitos.")
-        
-        # Verifica se todos os dígitos são iguais (CPF inválido)
+
         if cpf == cpf[0] * 11:
             raise serializers.ValidationError("CPF inválido.")
-        
+
         # Validação do primeiro dígito verificador
         soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
         digito1 = (soma * 10) % 11
@@ -57,7 +51,7 @@ class ConductorBaseSerializer(serializers.ModelSerializer):
             digito1 = 0
         if int(cpf[9]) != digito1:
             raise serializers.ValidationError("CPF inválido.")
-        
+
         # Validação do segundo dígito verificador
         soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
         digito2 = (soma * 10) % 11
@@ -65,7 +59,7 @@ class ConductorBaseSerializer(serializers.ModelSerializer):
             digito2 = 0
         if int(cpf[10]) != digito2:
             raise serializers.ValidationError("CPF inválido.")
-        
+
         return value
 
     def validate_license_expiry_date(self, value):
@@ -74,7 +68,6 @@ class ConductorBaseSerializer(serializers.ModelSerializer):
         return value
 
     def validate_birth_date(self, value):
-        # Verifica se a pessoa tem pelo menos 18 anos
         today = timezone.now().date()
         age = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if age < 18:
@@ -82,7 +75,7 @@ class ConductorBaseSerializer(serializers.ModelSerializer):
         return value
 
     def get_address(self, obj):
-        """Combine address fields into a single address string for frontend compatibility"""
+        """Combina campos de endereço em uma string única."""
         address_parts = []
         if obj.street:
             address_parts.append(obj.street)

@@ -28,28 +28,16 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
             'complaint_type',
             'description',
             'occurrence_date',
+            'occurrence_location',
             'complainant_name',
             'complainant_email',
             'complainant_phone',
         ]
 
     def validate_vehicle_plate(self, value):
-        """
-        Validar formato da placa.
-
-        Args:
-            value: Placa informada pelo usuário
-
-        Returns:
-            str: Placa normalizada (uppercase, sem espaços)
-
-        Raises:
-            ValidationError: Se a placa for inválida
-        """
         if not value:
             raise serializers.ValidationError('A placa do veículo é obrigatória.')
 
-        # Normalizar placa
         plate_clean = value.upper().strip().replace(' ', '')
 
         if len(plate_clean) < 7:
@@ -58,18 +46,6 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         return plate_clean
 
     def validate_description(self, value):
-        """
-        Validar descrição mínima.
-
-        Args:
-            value: Descrição da denúncia
-
-        Returns:
-            str: Descrição validada
-
-        Raises:
-            ValidationError: Se a descrição for muito curta
-        """
         if not value or len(value.strip()) < 20:
             raise serializers.ValidationError(
                 'A descrição deve ter pelo menos 20 caracteres para fornecer detalhes suficientes.'
@@ -77,33 +53,11 @@ class ComplaintCreateSerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_occurrence_date(self, value):
-        """
-        Validar que a data de ocorrência não seja futura.
-
-        Args:
-            value: Data da ocorrência
-
-        Returns:
-            date: Data validada
-
-        Raises:
-            ValidationError: Se a data for futura
-        """
         if value and value > timezone.now().date():
             raise serializers.ValidationError('A data da ocorrência não pode ser futura.')
         return value
 
     def validate(self, attrs):
-        """
-        Validações adicionais que envolvem múltiplos campos.
-
-        Args:
-            attrs: Dicionário com todos os atributos
-
-        Returns:
-            dict: Atributos validados
-        """
-        # Se forneceu email, validar formato básico
         email = attrs.get('complainant_email')
         if email and '@' not in email:
             raise serializers.ValidationError({
@@ -149,6 +103,10 @@ class ComplaintListSerializer(serializers.ModelSerializer):
         source='get_status_display',
         read_only=True
     )
+    priority_display = serializers.CharField(
+        source='get_priority_display',
+        read_only=True
+    )
 
     class Meta:
         model = Complaint
@@ -161,6 +119,9 @@ class ComplaintListSerializer(serializers.ModelSerializer):
             'complaint_type_display',
             'description',
             'occurrence_date',
+            'occurrence_location',
+            'priority',
+            'priority_display',
             'complainant_name',
             'complainant_email',
             'complainant_phone',
@@ -207,6 +168,10 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
         source='get_status_display',
         read_only=True
     )
+    priority_display = serializers.CharField(
+        source='get_priority_display',
+        read_only=True
+    )
 
     class Meta:
         model = Complaint
@@ -219,6 +184,9 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
             'complaint_type_display',
             'description',
             'occurrence_date',
+            'occurrence_location',
+            'priority',
+            'priority_display',
             'complainant_name',
             'complainant_email',
             'complainant_phone',
@@ -236,15 +204,7 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_reviewed_by_info(self, obj):
-        """
-        Retorna informações completas do revisor.
-
-        Args:
-            obj: Instância do Complaint
-
-        Returns:
-            dict: Dicionário com informações do revisor ou None
-        """
+        """Retorna informações do revisor ou None."""
         if obj.reviewed_by:
             return {
                 'id': obj.reviewed_by.id,
@@ -267,45 +227,21 @@ class ComplaintUpdateSerializer(serializers.ModelSerializer):
         model = Complaint
         fields = [
             'status',
+            'priority',
             'admin_notes',
             'resolution_notes',
         ]
 
     def validate_status(self, value):
-        """
-        Validar status.
-
-        Args:
-            value: Novo status
-
-        Returns:
-            str: Status validado
-
-        Raises:
-            ValidationError: Se o status for inválido
-        """
         valid_statuses = dict(Complaint.STATUS_CHOICES).keys()
         if value not in valid_statuses:
             raise serializers.ValidationError(f'Status inválido. Valores permitidos: {", ".join(valid_statuses)}')
         return value
 
     def update(self, instance, validated_data):
-        """
-        Sobrescrever update para adicionar lógica de revisão.
-
-        Quando o status é alterado, automaticamente registra quem fez a revisão
-        e quando foi feita.
-
-        Args:
-            instance: Instância da denúncia
-            validated_data: Dados validados
-
-        Returns:
-            Complaint: Instância atualizada
-        """
+        """Registra revisão automaticamente quando o status é alterado."""
         request = self.context.get('request')
 
-        # Se o status foi alterado, registrar revisão
         if 'status' in validated_data and validated_data['status'] != instance.status:
             if request and request.user:
                 instance.reviewed_by = request.user
@@ -327,7 +263,6 @@ class ComplaintStatusUpdateSerializer(serializers.Serializer):
     )
 
     def validate_status(self, value):
-        """Validar que o status é válido"""
         valid_statuses = dict(Complaint.STATUS_CHOICES).keys()
         if value not in valid_statuses:
             raise serializers.ValidationError('Status inválido.')

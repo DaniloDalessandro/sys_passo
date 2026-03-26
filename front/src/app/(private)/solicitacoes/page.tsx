@@ -96,19 +96,16 @@ type RequestType = 'driver' | 'vehicle';
 export default function SolicitacoesPage() {
   const router = useRouter()
 
-  // State
   const [activeTab, setActiveTab] = useState<RequestType>('driver')
   const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([])
   const [vehicleRequests, setVehicleRequests] = useState<VehicleRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isActionLoading, setIsActionLoading] = useState(false)
 
-  // Filters and sorting
   const [statusFilter, setStatusFilter] = useState<string>('todas')
   const [sortField, setSortField] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
-  // Modals
   const [detailsDialog, setDetailsDialog] = useState<{
     open: boolean;
     type: RequestType | null;
@@ -145,22 +142,14 @@ export default function SolicitacoesPage() {
 
   const [rejectionReason, setRejectionReason] = useState('')
 
-  // WebSocket para notificações em tempo real
   const { isConnected } = useWebSocket('ws://127.0.0.1:8000/ws/requests/', {
     onMessage: (message) => {
-      // Quando recebe notificação de nova solicitação
       if (message.type === 'new_request') {
-        console.log('Nova solicitação recebida via WebSocket:', message);
-
-        // Cria URL absoluta para a página de detalhes
         const relativePath = message.request_type === 'driver'
           ? `/solicitacoes/motoristas/${message.request_id}`
           : `/solicitacoes/veiculos/${message.request_id}`;
 
-        // Cria URL absoluta usando window.location.origin
         const detailsUrl = `${window.location.origin}${relativePath}`;
-
-        // Mostra notificação clicável com protocolo
         const title = message.title || message.message || 'Nova solicitação recebida!';
         const protocol = message.protocol || `#${message.request_id}`;
 
@@ -168,20 +157,15 @@ export default function SolicitacoesPage() {
           description: `${protocol} - Clique para ver detalhes`,
           action: {
             label: 'Ver',
-            onClick: () => {
-              console.log('Abrindo URL:', detailsUrl);
-              window.open(detailsUrl, '_blank');
-            },
+            onClick: () => window.open(detailsUrl, '_blank'),
           },
-          duration: 10000, // 10 segundos
+          duration: 10000,
         });
 
-        // Recarrega automaticamente a lista SOMENTE se estiver na aba correta
         const isCorrectTab = (message.request_type === 'driver' && activeTab === 'driver') ||
                             (message.request_type === 'vehicle' && activeTab === 'vehicle');
 
         if (isCorrectTab) {
-          // Usa timeout para evitar múltiplas chamadas simultâneas
           setTimeout(() => {
             if (activeTab === 'driver') {
               loadDriverRequests();
@@ -190,19 +174,11 @@ export default function SolicitacoesPage() {
             }
           }, 500);
         }
-      } else if (message.type === 'connection_established') {
-        console.log('Conexão WebSocket confirmada');
       }
     },
-    onConnect: () => {
-      console.log('Conectado ao servidor WebSocket');
-    },
-    onDisconnect: () => {
-      console.log('Desconectado do servidor WebSocket');
-    },
-    onError: (error) => {
-      console.error('Erro no WebSocket:', error);
-    },
+    onConnect: () => {},
+    onDisconnect: () => {},
+    onError: () => {},
   })
 
   // Load data
@@ -228,11 +204,10 @@ export default function SolicitacoesPage() {
       if (sortField) filters.ordering = sortOrder === 'desc' ? `-${sortField}` : sortField
 
       const data = await getVehicleRequests(filters)
-      // Garantir que sempre seja um array, mesmo se o service retornar algo inesperado
       setVehicleRequests(Array.isArray(data) ? data : [])
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar solicitações de veículos')
-      setVehicleRequests([]) // Define array vazio em caso de erro
+      setVehicleRequests([])
     }
   }, [statusFilter, sortField, sortOrder])
 
@@ -249,7 +224,6 @@ export default function SolicitacoesPage() {
     }
   }, [activeTab, loadDriverRequests, loadVehicleRequests])
 
-  // Initial load and reload on filter/tab change
   useEffect(() => {
     const token = localStorage.getItem("access_token")
     if (!token) {
@@ -260,49 +234,35 @@ export default function SolicitacoesPage() {
     loadData()
   }, [router, loadData])
 
-  // Handle sort
   const handleSort = (field: string) => {
     if (sortField === field) {
-      // Toggle order
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
-      // New field, default desc
       setSortField(field)
       setSortOrder('desc')
     }
   }
 
-  // Get sort icon
   const getSortIcon = (field: string) => {
     if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 ml-1" />
     return sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 ml-1" /> : <ArrowDown className="h-3.5 w-3.5 ml-1" />
   }
 
-  // Handle view request - marks as viewed and opens in new tab
   const handleViewRequest = async (type: RequestType, id: number) => {
+    const url = type === 'driver' ? `/solicitacoes/motoristas/${id}` : `/solicitacoes/veiculos/${id}`
     try {
-      // Mark as viewed
       if (type === 'driver') {
         await markDriverRequestAsViewed(id)
       } else {
         await markVehicleRequestAsViewed(id)
       }
-
-      // Open in new tab
-      const url = type === 'driver' ? `/solicitacoes/motoristas/${id}` : `/solicitacoes/veiculos/${id}`
       window.open(url, '_blank')
-
-      // Reload data to update the viewed status
       await loadData()
-    } catch (error) {
-      // Silent fail - just open the page anyway
-      console.error('Error marking as viewed:', error)
-      const url = type === 'driver' ? `/solicitacoes/motoristas/${id}` : `/solicitacoes/veiculos/${id}`
+    } catch {
       window.open(url, '_blank')
     }
   }
 
-  // Handle approve
   const handleApprove = async () => {
     if (!approveDialog.id || !approveDialog.type) return
 

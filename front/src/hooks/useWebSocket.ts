@@ -1,7 +1,3 @@
-/**
- * Hook personalizado para gerenciar conexão WebSocket
- * para notificações em tempo real de solicitações
- */
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 interface WebSocketMessage {
@@ -11,7 +7,7 @@ interface WebSocketMessage {
   protocol?: string;
   message?: string;
   title?: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface UseWebSocketOptions {
@@ -38,13 +34,12 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Armazena callbacks em refs para evitar recriação
+  // Refs evitam recriação da conexão quando callbacks mudam
   const onMessageRef = useRef(onMessage);
   const onConnectRef = useRef(onConnect);
   const onDisconnectRef = useRef(onDisconnect);
   const onErrorRef = useRef(onError);
 
-  // Atualiza refs quando callbacks mudam
   useEffect(() => {
     onMessageRef.current = onMessage;
     onConnectRef.current = onConnect;
@@ -54,19 +49,14 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
 
   const connect = useCallback(() => {
     try {
-      // Fecha conexão existente se houver
       if (ws.current) {
         ws.current.close();
         ws.current = null;
       }
 
-      console.log('[WebSocket] Tentando conectar a:', url);
-
-      // Cria nova conexão WebSocket
       ws.current = new WebSocket(url);
 
       ws.current.onopen = () => {
-        console.log('[WebSocket] Conexão estabelecida');
         setIsConnected(true);
         setConnectionError(null);
         onConnectRef.current?.();
@@ -75,34 +65,28 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       ws.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('[WebSocket] Mensagem recebida:', data);
           onMessageRef.current?.(data);
-        } catch (error) {
-          console.error('[WebSocket] Erro ao parsear mensagem:', error);
+        } catch {
+          // mensagem inválida ignorada
         }
       };
 
       ws.current.onerror = (error) => {
-        console.error('[WebSocket] Erro:', error);
         setConnectionError('Erro na conexão WebSocket');
         onErrorRef.current?.(error);
       };
 
       ws.current.onclose = (event) => {
-        console.log('[WebSocket] Conexão fechada', event.code, event.reason);
         setIsConnected(false);
         onDisconnectRef.current?.();
 
-        // Reconecta automaticamente se configurado
         if (autoReconnect && !event.wasClean) {
-          console.log(`[WebSocket] Reconectando em ${reconnectInterval}ms...`);
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, reconnectInterval);
         }
       };
-    } catch (error) {
-      console.error('[WebSocket] Erro ao criar conexão:', error);
+    } catch {
       setConnectionError('Falha ao conectar');
     }
   }, [url, autoReconnect, reconnectInterval]);
@@ -119,16 +103,12 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
     setIsConnected(false);
   }, []);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: unknown) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
-    } else {
-      console.warn('[WebSocket] Não é possível enviar mensagem: conexão não estabelecida');
     }
   }, []);
 
-  // Conecta ao montar e desconecta ao desmontar
-  // IMPORTANTE: Array de dependências vazio para conectar apenas UMA VEZ
   useEffect(() => {
     connect();
 
@@ -136,7 +116,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
       disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Conecta apenas na montagem inicial
+  }, []);
 
   return {
     isConnected,

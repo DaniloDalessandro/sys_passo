@@ -8,11 +8,7 @@ from .models import SiteConfiguration
 
 @admin.register(SiteConfiguration)
 class SiteConfigurationAdmin(admin.ModelAdmin):
-    """
-    Admin interface for SiteConfiguration model.
-    Enforces singleton pattern - prevents adding multiple instances or deleting.
-    Automatically redirects to edit view when accessing the list.
-    """
+    """Admin para SiteConfiguration (singleton). Redireciona a listagem para edição."""
 
     list_display = ('company_name', 'email', 'phone', 'whatsapp', 'updated_at')
     readonly_fields = ('id', 'created_at', 'updated_at', 'logo_preview')
@@ -47,9 +43,6 @@ class SiteConfigurationAdmin(admin.ModelAdmin):
         }
 
     def logo_preview(self, obj):
-        """
-        Display logo preview in admin.
-        """
         if obj.logo:
             return format_html(
                 '<img src="{}" style="max-height: 200px; max-width: 300px;"/>',
@@ -60,41 +53,24 @@ class SiteConfigurationAdmin(admin.ModelAdmin):
     logo_preview.short_description = 'Preview da Logo'
 
     def has_add_permission(self, request):
-        """
-        Remove 'Add' button completely.
-        Configuration is auto-created via get_configuration().
-        """
         return False
 
     def has_delete_permission(self, request, obj=None):
-        """
-        Prevent deletion of the singleton configuration.
-        """
         return False
 
     def changelist_view(self, request, extra_context=None):
-        """
-        Override changelist to redirect directly to the change view.
-        If configuration doesn't exist, create it first.
-        """
-        # Get or create the singleton configuration
+        """Redireciona diretamente para o formulário de edição (instância singleton)."""
         config = SiteConfiguration.objects.get_configuration()
-
-        # Redirect to the change view for the singleton instance
         url = reverse('admin:sitehome_siteconfiguration_change', args=[config.pk])
         return redirect(url)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        """
-        Customize the change view with helpful context and messages.
-        """
         extra_context = extra_context or {}
         extra_context['show_save_and_add_another'] = False
         extra_context['show_save_and_continue'] = True
         extra_context['show_delete'] = False
         extra_context['title'] = 'Configuração do Site'
 
-        # Add helpful message only on GET requests (not on save)
         if request.method == 'GET':
             messages.info(
                 request,

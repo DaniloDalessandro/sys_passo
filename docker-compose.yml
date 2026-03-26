@@ -1,15 +1,4 @@
-version: '3.8'
-
-# ============================================================================
-# Docker Compose - Sys Passo (ViaLumiar)
-# ============================================================================
-# Orquestra todos os serviços necessários para o sistema
-# ============================================================================
-
 services:
-  # ==========================================================================
-  # PostgreSQL Database
-  # ==========================================================================
   db:
     image: postgres:16-alpine
     container_name: syspasso_db
@@ -21,8 +10,6 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - syspasso_network
     healthcheck:
@@ -31,9 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==========================================================================
-  # Redis (Cache & Celery Broker)
-  # ==========================================================================
   redis:
     image: redis:7-alpine
     container_name: syspasso_redis
@@ -41,8 +25,6 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     networks:
       - syspasso_network
     healthcheck:
@@ -51,9 +33,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ==========================================================================
-  # Django Backend
-  # ==========================================================================
   backend:
     build:
       context: ./back
@@ -65,31 +44,25 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
     environment:
-      # Django Settings
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DEBUG: ${DEBUG:-False}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-
-      # Database
-      DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-syspasso}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
       DB_PORT: 5432
-
-      # Redis & Celery
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-
-      # CORS
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002,http://localhost:3000,http://127.0.0.1:3000}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002,http://localhost:3000,http://127.0.0.1:3000}
+      SECURE_SSL_REDIRECT: "False"
     volumes:
       - ./back/media:/app/media
       - ./back/staticfiles:/app/staticfiles
       - ./back/logs:/app/logs
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -104,9 +77,6 @@ services:
       retries: 3
       start_period: 40s
 
-  # ==========================================================================
-  # Celery Worker (Tarefas Assíncronas)
-  # ==========================================================================
   celery:
     build:
       context: ./back
@@ -115,19 +85,13 @@ services:
     restart: unless-stopped
     command: celery -A core worker -l info
     environment:
-      # Django Settings
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DEBUG: ${DEBUG:-False}
-
-      # Database
-      DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-syspasso}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
       DB_PORT: 5432
-
-      # Redis & Celery
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
@@ -140,9 +104,6 @@ services:
     networks:
       - syspasso_network
 
-  # ==========================================================================
-  # Celery Beat (Agendador de Tarefas)
-  # ==========================================================================
   celery-beat:
     build:
       context: ./back
@@ -151,19 +112,13 @@ services:
     restart: unless-stopped
     command: celery -A core beat -l info
     environment:
-      # Django Settings
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-change-me-in-production}
       DEBUG: ${DEBUG:-False}
-
-      # Database
-      DB_ENGINE: django.db.backends.postgresql
       DB_NAME: ${DB_NAME:-syspasso}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
       DB_PORT: 5432
-
-      # Redis & Celery
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     volumes:
@@ -175,9 +130,6 @@ services:
     networks:
       - syspasso_network
 
-  # ==========================================================================
-  # Next.js Frontend
-  # ==========================================================================
   frontend:
     build:
       context: ./front
@@ -188,32 +140,25 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - backend
     networks:
       - syspasso_network
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})\""]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-# ============================================================================
-# Volumes (Persistência de Dados)
-# ============================================================================
 volumes:
   postgres_data:
     name: syspasso_postgres_data
   redis_data:
     name: syspasso_redis_data
 
-# ============================================================================
-# Networks
-# ============================================================================
 networks:
   syspasso_network:
     name: syspasso_network

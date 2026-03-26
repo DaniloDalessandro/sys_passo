@@ -34,8 +34,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setError("")
 
     try {
-      console.log("Tentando fazer login com:", { username: email, password: "***" })
-
       const normalizedEmail = email.trim()
       const response = await fetch(buildApiUrl("/api/auth/login/"), {
         method: "POST",
@@ -43,9 +41,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         body: JSON.stringify({ username: normalizedEmail, email: normalizedEmail, password }),
       })
 
-      console.log("Response status:", response.status)
       const data = await response.json()
-      console.log("Response data:", data)
 
       if (response.ok) {
         login({
@@ -53,15 +49,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           refresh: data.refresh,
           user: data.user,
         })
-        console.log("Login successful, redirecting...")
         router.push("/dashboard")
       } else {
         const errorMessage =
           data?.detail || data?.non_field_errors?.[0] || "Credenciais inválidas"
         setError(errorMessage)
       }
-    } catch (err) {
-      console.error("Erro no login:", err)
+    } catch {
       setError("Erro de conexão com o servidor. Tente novamente mais tarde.")
     }
   }
@@ -87,7 +81,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         )
         setForgotPasswordEmail("")
 
-        // Fechar o modal após 3 segundos
         setTimeout(() => {
           setIsForgotPasswordOpen(false)
           setForgotPasswordSuccess("")
@@ -99,8 +92,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           "Erro ao enviar email de recuperação. Verifique o endereço informado."
         setForgotPasswordError(errorMessage)
       }
-    } catch (err) {
-      console.error("Erro ao solicitar recuperação de senha:", err)
+    } catch {
       setForgotPasswordError("Erro de conexão com o servidor. Tente novamente mais tarde.")
     } finally {
       setIsSubmittingForgotPassword(false)
@@ -109,7 +101,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
   return (
     <div className={cn("space-y-8", className)} {...props}>
-      {/* Header com ícone de carro */}
       <div className="text-center space-y-4">
         <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
           <svg
@@ -137,7 +128,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         </div>
       </div>
 
-      {/* Formulário */}
       <Card className="bg-white shadow-2xl rounded-2xl border-0">
         <CardContent className="p-8">
           <form onSubmit={handleLogin} className="space-y-6">
@@ -203,12 +193,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         </CardContent>
       </Card>
 
-      {/* Footer */}
       <div className="text-center text-gray-500 text-sm">
         <p>© 2024 ViaLumiar. Todos os direitos reservados.</p>
       </div>
 
-      {/* Forgot Password Dialog */}
       <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

@@ -98,11 +98,6 @@ export default function VehicleForm({
     }
   }, [open, initialData]);
 
-  // Debug: log conductors when they change
-  useEffect(() => {
-    console.log('Condutores carregados:', conductors);
-  }, [conductors]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     let formattedValue = value;

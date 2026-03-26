@@ -39,7 +39,6 @@ class DriverRequest(models.Model):
         ('reprovado', 'Reprovado'),
     ]
 
-    # Protocolo único
     protocol = models.CharField(
         max_length=12,
         unique=True,
@@ -50,8 +49,6 @@ class DriverRequest(models.Model):
         help_text='Protocolo gerado automaticamente (formato: DRV-YYYYNNNN)',
         db_index=True
     )
-
-    # Dados pessoais
     name = models.CharField(
         max_length=150,
         verbose_name='Nome Completo',
@@ -82,8 +79,6 @@ class DriverRequest(models.Model):
         verbose_name='Nacionalidade',
         help_text='Nacionalidade do condutor'
     )
-
-    # Endereço
     street = models.CharField(
         max_length=200,
         default='',
@@ -119,8 +114,6 @@ class DriverRequest(models.Model):
         verbose_name='Ponto de Referência',
         help_text='Referência adicional do endereço'
     )
-
-    # Contato
     email = models.EmailField(
         verbose_name='E-mail',
         help_text='E-mail de contato do condutor'
@@ -137,8 +130,6 @@ class DriverRequest(models.Model):
         verbose_name='WhatsApp',
         help_text='WhatsApp do condutor (opcional)'
     )
-
-    # CNH
     license_number = models.CharField(
         max_length=20,
         verbose_name='Número da CNH',
@@ -156,8 +147,6 @@ class DriverRequest(models.Model):
         verbose_name='Validade da CNH',
         help_text='Data de validade da CNH'
     )
-
-    # Documentos
     document = models.FileField(
         upload_to='requests/driver/documents/',
         blank=True,
@@ -179,15 +168,12 @@ class DriverRequest(models.Model):
         verbose_name='Foto (JPG/PNG)',
         help_text='Foto do motorista (opcional)'
     )
-
     message = models.TextField(
         blank=True,
         null=True,
         verbose_name='Mensagem',
         help_text='Observações adicionais do solicitante'
     )
-
-    # Status e controle
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -227,7 +213,6 @@ class DriverRequest(models.Model):
         verbose_name='Motivo da Reprovação',
         help_text='Justificativa para reprovação da solicitação'
     )
-
     conductor = models.OneToOneField(
         Conductor,
         on_delete=models.SET_NULL,
@@ -270,18 +255,12 @@ class DriverRequest(models.Model):
             self.license_number = self.license_number.strip()
 
     def _generate_protocol(self):
-        """
-        Gera protocolo automaticamente no formato DRV-YYYYNNNN.
-
-        Returns:
-            str: Protocolo único no formato DRV-ano + 4 dígitos sequenciais
-        """
+        """Gera protocolo único no formato DRV-YYYYNNNN."""
         from django.db.models import Max
 
         current_year = timezone.now().year
         year_prefix = f"DRV-{current_year}"
 
-        # Buscar o último protocolo do ano atual
         last_request = DriverRequest.objects.filter(
             protocol__startswith=year_prefix
         ).aggregate(Max('protocol'))
@@ -289,20 +268,14 @@ class DriverRequest(models.Model):
         last_protocol = last_request['protocol__max']
 
         if last_protocol:
-            # Extrair o número sequencial do último protocolo
-            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
+            last_number = int(last_protocol[-4:])
             new_number = last_number + 1
         else:
-            # Primeiro protocolo do ano
             new_number = 1
 
-        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
-        protocol = f"{year_prefix}{new_number:04d}"
-
-        return protocol
+        return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
-        # Gerar protocolo se não existir
         if not self.protocol:
             self.protocol = self._generate_protocol()
 
@@ -314,8 +287,8 @@ class VehicleRequest(models.Model):
     """
     Model para solicitações de cadastro de veículos.
 
-    Este model armazena as solicitações enviadas pelo site público
-    e permite que administradores aprovem ou reprovem os cadastros.
+    Armazena as solicitações enviadas pelo site público e permite que
+    administradores aprovem ou reprovem os cadastros.
     """
 
     FUEL_TYPE_CHOICES = [
@@ -341,7 +314,6 @@ class VehicleRequest(models.Model):
         ('reprovado', 'Reprovado'),
     ]
 
-    # Protocolo único
     protocol = models.CharField(
         max_length=12,
         unique=True,
@@ -352,8 +324,6 @@ class VehicleRequest(models.Model):
         help_text='Protocolo gerado automaticamente (formato: VHC-YYYYNNNN)',
         db_index=True
     )
-
-    # Dados básicos do veículo
     plate = models.CharField(
         max_length=10,
         verbose_name='Placa',
@@ -383,8 +353,6 @@ class VehicleRequest(models.Model):
         verbose_name='Cor',
         help_text='Cor do veículo'
     )
-
-    # Dados técnicos
     chassis_number = models.CharField(
         max_length=50,
         blank=True,
@@ -405,8 +373,6 @@ class VehicleRequest(models.Model):
         verbose_name='Tipo de Combustível',
         help_text='Tipo de combustível utilizado pelo veículo'
     )
-
-    # Categoria e capacidade
     category = models.CharField(
         max_length=50,
         choices=CATEGORY_CHOICES,
@@ -419,8 +385,6 @@ class VehicleRequest(models.Model):
         verbose_name='Capacidade de Passageiros',
         help_text='Número de passageiros que o veículo comporta'
     )
-
-    # Documentos do veículo
     crlv_pdf = models.FileField(
         upload_to='requests/vehicle/documents/',
         blank=True,
@@ -435,8 +399,6 @@ class VehicleRequest(models.Model):
         verbose_name='Seguro (PDF)',
         help_text='Documento do seguro do veículo em PDF (opcional)'
     )
-
-    # Fotos do veículo
     photo_1 = models.ImageField(
         upload_to='requests/vehicle/photos/',
         blank=True,
@@ -472,14 +434,12 @@ class VehicleRequest(models.Model):
         verbose_name='Foto 5',
         help_text='Foto do veículo (opcional)'
     )
-
     message = models.TextField(
         blank=True,
         null=True,
         verbose_name='Mensagem',
         help_text='Mensagem ou observações adicionais do solicitante'
     )
-
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -519,7 +479,6 @@ class VehicleRequest(models.Model):
         verbose_name='Motivo da Reprovação',
         help_text='Justificativa para reprovação da solicitação'
     )
-
     vehicle = models.OneToOneField(
         Vehicle,
         on_delete=models.SET_NULL,
@@ -550,25 +509,18 @@ class VehicleRequest(models.Model):
         return f"{self.brand} {self.model} - {self.plate} ({self.get_status_display()})"
 
     def clean(self):
-        """Validação adicional do model."""
-        # Normalizar placa
+        """Normaliza a placa antes de salvar."""
         if self.plate:
             self.plate = self.plate.upper().strip().replace(' ', '')
 
     def _generate_protocol(self):
-        """
-        Gera protocolo automaticamente no formato VHC-YYYYNNNN.
-
-        Returns:
-            str: Protocolo único no formato VHC-ano + 4 dígitos sequenciais
-        """
+        """Gera protocolo único no formato VHC-YYYYNNNN."""
         from django.db.models import Max
         from django.utils import timezone
 
         current_year = timezone.now().year
         year_prefix = f"VHC-{current_year}"
 
-        # Buscar o último protocolo do ano atual
         last_request = VehicleRequest.objects.filter(
             protocol__startswith=year_prefix
         ).aggregate(Max('protocol'))
@@ -576,20 +528,14 @@ class VehicleRequest(models.Model):
         last_protocol = last_request['protocol__max']
 
         if last_protocol:
-            # Extrair o número sequencial do último protocolo
-            last_number = int(last_protocol[-4:])  # Pega os 4 últimos dígitos
+            last_number = int(last_protocol[-4:])
             new_number = last_number + 1
         else:
-            # Primeiro protocolo do ano
             new_number = 1
 
-        # Formatar com 4 dígitos (ex: 0001, 0002, etc)
-        protocol = f"{year_prefix}{new_number:04d}"
-
-        return protocol
+        return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
-        # Gerar protocolo se não existir
         if not self.protocol:
             self.protocol = self._generate_protocol()
 

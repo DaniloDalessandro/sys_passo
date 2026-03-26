@@ -23,21 +23,10 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar denúncias.
 
-    Fornece endpoints CRUD completos para denúncias, com diferentes níveis
-    de permissão:
-    - Create: Público (qualquer pessoa pode fazer uma denúncia)
-    - List/Retrieve/Update/Delete: Autenticado (apenas administradores)
-
-    Endpoints:
-    - POST /api/complaints/ - Criar denúncia (público)
-    - GET /api/complaints/ - Listar denúncias (autenticado)
-    - GET /api/complaints/{id}/ - Detalhar denúncia (autenticado)
-    - PATCH /api/complaints/{id}/ - Atualizar denúncia (autenticado)
-    - DELETE /api/complaints/{id}/ - Deletar denúncia (autenticado)
-    - POST /api/complaints/{id}/change_status/ - Alterar status (autenticado)
+    Create é público; demais ações requerem autenticação.
     """
 
-    queryset = Complaint.objects.select_related('vehicle', 'reviewed_by').all()
+    queryset = Complaint.objects.select_related('vehicle', 'reviewed_by').prefetch_related('photos').all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'complaint_type', 'is_anonymous']
     search_fields = ['vehicle_plate', 'description', 'complainant_name', 'occurrence_location']
@@ -45,12 +34,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        """
-        Retorna o serializer apropriado baseado na action.
-
-        Returns:
-            Serializer class: Classe do serializer adequado
-        """
+        """Retorna o serializer adequado para cada action."""
         if self.action == 'create':
             return ComplaintCreateSerializer
         elif self.action == 'retrieve':
@@ -60,67 +44,33 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         return ComplaintListSerializer
 
     def get_permissions(self):
-        """
-        Retorna as permissões apropriadas baseado na action.
-
-        Create é público (qualquer pessoa pode denunciar).
-        Demais actions requerem autenticação.
-
-        Returns:
-            list: Lista de instâncias de permissões
-        """
+        """Create é público; demais actions requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
         return [IsAuthenticated()]
 
     def get_throttles(self):
-        """
-        Define throttling baseado na ação.
-
-        - create: PublicWriteThrottle (20 requests/hour) - protege contra spam de denúncias
-        - Demais ações: Sem throttle (usuários autenticados)
-
-        Returns:
-            list: Lista de instâncias de throttles
-        """
+        """Aplica throttle apenas na criação para evitar spam de denúncias."""
         if self.action == 'create':
             return [PublicWriteThrottle()]
         return []
 
     def get_queryset(self):
-        """
-        Customiza queryset com filtros adicionais via query params.
-
-        Suporta filtros por:
-        - status: Status da denúncia
-        - priority: Prioridade da denúncia
-        - complaint_type: Tipo de denúncia
-        - search: Busca em placa, descrição, nome do denunciante
-        - date_from: Denúncias a partir de uma data
-        - date_to: Denúncias até uma data
-        - vehicle_id: Denúncias de um veículo específico
-
-        Returns:
-            QuerySet: Queryset filtrado
-        """
+        """Aplica filtros adicionais via query params (date_from, date_to, vehicle_id, plate)."""
         queryset = super().get_queryset()
 
-        # Filtro por data de criação (from)
         date_from = self.request.query_params.get('date_from', None)
         if date_from:
             queryset = queryset.filter(created_at__date__gte=date_from)
 
-        # Filtro por data de criação (to)
         date_to = self.request.query_params.get('date_to', None)
         if date_to:
             queryset = queryset.filter(created_at__date__lte=date_to)
 
-        # Filtro por veículo específico
         vehicle_id = self.request.query_params.get('vehicle_id', None)
         if vehicle_id:
             queryset = queryset.filter(vehicle_id=vehicle_id)
 
-        # Filtro por placa específica
         plate = self.request.query_params.get('plate', None)
         if plate:
             queryset = queryset.filter(vehicle_plate__icontains=plate)
@@ -128,21 +78,11 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        """
-        Cria uma nova denúncia.
-
-        Endpoint público - não requer autenticação.
-        Automaticamente tenta associar veículo pela placa.
-        Suporta upload de até 5 fotos.
-
-        Returns:
-            Response: Dados da denúncia criada
-        """
+        """Cria uma nova denúncia. Suporta upload de até 5 fotos."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         complaint = serializer.save()
 
-        # Processar fotos se houver (máximo 5)
         photos = request.FILES.getlist('photos')
         if photos:
             if len(photos) > 5:
@@ -151,7 +91,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Salvar cada foto
             for index, photo in enumerate(photos):
                 ComplaintPhoto.objects.create(
                     complaint=complaint,
@@ -161,7 +100,6 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
 
-        # Recarregar complaint com fotos
         complaint.refresh_from_db()
         detail_serializer = ComplaintDetailSerializer(complaint)
 
@@ -176,70 +114,68 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def change_status(self, request, pk=None):
-        """
-        Altera o status de uma denúncia.
-
-        Endpoint para mudança rápida de status. Automaticamente registra
-        o usuário que fez a alteração e o timestamp.
-
-        Args:
-            request: Request com novo status
-            pk: ID da denúncia
-
-        Returns:
-            Response: Dados atualizados da denúncia
-        """
+        """Altera o status de uma denúncia e registra o revisor."""
         complaint = self.get_object()
         serializer = ComplaintStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         new_status = serializer.validated_data['status']
 
-        # Atualizar status e informações de revisão
         complaint.status = new_status
         complaint.reviewed_by = request.user
         complaint.reviewed_at = timezone.now()
         complaint.save()
 
-        # Retornar denúncia atualizada
+        detail_serializer = ComplaintDetailSerializer(complaint)
+        return Response(detail_serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def change_priority(self, request, pk=None):
+        """Altera a prioridade de uma denúncia."""
+        complaint = self.get_object()
+
+        priority = request.data.get('priority')
+        if not priority:
+            return Response(
+                {'error': 'O campo priority é obrigatório.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        valid_priorities = ['baixa', 'media', 'alta', 'urgente']
+        if priority not in valid_priorities:
+            return Response(
+                {'error': f'Prioridade inválida. Valores permitidos: {", ".join(valid_priorities)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        complaint.priority = priority
+        complaint.save()
+
         detail_serializer = ComplaintDetailSerializer(complaint)
         return Response(detail_serializer.data)
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def statistics(self, request):
-        """
-        Retorna estatísticas sobre as denúncias.
+        """Retorna estatísticas das denúncias agrupadas por status, tipo e anonimato."""
+        from datetime import timedelta
 
-        Fornece um resumo quantitativo das denúncias agrupadas por:
-        - Status
-        - Tipo de denúncia
-
-        Returns:
-            Response: Dicionário com estatísticas
-        """
-        # Total de denúncias
         total = Complaint.objects.count()
 
-        # Denúncias por status
         by_status = dict(
             Complaint.objects.values('status')
             .annotate(count=Count('id'))
             .values_list('status', 'count')
         )
 
-        # Denúncias por tipo
         by_type = dict(
             Complaint.objects.values('complaint_type')
             .annotate(count=Count('id'))
             .values_list('complaint_type', 'count')
         )
 
-        # Denúncias anônimas vs identificadas
         anonymous_count = Complaint.objects.filter(is_anonymous=True).count()
         identified_count = Complaint.objects.filter(is_anonymous=False).count()
 
-        # Denúncias recentes (últimos 7 dias)
-        from datetime import timedelta
         week_ago = timezone.now() - timedelta(days=7)
         recent_count = Complaint.objects.filter(created_at__gte=week_ago).count()
 
@@ -254,18 +190,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def mark_as_resolved(self, request, pk=None):
-        """
-        Marca uma denúncia como resolvida.
-
-        Atalho para alterar status para 'resolvida' e adicionar notas de resolução.
-
-        Args:
-            request: Request com notas de resolução (opcional)
-            pk: ID da denúncia
-
-        Returns:
-            Response: Dados atualizados da denúncia
-        """
+        """Marca uma denúncia como resolvida, com notas de resolução opcionais."""
         complaint = self.get_object()
 
         resolution_notes = request.data.get('resolution_notes', '')
@@ -286,31 +211,18 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def vehicle_autocomplete(request):
-    """
-    Endpoint para autocomplete de placas de veículos.
-
-    Endpoint público para auxiliar usuários a encontrar placas de veículos
-    cadastrados no sistema ao fazer uma denúncia.
-
-    Query Params:
-        q: String de busca (mínimo 2 caracteres)
-
-    Returns:
-        Response: Lista de veículos que correspondem à busca
-    """
+    """Autocomplete público de placas de veículos cadastrados."""
     query = request.query_params.get('q', '')
 
     if len(query) < 2:
         return Response([])
 
-    # Buscar veículos por placa, marca ou modelo
     vehicles = Vehicle.objects.filter(
         Q(plate__icontains=query) |
         Q(brand__icontains=query) |
         Q(model__icontains=query)
     ).values('id', 'plate', 'brand', 'model', 'year', 'color')[:10]
 
-    # Formatar resultados para autocomplete
     results = [
         {
             'id': v['id'],
@@ -330,14 +242,7 @@ def vehicle_autocomplete(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def complaint_types(request):
-    """
-    Retorna lista de tipos de denúncia disponíveis.
-
-    Endpoint público para obter os tipos de denúncia aceitos pelo sistema.
-
-    Returns:
-        Response: Lista de tipos com chave e label
-    """
+    """Retorna a lista de tipos de denúncia disponíveis."""
     types = [
         {'value': key, 'label': label}
         for key, label in Complaint.TYPE_CHOICES
@@ -350,16 +255,8 @@ def complaint_types(request):
 @permission_classes([AllowAny])
 def check_complaint_by_protocol(request):
     """
-    Consulta uma denúncia pelo número de protocolo.
-
-    Endpoint público para permitir que denunciantes consultem o status
-    de suas denúncias usando o protocolo fornecido.
-
-    Query Params:
-        protocol: Número do protocolo (formato: YYYYNNNN)
-
-    Returns:
-        Response: Informações básicas da denúncia (sem dados sensíveis)
+    Consulta pública de denúncia pelo número de protocolo.
+    Retorna apenas dados básicos, sem expor informações do denunciante.
     """
     protocol = request.query_params.get('protocol', '').strip()
 
@@ -369,7 +266,6 @@ def check_complaint_by_protocol(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # Normalizar protocolo (remover espaços, uppercase)
     protocol = protocol.upper().replace(' ', '').replace('-', '')
 
     try:
@@ -384,7 +280,6 @@ def check_complaint_by_protocol(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    # Retornar apenas informações básicas (sem dados sensíveis do denunciante)
     data = {
         'protocol': complaint.protocol,
         'status': complaint.status,
@@ -398,7 +293,6 @@ def check_complaint_by_protocol(request):
         'updated_at': complaint.updated_at,
     }
 
-    # Adicionar informações do veículo se disponível
     if complaint.vehicle:
         data['vehicle'] = {
             'brand': complaint.vehicle.brand,

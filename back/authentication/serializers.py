@@ -7,14 +7,10 @@ from .models import UserProfile, EmailVerification, PasswordResetToken
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """
-    Custom JWT Token serializer with additional user data
-    """
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        
-        # Add custom claims
+
         token['username'] = user.username
         token['email'] = user.email
         token['first_name'] = user.first_name
@@ -25,8 +21,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         """
-        Otimizado para reduzir queries e evitar timing attacks.
-        Permite login com email ou username (case-insensitive).
+        Permite login com e-mail ou username (case-insensitive).
+        Normaliza o tempo de resposta para prevenir timing attacks.
         """
         from django.db.models import Q
 
@@ -34,45 +30,35 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         password = attrs.get('password') or self.initial_data.get('password')
 
         if not password or not raw_identifier:
-            raise serializers.ValidationError('Username and password required.')
+            raise serializers.ValidationError('Usuário e senha são obrigatórios.')
 
-        # Clean identifier
         identifier = raw_identifier.strip() if isinstance(raw_identifier, str) else str(raw_identifier)
 
         if not identifier:
-            raise serializers.ValidationError('Username and password required.')
+            raise serializers.ValidationError('Usuário e senha são obrigatórios.')
 
-        # Busca única otimizada: procura por username OU email (case-insensitive)
         candidate_user = User.objects.filter(
             Q(username__iexact=identifier) | Q(email__iexact=identifier)
         ).first()
 
         if candidate_user:
-            # Tenta autenticar com o username encontrado
             user = authenticate(username=candidate_user.username, password=password)
         else:
-            # Se não encontrou usuário, ainda chama authenticate para normalizar tempo
-            # (prevenção de timing attack)
+            # Normaliza o tempo de resposta mesmo quando o usuário não existe
             user = authenticate(username=identifier, password=password)
 
         if user and user.is_active:
-            # Sync attrs para o parent serializer
             attrs[self.username_field] = user.username
             attrs['password'] = password
-
-            # Update last login
             user.save(update_fields=['last_login'])
             data = super().validate(attrs)
             data['user'] = UserSerializer(user).data
             return data
 
-        raise serializers.ValidationError('Invalid credentials or inactive account.')
+        raise serializers.ValidationError('Credenciais inválidas ou conta inativa.')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for user registration with JWT support
-    """
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     
@@ -87,17 +73,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+            raise serializers.ValidationError({"password_confirm": "As senhas não coincidem."})
         return attrs
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+            raise serializers.ValidationError("Já existe um usuário com este e-mail.")
         return value
 
     def validate_username(self, value):
         if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("A user with this username already exists.")
+            raise serializers.ValidationError("Já existe um usuário com este nome de usuário.")
         return value
 
     def create(self, validated_data):
@@ -109,7 +95,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
-            is_active=True  # Set to False if email verification is required
+            is_active=True
         )
         
         return user
@@ -142,7 +128,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         user = self.context['request'].user
         if User.objects.filter(email=value).exclude(pk=user.pk).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+            raise serializers.ValidationError("Já existe um usuário com este e-mail.")
         return value
 
     def update(self, instance, validated_data):
@@ -169,12 +155,12 @@ class PasswordChangeSerializer(serializers.Serializer):
     def validate_old_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
-            raise serializers.ValidationError("Old password is incorrect.")
+            raise serializers.ValidationError("Senha atual incorreta.")
         return value
 
     def validate(self, attrs):
         if attrs['new_password'] != attrs['new_password_confirm']:
-            raise serializers.ValidationError("New passwords do not match.")
+            raise serializers.ValidationError("As novas senhas não coincidem.")
         return attrs
 
     def save(self):
@@ -186,17 +172,15 @@ class PasswordChangeSerializer(serializers.Serializer):
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     """
-    Serializer for password reset request
-
-    Nota: Não validamos se o email existe aqui por segurança
-    (prevenir account enumeration). A validação é feita na view.
+    Serializer para solicitação de redefinição de senha.
+    A existência do e-mail não é validada aqui para prevenir enumeração de contas.
     """
     email = serializers.EmailField()
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     """
-    Serializer for password reset confirmation
+    Serializer para confirmação de redefinição de senha.
     """
     token = serializers.CharField()
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -204,26 +188,25 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Passwords do not match.")
-        
-        # Validate token
+            raise serializers.ValidationError("As senhas não coincidem.")
+
         try:
             reset_token = PasswordResetToken.objects.get(
                 token=attrs['token'],
                 is_used=False
             )
             if reset_token.is_expired():
-                raise serializers.ValidationError("Reset token has expired.")
+                raise serializers.ValidationError("Token de redefinição expirado.")
             attrs['reset_token'] = reset_token
         except PasswordResetToken.DoesNotExist:
-            raise serializers.ValidationError("Invalid or expired reset token.")
-        
+            raise serializers.ValidationError("Token de redefinição inválido ou expirado.")
+
         return attrs
 
 
 class EmailVerificationSerializer(serializers.Serializer):
     """
-    Serializer for email verification
+    Serializer para verificação de e-mail.
     """
     token = serializers.CharField()
 
@@ -234,22 +217,19 @@ class EmailVerificationSerializer(serializers.Serializer):
                 is_used=False
             )
             if verification_token.is_expired():
-                raise serializers.ValidationError("Verification token has expired.")
+                raise serializers.ValidationError("Token de verificação expirado.")
             return verification_token
         except EmailVerification.DoesNotExist:
-            raise serializers.ValidationError("Invalid or expired verification token.")
+            raise serializers.ValidationError("Token de verificação inválido ou expirado.")
 
     def save(self):
-        """Mark email as verified and token as used"""
         from django.utils import timezone
         verification_token = self.validated_data['token']
         user = verification_token.user
 
-        # Mark token as used
         verification_token.is_used = True
         verification_token.save()
 
-        # Mark email as verified in UserProfile
         if hasattr(user, 'profile'):
             user.profile.is_email_verified = True
             user.profile.email_verified_at = timezone.now()
@@ -260,16 +240,15 @@ class EmailVerificationSerializer(serializers.Serializer):
 
 class EmailResendSerializer(serializers.Serializer):
     """
-    Serializer for resending email verification
+    Serializer para reenvio de e-mail de verificação.
     """
     email = serializers.EmailField()
 
     def validate_email(self, value):
         try:
             user = User.objects.get(email=value)
-            # Corrigido: verifica se email já foi verificado usando UserProfile
             if hasattr(user, 'profile') and user.profile.is_email_verified:
-                raise serializers.ValidationError("Email is already verified.")
+                raise serializers.ValidationError("E-mail já verificado.")
             return user
         except User.DoesNotExist:
-            raise serializers.ValidationError("No user found with this email.")
+            raise serializers.ValidationError("Nenhum usuário encontrado com este e-mail.")
