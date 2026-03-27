@@ -51,6 +51,7 @@ import {
   type DriverRequest,
 } from "@/services/requests"
 import { buildApiUrl } from "@/lib/api-client"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 import { RequestStatusBadge } from "../../RequestStatusBadge"
 import {
@@ -64,6 +65,7 @@ export default function DriverRequestDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const { canApprove } = useAuthContext()
 
   const [request, setRequest] = useState<DriverRequest | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -450,7 +452,7 @@ export default function DriverRequestDetailsPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             {/* Ações */}
-            {request.status === 'em_analise' && (
+            {request.status === 'em_analise' && canApprove && (
               <div className="bg-white rounded-lg p-4">
                 <h3 className="text-base font-semibold text-gray-900 mb-3">Ações</h3>
                 <div className="space-y-2">

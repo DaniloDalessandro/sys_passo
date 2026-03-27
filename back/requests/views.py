@@ -10,6 +10,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 import logging
 import os
 
+from authentication.permissions import IsApproverOrAdmin
 from core.throttling import PublicWriteThrottle
 from .models import DriverRequest, VehicleRequest
 from .serializers import (
@@ -61,9 +62,11 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
         return DriverRequestListSerializer
 
     def get_permissions(self):
-        """Criação é pública; demais ações requerem autenticação."""
+        """Criação é pública; approve/reject exigem papel aprovador ou admin; demais requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
+        if self.action in ['approve', 'reject']:
+            return [IsApproverOrAdmin()]
         return [IsAuthenticated()]
 
     def get_throttles(self):
@@ -323,9 +326,11 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
         return VehicleRequestListSerializer
 
     def get_permissions(self):
-        """Criação é pública; demais ações requerem autenticação."""
+        """Criação é pública; approve/reject exigem papel aprovador ou admin; demais requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
+        if self.action in ['approve', 'reject']:
+            return [IsApproverOrAdmin()]
         return [IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):

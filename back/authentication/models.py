@@ -96,14 +96,38 @@ class UserProfile(models.Model):
     """
     Perfil estendido do usuário para armazenar informações adicionais.
     """
+
+    ROLE_CHOICES = [
+        ('admin', 'Administrador'),
+        ('approver', 'Aprovador'),
+        ('viewer', 'Visualizador'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     is_email_verified = models.BooleanField(default=False)
     email_verified_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='viewer',
+        verbose_name='Papel',
+        db_index=True
+    )
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+    @property
+    def is_admin_role(self) -> bool:
+        """Retorna True se o usuário é admin ou superuser."""
+        return self.role == 'admin' or self.user.is_superuser
+
+    @property
+    def is_approver_or_admin(self) -> bool:
+        """Retorna True se o usuário é admin, aprovador ou superuser."""
+        return self.role in ('admin', 'approver') or self.user.is_superuser
 
     class Meta:
         db_table = 'user_profiles'

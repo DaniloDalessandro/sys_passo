@@ -9,12 +9,15 @@ export interface UserProfile {
   email_verified_at: string | null
 }
 
+export type UserRole = 'admin' | 'approver' | 'viewer'
+
 export interface UserData {
   id: string
   email: string
   username: string
   first_name: string
   last_name: string
+  role?: UserRole
   date_joined?: string
   last_login?: string | null
   is_active?: boolean
@@ -24,9 +27,12 @@ export interface UserData {
 export interface AuthContextType {
   user: UserData | null
   accessToken: string | null
+  role: UserRole | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
+  canApprove: boolean
+  canAdmin: boolean
   login: (data: { access: string; refresh: string; user: UserData }) => void
   logout: () => void
   refreshAccessToken: () => Promise<boolean>
@@ -34,9 +40,19 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+function getRoleFromToken(token: string): UserRole | null {
+  try {
+    const decoded = jwtDecode<{ role?: UserRole }>(token)
+    return decoded.role ?? null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,12 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const token = localStorage.getItem("access_token")
+      const tokenRole = token ? getRoleFromToken(token) : null
       const userData = {
         id: localStorage.getItem("user_id") || '',
         email: localStorage.getItem("user_email") || '',
         username: localStorage.getItem("user_username") || '',
         first_name: localStorage.getItem("user_first_name") || '',
         last_name: localStorage.getItem("user_last_name") || '',
+        role: (tokenRole ?? (localStorage.getItem("user_role") as UserRole | null) ?? undefined),
       }
 
       const result = {
@@ -86,14 +104,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback((data: { access: string; refresh: string; user: UserData }) => {
     try {
-      const writes = [
+      const tokenRole = getRoleFromToken(data.access)
+      const writes: [string, string][] = [
         ["access_token", data.access],
         ["refresh", data.refresh],
         ["user_id", data.user.id],
         ["user_email", data.user.email],
         ["user_username", data.user.username],
         ["user_first_name", data.user.first_name],
-        ["user_last_name", data.user.last_name]
+        ["user_last_name", data.user.last_name],
+        ["user_role", tokenRole ?? data.user.role ?? 'viewer'],
       ]
 
       writes.forEach(([key, value]) => localStorage.setItem(key, value))
@@ -102,8 +122,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.cookie = `access=${data.access}${cookieOptions}`
       document.cookie = `refresh=${data.refresh}${cookieOptions}`
 
+      const resolvedRole = (tokenRole ?? data.user.role ?? 'viewer') as UserRole
       setAccessToken(data.access)
-      setUser(data.user)
+      setUser({ ...data.user, role: resolvedRole })
+      setRole(resolvedRole)
       setError(null)
       authDataCache.current = null
     } catch (error) {
@@ -114,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     try {
-      const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
+      const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name", "user_role"]
       keys.forEach(key => localStorage.removeItem(key))
 
       const expireDate = "Thu, 01 Jan 1970 00:00:01 GMT"
@@ -123,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setAccessToken(null)
       setUser(null)
+      setRole(null)
       setError(null)
       authDataCache.current = null
     } catch (error) {
@@ -176,8 +199,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!response.ok) throw new Error("Refresh failed")
 
       const data = await response.json()
+      const newRole = getRoleFromToken(data.access)
       localStorage.setItem("access_token", data.access)
+      if (newRole) localStorage.setItem("user_role", newRole)
       setAccessToken(data.access)
+      setRole(newRole)
       setError(null)
       authDataCache.current = null
       return true
@@ -222,8 +248,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const refreshed = await refreshAccessToken()
             if (!refreshed || !isMounted) return
           } else {
+            const tokenRole = getRoleFromToken(token)
             setAccessToken(token)
-            setUser(userData)
+            setRole(tokenRole)
+            setUser({ ...userData, role: tokenRole ?? undefined })
           }
         }
       } catch (error) {
@@ -259,8 +287,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             first_name: localStorage.getItem("user_first_name") || '',
             last_name: localStorage.getItem("user_last_name") || '',
           }
+          const tokenRole = token ? getRoleFromToken(token) : null
           setAccessToken(token)
-          setUser(token && userData.id ? userData : null)
+          setRole(tokenRole)
+          setUser(token && userData.id ? { ...userData, role: tokenRole ?? undefined } : null)
         } catch (error) {
           console.error("Error reading auth data on storage change", error)
         }
@@ -274,13 +304,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const contextValue = useMemo(() => ({
     user,
     accessToken,
+    role,
     isAuthenticated: !!accessToken,
     isLoading,
     error,
+    canApprove: role === 'admin' || role === 'approver',
+    canAdmin: role === 'admin',
     login,
     logout,
     refreshAccessToken,
-  }), [user, accessToken, isLoading, error, login, logout, refreshAccessToken])
+  }), [user, accessToken, role, isLoading, error, login, logout, refreshAccessToken])
 
   return (
     <AuthContext.Provider value={contextValue}>

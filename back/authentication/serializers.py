@@ -16,7 +16,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
         token['user_id'] = user.id
-        
+        token['role'] = user.profile.role if hasattr(user, 'profile') else 'viewer'
+
         return token
 
     def validate(self, attrs):
@@ -104,8 +105,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ('is_email_verified', 'email_verified_at')
-        read_only_fields = ('is_email_verified', 'email_verified_at')
+        fields = ('is_email_verified', 'email_verified_at', 'role')
+        read_only_fields = ('is_email_verified', 'email_verified_at', 'role')
 
 
 class UserSerializer(serializers.ModelSerializer):

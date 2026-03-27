@@ -77,9 +77,9 @@ export function NotificationBadge() {
     await handleMarkAsRead(notification.id);
 
     if (notification.notification_type === "driver_request") {
-      router.push(`/admin/requests/drivers/${notification.request_id}`);
+      router.push(`/solicitacoes/motoristas/${notification.request_id}`);
     } else if (notification.notification_type === "vehicle_request") {
-      router.push(`/admin/requests/vehicles/${notification.request_id}`);
+      router.push(`/solicitacoes/veiculos/${notification.request_id}`);
     }
     setIsOpen(false);
   };

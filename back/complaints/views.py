@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
+from authentication.permissions import IsApproverOrAdmin
 from core.throttling import PublicWriteThrottle
 from .models import Complaint, ComplaintPhoto
 from .serializers import (
@@ -44,9 +45,11 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         return ComplaintListSerializer
 
     def get_permissions(self):
-        """Create é público; demais actions requerem autenticação."""
+        """Create é público; change_status/change_priority exigem aprovador ou admin; demais requerem autenticação."""
         if self.action == 'create':
             return [AllowAny()]
+        if self.action in ['change_status', 'change_priority']:
+            return [IsApproverOrAdmin()]
         return [IsAuthenticated()]
 
     def get_throttles(self):

@@ -90,11 +90,13 @@ import {
   getRelativeTime,
   formatCNHCategory,
 } from "@/lib/formatters"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 type RequestType = 'driver' | 'vehicle';
 
 export default function SolicitacoesPage() {
   const router = useRouter()
+  const { canApprove } = useAuthContext()
 
   const [activeTab, setActiveTab] = useState<RequestType>('driver')
   const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([])
@@ -410,7 +412,7 @@ export default function SolicitacoesPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {request.status === 'em_analise' && (
+                    {request.status === 'em_analise' && canApprove && (
                       <>
                         <Button
                           variant="ghost"
@@ -566,7 +568,7 @@ export default function SolicitacoesPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {request.status === 'em_analise' && (
+                    {request.status === 'em_analise' && canApprove && (
                       <>
                         <Button
                           variant="ghost"

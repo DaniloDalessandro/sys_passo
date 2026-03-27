@@ -61,7 +61,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { logout } = useAuthContext()
+  const { logout, role } = useAuthContext()
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -334,6 +334,11 @@ export function NavUser({
                   {capitalizeFirstLetter(user.name)}
                 </h3>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
+                {role && (
+                  <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium capitalize">
+                    {role === 'admin' ? 'Administrador' : role === 'approver' ? 'Aprovador' : 'Visualizador'}
+                  </span>
+                )}
               </div>
             </div>
 
