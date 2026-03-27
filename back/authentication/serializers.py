@@ -253,3 +253,74 @@ class EmailResendSerializer(serializers.Serializer):
             return user
         except User.DoesNotExist:
             raise serializers.ValidationError("Nenhum usuário encontrado com este e-mail.")
+
+
+# ---------------------------------------------------------------------------
+# Gestão de usuários (admin only)
+# ---------------------------------------------------------------------------
+
+class UserManagementSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source='profile.role', read_only=True)
+    is_email_verified = serializers.BooleanField(source='profile.is_email_verified', read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_active', 'date_joined', 'last_login',
+            'role', 'is_email_verified',
+        )
+        read_only_fields = ('id', 'date_joined', 'last_login', 'is_email_verified')
+
+
+class AdminCreateUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    role = serializers.ChoiceField(
+        choices=UserProfile.ROLE_CHOICES,
+        default='viewer',
+        write_only=True,
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password', 'first_name', 'last_name', 'role')
+        extra_kwargs = {
+            'email': {'required': True},
+            'first_name': {'required': False},
+            'last_name': {'required': False},
+        }
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Já existe um usuário com este e-mail.")
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Já existe um usuário com este nome de usuário.")
+        return value
+
+    def create(self, validated_data):
+        from django.utils import timezone
+        role = validated_data.pop('role', 'viewer')
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+            is_active=True,
+        )
+        if hasattr(user, 'profile'):
+            user.profile.role = role
+            user.profile.is_email_verified = True
+            user.profile.email_verified_at = timezone.now()
+            user.profile.save()
+        return user
+
+
+class AdminUpdateUserSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=UserProfile.ROLE_CHOICES, required=False)
+    is_active = serializers.BooleanField(required=False)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)

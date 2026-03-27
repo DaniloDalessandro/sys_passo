@@ -25,8 +25,12 @@ from .serializers import (
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
     EmailVerificationSerializer,
-    EmailResendSerializer
+    EmailResendSerializer,
+    UserManagementSerializer,
+    AdminCreateUserSerializer,
+    AdminUpdateUserSerializer,
 )
+from .permissions import IsAdminRole
 from .utils import (
     get_client_ip,
     get_user_agent,
@@ -538,3 +542,108 @@ def auth_status(request):
         'password_reset_timeout_hours': settings.PASSWORD_RESET_TIMEOUT / 3600,
         'email_verification_timeout_hours': settings.EMAIL_VERIFICATION_TIMEOUT / 3600,
     }, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# Gestão de usuários (admin only)
+# ---------------------------------------------------------------------------
+
+class UserManagementListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+
+    def get(self, request):
+        from django.db.models import Q
+        queryset = User.objects.select_related('profile').all().order_by('-date_joined')
+
+        search = request.query_params.get('search', '')
+        role_filter = request.query_params.get('role', '')
+        is_active = request.query_params.get('is_active', '')
+
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search) |
+                Q(email__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search)
+            )
+        if role_filter:
+            queryset = queryset.filter(profile__role=role_filter)
+        if is_active in ('true', 'false'):
+            queryset = queryset.filter(is_active=(is_active == 'true'))
+
+        serializer = UserManagementSerializer(queryset, many=True)
+        return Response({'count': queryset.count(), 'results': serializer.data}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = AdminCreateUserSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    user = serializer.save()
+                    log_user_activity(
+                        user=request.user,
+                        action='admin_create_user',
+                        ip_address=get_client_ip(request),
+                        details={'created_user': user.username}
+                    )
+                    return Response(UserManagementSerializer(user).data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return safe_error_response(
+                    message='Falha ao criar usuário',
+                    exception=e,
+                    context={'action': 'admin_create_user'}
+                )
+        return Response({'error': 'Dados inválidos', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserManagementDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+
+    def get_object(self, pk):
+        try:
+            return User.objects.select_related('profile').get(pk=pk)
+        except User.DoesNotExist:
+            return None
+
+    def patch(self, request, pk):
+        user = self.get_object(pk)
+        if not user:
+            return Response({'error': 'Usuário não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        if user == request.user and 'role' in request.data and request.data['role'] != 'admin':
+            return Response(
+                {'error': 'Você não pode alterar seu próprio papel de administrador.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = AdminUpdateUserSerializer(data=request.data, partial=True)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            try:
+                with transaction.atomic():
+                    if 'first_name' in data:
+                        user.first_name = data['first_name']
+                    if 'last_name' in data:
+                        user.last_name = data['last_name']
+                    if 'is_active' in data:
+                        user.is_active = data['is_active']
+                    user.save()
+
+                    if 'role' in data and hasattr(user, 'profile'):
+                        user.profile.role = data['role']
+                        user.profile.save()
+
+                    log_user_activity(
+                        user=request.user,
+                        action='admin_update_user',
+                        ip_address=get_client_ip(request),
+                        details={'target_user': user.username, 'changes': list(data.keys())}
+                    )
+                    return Response(UserManagementSerializer(user).data, status=status.HTTP_200_OK)
+            except Exception as e:
+                return safe_error_response(
+                    message='Falha ao atualizar usuário',
+                    exception=e,
+                    context={'action': 'admin_update_user'}
+                )
+        return Response({'error': 'Dados inválidos', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

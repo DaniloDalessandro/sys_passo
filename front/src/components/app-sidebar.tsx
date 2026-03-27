@@ -10,6 +10,7 @@ import {
   ExternalLink,
   ClipboardList,
   AlertTriangle,
+  UserCog,
 } from "lucide-react"
 import { useAuthContext } from "@/contexts/AuthContext"
 import { NavMain } from "@/components/nav-main"
@@ -36,7 +37,7 @@ interface NavItem {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user } = useAuthContext()
+  const { user, canAdmin } = useAuthContext()
   const pathname = usePathname()
 
   const navItems: NavItem[] = React.useMemo(() => [
@@ -70,6 +71,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: AlertTriangle,
       isActive: pathname.startsWith("/denuncias"),
     },
+    ...(canAdmin ? [{
+      title: "Usuários",
+      url: "/usuarios",
+      icon: UserCog,
+      isActive: pathname.startsWith("/usuarios"),
+    }] : []),
     {
       title: "Site",
       url: "/sitehome",
@@ -83,7 +90,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: HelpCircle,
       isActive: pathname.startsWith("/ajuda"),
     },
-  ], [pathname])
+  ], [pathname, canAdmin])
 
   if (!user) return null
 

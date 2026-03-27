@@ -30,4 +30,8 @@ urlpatterns = [
 
     # Status
     re_path(r'^status/?$', views.auth_status, name='auth-status'),
+
+    # Gestão de usuários (admin only)
+    re_path(r'^users/?$', views.UserManagementListCreateView.as_view(), name='user-management-list'),
+    re_path(r'^users/(?P<pk>\d+)/?$', views.UserManagementDetailView.as_view(), name='user-management-detail'),
 ]
