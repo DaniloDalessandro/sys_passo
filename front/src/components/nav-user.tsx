@@ -48,6 +48,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { buildApiUrl } from "@/lib/api-client"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function NavUser({
   user,
@@ -248,7 +249,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="bg-gray-100 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="bg-muted data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -266,7 +267,7 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-gray-100"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg bg-popover"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
@@ -296,6 +297,10 @@ export function NavUser({
             </DropdownMenuGroup>
 
             <DropdownMenuSeparator />
+            <div className="px-1 py-0.5">
+              <ThemeToggle />
+            </div>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut />
               Log out
@@ -308,7 +313,7 @@ export function NavUser({
         <DialogContent className="w-[min(95vw,520px)] md:w-[min(90vw,600px)] max-h-[85vh] overflow-y-auto px-5 py-6 sm:rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
-              <User className="w-6 h-6 text-blue-600" />
+              <User className="w-6 h-6 text-primary" />
               Minha Conta
             </DialogTitle>
             <DialogDescription>
@@ -317,7 +322,7 @@ export function NavUser({
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/40 dark:to-purple-950/40 rounded-xl">
               <Avatar className="h-16 w-16 rounded-xl sm:h-20 sm:w-20">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-xl text-xl sm:text-2xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
@@ -325,10 +330,10 @@ export function NavUser({
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-1 text-center sm:text-left">
-                <h3 className="font-semibold text-lg text-gray-900">
+                <h3 className="font-semibold text-lg text-foreground">
                   {capitalizeFirstLetter(user.name)}
                 </h3>
-                <p className="text-sm text-gray-600">{user.email}</p>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
 
@@ -340,7 +345,7 @@ export function NavUser({
                     Nome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                    <div className="h-11 bg-muted animate-pulse rounded-md" />
                   ) : (
                     <Input
                       id="firstName"
@@ -358,7 +363,7 @@ export function NavUser({
                     Sobrenome
                   </Label>
                   {isLoadingProfile ? (
-                    <div className="h-11 bg-gray-100 animate-pulse rounded-md" />
+                    <div className="h-11 bg-muted animate-pulse rounded-md" />
                   ) : (
                     <Input
                       id="lastName"
@@ -392,7 +397,7 @@ export function NavUser({
             </div>
 
             <div className="space-y-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Lock className="w-4 h-4" />
                 Alterar Senha
               </h3>
@@ -449,7 +454,7 @@ export function NavUser({
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-muted-foreground mr-2"></div>
                       Alterando...
                     </>
                   ) : (

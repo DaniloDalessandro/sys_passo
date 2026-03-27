@@ -119,32 +119,32 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           </svg>
         </div>
         <div>
-          <h1 className="text-4xl font-bold text-gray-800">
+          <h1 className="text-4xl font-bold text-foreground">
             ViaLumiar
           </h1>
-          <p className="text-gray-600 mt-2 text-lg">
+          <p className="text-muted-foreground mt-2 text-lg">
             Sistema de Gestão
           </p>
         </div>
       </div>
 
-      <Card className="bg-white shadow-2xl rounded-2xl border-0">
+      <Card className="shadow-2xl rounded-2xl border-border">
         <CardContent className="p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+              <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-md">
                 <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-destructive mr-3" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 102 0V7zm-1 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-red-800 text-sm">{error}</span>
+                  <span className="text-destructive text-sm">{error}</span>
                 </div>
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <Label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
                   Email
                 </Label>
                 <Input
@@ -154,19 +154,19 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-12 px-4 bg-gray-100 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full h-12 px-4 bg-muted border-input rounded-lg transition-colors text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <Label htmlFor="password" className="block text-sm font-medium text-foreground">
                     Senha
                   </Label>
                   <button
                     type="button"
                     onClick={() => setIsForgotPasswordOpen(true)}
-                    className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
+                    className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
                   >
                     Esqueceu a senha?
                   </button>
@@ -178,7 +178,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 px-4 bg-gray-100 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full h-12 px-4 bg-muted border-input rounded-lg transition-colors text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -193,7 +193,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         </CardContent>
       </Card>
 
-      <div className="text-center text-gray-500 text-sm">
+      <div className="text-center text-muted-foreground text-sm">
         <p>© 2024 ViaLumiar. Todos os direitos reservados.</p>
       </div>
 
@@ -223,11 +223,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
           <form onSubmit={handleForgotPassword} className="space-y-6 mt-4">
             {forgotPasswordError && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+              <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded-md">
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-red-500 mr-3"
+                    className="h-5 w-5 text-destructive mr-3"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -237,17 +237,17 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-red-800 text-sm">{forgotPasswordError}</span>
+                  <span className="text-destructive text-sm">{forgotPasswordError}</span>
                 </div>
               </div>
             )}
 
             {forgotPasswordSuccess && (
-              <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
+              <div className="bg-green-500/10 dark:bg-green-500/20 border-l-4 border-green-500 p-4 rounded-md">
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-500 mr-3"
+                    className="h-5 w-5 text-green-600 dark:text-green-400 mr-3"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -257,13 +257,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-green-800 text-sm">{forgotPasswordSuccess}</span>
+                  <span className="text-green-700 dark:text-green-400 text-sm">{forgotPasswordSuccess}</span>
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="forgotPasswordEmail" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="forgotPasswordEmail" className="block text-sm font-medium text-foreground">
                 Email
               </Label>
               <Input
@@ -273,7 +273,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 required
                 value={forgotPasswordEmail}
                 onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                className="w-full h-12 px-4 bg-gray-50 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full h-12 px-4 bg-muted border-input rounded-lg transition-colors text-foreground placeholder:text-muted-foreground"
                 disabled={isSubmittingForgotPassword}
               />
             </div>

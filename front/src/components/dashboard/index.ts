@@ -1,3 +1,4 @@
+export { ChartCard } from "./ChartCard"
 export { StatsCard } from "./StatsCard"
 export { StatsOverview } from "./StatsOverview"
 export { VehicleStatusChart } from "./VehicleStatusChart"

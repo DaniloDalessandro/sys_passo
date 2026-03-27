@@ -3,7 +3,7 @@ import styles from "./LoginPage.module.css"
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-svh bg-gradient-to-b from-sky-100 to-blue-50 flex flex-col justify-center items-center p-4 overflow-hidden">
+    <div className="relative min-h-svh bg-gradient-to-b from-sky-100 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex flex-col justify-center items-center p-4 overflow-hidden">
       <div className="relative z-10 w-full max-w-md mb-24">
         <LoginForm />
       </div>

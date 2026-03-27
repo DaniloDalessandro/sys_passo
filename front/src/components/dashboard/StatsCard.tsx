@@ -15,7 +15,7 @@ interface StatsCardProps {
   }
 }
 
-export function StatsCard({ title, value, icon: Icon, iconColor = "text-blue-500", subtitle, trend }: StatsCardProps) {
+export function StatsCard({ title, value, icon: Icon, iconColor = "text-primary", subtitle, trend }: StatsCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -28,7 +28,7 @@ export function StatsCard({ title, value, icon: Icon, iconColor = "text-blue-500
           <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
         )}
         {trend && (
-          <p className={`text-xs mt-1 ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-xs mt-1 ${trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {trend.isPositive ? '+' : ''}{trend.value}% em relação ao mês anterior
           </p>
         )}

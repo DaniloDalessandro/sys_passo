@@ -8,6 +8,7 @@ import { InterceptorProvider } from "@/contexts/InterceptorContext";
 import { NavigationProgressBar } from "@/components/ui/navigation-progress-bar";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-br">
+    <html lang="pt-br" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -55,11 +56,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <InterceptorProvider>
-            <NavigationProgressBar />
-            {children}
-            <Toaster />
-          </InterceptorProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <InterceptorProvider>
+              <NavigationProgressBar />
+              {children}
+              <Toaster />
+              <SonnerToaster />
+            </InterceptorProvider>
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

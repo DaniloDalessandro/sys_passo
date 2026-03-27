@@ -16,9 +16,9 @@ const alertIcons = {
 }
 
 const alertColors = {
-  warning: "text-yellow-600 bg-yellow-50 border-yellow-200",
-  error: "text-red-600 bg-red-50 border-red-200",
-  info: "text-blue-600 bg-blue-50 border-blue-200"
+  warning: "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 border-yellow-200 dark:border-yellow-800",
+  error: "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800",
+  info: "text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800"
 }
 
 export function AlertsList({ alerts }: AlertsListProps) {
@@ -57,7 +57,7 @@ export function AlertsList({ alerts }: AlertsListProps) {
                   <p className="text-sm mt-1">{alert.message}</p>
                 </div>
                 <div className="ml-3 flex-shrink-0">
-                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none rounded-full bg-white">
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none rounded-full bg-background text-foreground">
                     {alert.count}
                   </span>
                 </div>

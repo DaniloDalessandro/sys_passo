@@ -5,11 +5,17 @@ import { StatsOverview } from "@/components/dashboard/StatsOverview"
 import { MonthlyRegistrationsChart } from "@/components/dashboard/MonthlyRegistrationsChart"
 import { RequestsStatusChart } from "@/components/dashboard/RequestsStatusChart"
 import { CategoryDistributionChart } from "@/components/dashboard/CategoryDistributionChart"
+import { AlertsList } from "@/components/dashboard/AlertsList"
+import { RecentActivityList } from "@/components/dashboard/RecentActivityList"
 import {
   getDashboardStats,
   getDashboardCharts,
+  getDashboardRecentActivity,
+  getDashboardAlerts,
   DashboardStats,
-  DashboardCharts
+  DashboardCharts,
+  RecentActivity,
+  DashboardAlert,
 } from "@/services/dashboard"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -17,6 +23,8 @@ import { useToast } from "@/hooks/use-toast"
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [charts, setCharts] = useState<DashboardCharts | null>(null)
+  const [alerts, setAlerts] = useState<DashboardAlert[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
@@ -24,19 +32,21 @@ export default function DashboardPage() {
     try {
       setLoading(true)
 
-      const [statsData, chartsData] = await Promise.all([
+      const [statsResult, chartsResult, alertsResult, activityResult] = await Promise.allSettled([
         getDashboardStats(),
-        getDashboardCharts()
+        getDashboardCharts(),
+        getDashboardAlerts(),
+        getDashboardRecentActivity(),
       ])
 
-      setStats(statsData)
-      setCharts(chartsData)
-    } catch (error) {
-      toast({
-        title: "Erro ao carregar dashboard",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive"
-      })
+      if (statsResult.status === "fulfilled") setStats(statsResult.value)
+      else toast({ title: "Erro ao carregar estatísticas", variant: "destructive" })
+
+      if (chartsResult.status === "fulfilled") setCharts(chartsResult.value)
+      else toast({ title: "Erro ao carregar gráficos", variant: "destructive" })
+
+      if (alertsResult.status === "fulfilled") setAlerts(alertsResult.value)
+      if (activityResult.status === "fulfilled") setRecentActivity(activityResult.value)
     } finally {
       setLoading(false)
     }
@@ -78,6 +88,11 @@ export default function DashboardPage() {
 
       <div className="w-full">
         <RequestsStatusChart data={charts.requestsStatus} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AlertsList alerts={alerts} />
+        <RecentActivityList activities={recentActivity} />
       </div>
     </div>
   )
