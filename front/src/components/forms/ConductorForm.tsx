@@ -139,11 +139,6 @@ export default function ConductorForm({
     if (errors[field]) setErrors({ ...errors, [field]: "" });
   };
 
-  const handleBooleanChange = (field: string, value: boolean) => {
-    setFormData({ ...formData, [field]: value });
-    if (errors[field]) setErrors({ ...errors, [field]: "" });
-  };
-
   const handleDateChange = (field: string, date: Date | undefined) => {
     setFormData({ ...formData, [field]: date });
     if (field === "birth_date") setIsAgeValid(!date || isValidAge(date));
@@ -169,7 +164,6 @@ export default function ConductorForm({
     if (!formData.license_number.trim()) newErrors.license_number = "Número da CNH é obrigatório";
     if (!formData.license_category) newErrors.license_category = "Categoria da CNH é obrigatória";
     if (!formData.license_expiry_date) newErrors.license_expiry_date = "Validade da CNH é obrigatória";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -188,256 +182,288 @@ export default function ConductorForm({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-w-[95vw]">
         <form onSubmit={handleSubmit}>
-          <DialogHeader className="flex flex-row justify-between items-center">
-            <DialogTitle className="text-lg font-semibold text-primary">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold text-primary">
               {initialData ? "Editar Condutor" : "Novo Condutor"}
             </DialogTitle>
           </DialogHeader>
 
-          {/* Seção de Foto */}
-          <div className="flex flex-col items-center gap-3 py-4 border-b">
-            <div className="relative">
-              {photoFile || (formData.photo && !photoFile) ? (
-                <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-blue-100">
-                  <img
-                    src={photoFile ? URL.createObjectURL(photoFile) : formData.photo}
-                    alt="Foto do condutor"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPhotoFile(null)}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="w-32 h-32 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <Camera className="h-12 w-12 text-gray-400" />
-                </div>
-              )}
-            </div>
-            <Label htmlFor="photo" className="cursor-pointer">
-              <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById('photo')?.click()}>
-                <Upload className="h-4 w-4 mr-2" />
-                {photoFile ? "Alterar Foto" : "Adicionar Foto"}
+          <div className="mt-4 space-y-4">
+            {/* Foto — barra horizontal compacta */}
+            <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/40 px-4 py-3">
+              <div className="relative shrink-0">
+                {photoFile || (formData.photo && !photoFile) ? (
+                  <div className="relative h-14 w-14 overflow-hidden rounded-full border-2 border-primary/20">
+                    <img
+                      src={photoFile ? URL.createObjectURL(photoFile) : formData.photo}
+                      alt="Foto do condutor"
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFile(null)}
+                      className="absolute right-0 top-0 rounded-full bg-destructive p-0.5 text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-border bg-background">
+                    <Camera className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Foto do condutor</p>
+                <p className="text-xs text-muted-foreground">Opcional · JPG, PNG ou WebP</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                onClick={() => document.getElementById("photo")?.click()}
+              >
+                <Upload className="mr-1.5 h-3.5 w-3.5" />
+                {photoFile ? "Alterar foto" : "Selecionar foto"}
               </Button>
-            </Label>
-            <Input
-              id="photo"
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
-              className="hidden"
-            />
-            <p className="text-xs text-gray-500">Foto do condutor (opcional)</p>
+              <Input
+                id="photo"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+            </div>
+
+            {/* Layout 2 colunas */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+              {/* ── COLUNA ESQUERDA ── */}
+              <div className="space-y-4">
+                {/* Dados Pessoais */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Dados Pessoais
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="name" className="text-xs font-medium">Nome Completo *</Label>
+                      <Input id="name" value={formData.name} onChange={handleChange} placeholder="Nome completo do condutor" className="h-8 text-sm" />
+                      {errors.name && <span className="text-xs text-destructive">{errors.name}</span>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="cpf" className="text-xs font-medium">CPF *</Label>
+                        <Input
+                          id="cpf"
+                          value={formData.cpf}
+                          onChange={handleChange}
+                          placeholder="000.000.000-00"
+                          maxLength={14}
+                          className={cn("h-8 text-sm", warnings.cpf.exists && "border-warning/60 bg-warning/5")}
+                        />
+                        {errors.cpf && <span className="text-xs text-destructive">{errors.cpf}</span>}
+                        <DuplicateWarningInline warning={warnings.cpf} />
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="birth_date" className="text-xs font-medium">Data de Nascimento *</Label>
+                        <Input
+                          type="date"
+                          id="birth_date"
+                          value={formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : ""}
+                          onChange={(e) => handleDateChange("birth_date", e.target.value ? new Date(e.target.value) : undefined)}
+                          className={cn("h-8 text-sm", !isAgeValid && "border-destructive/50 bg-destructive/5")}
+                        />
+                        {errors.birth_date && <span className="text-xs text-destructive">{errors.birth_date}</span>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="gender" className="text-xs font-medium">Gênero *</Label>
+                        <Select onValueChange={(v) => handleSelectChange("gender", v)} value={formData.gender}>
+                          <SelectTrigger id="gender" className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="M">Masculino</SelectItem>
+                            <SelectItem value="F">Feminino</SelectItem>
+                            <SelectItem value="O">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.gender && <span className="text-xs text-destructive">{errors.gender}</span>}
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="nationality" className="text-xs font-medium">Nacionalidade *</Label>
+                        <Input id="nationality" value={formData.nationality} onChange={handleChange} placeholder="Brasileira" className="h-8 text-sm" />
+                        {errors.nationality && <span className="text-xs text-destructive">{errors.nationality}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contato */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
+                    <Phone className="h-3.5 w-3.5 text-success" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Contato
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="email" className="text-xs font-medium">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="email@exemplo.com"
+                          className={cn("h-8 text-sm", warnings.email.exists && "border-warning/60 bg-warning/5")}
+                        />
+                        {errors.email && <span className="text-xs text-destructive">{errors.email}</span>}
+                        <DuplicateWarningInline warning={warnings.email} />
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="phone" className="text-xs font-medium">Telefone *</Label>
+                        <Input id="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000" maxLength={15} className="h-8 text-sm" />
+                        {errors.phone && <span className="text-xs text-destructive">{errors.phone}</span>}
+                      </div>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="whatsapp" className="text-xs font-medium">WhatsApp</Label>
+                      <Input id="whatsapp" value={formData.whatsapp || ""} onChange={handleChange} placeholder="(00) 00000-0000" maxLength={15} className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── COLUNA DIREITA ── */}
+              <div className="space-y-4">
+                {/* Endereço */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-info" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Endereço
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="col-span-3 grid gap-1.5">
+                        <Label htmlFor="street" className="text-xs font-medium">Rua / Avenida *</Label>
+                        <Input id="street" value={formData.street} onChange={handleChange} placeholder="Nome da rua" className="h-8 text-sm" />
+                        {errors.street && <span className="text-xs text-destructive">{errors.street}</span>}
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="number" className="text-xs font-medium">Nº *</Label>
+                        <Input id="number" value={formData.number} onChange={handleChange} placeholder="123" className="h-8 text-sm" />
+                        {errors.number && <span className="text-xs text-destructive">{errors.number}</span>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="neighborhood" className="text-xs font-medium">Bairro *</Label>
+                        <Input id="neighborhood" value={formData.neighborhood} onChange={handleChange} className="h-8 text-sm" />
+                        {errors.neighborhood && <span className="text-xs text-destructive">{errors.neighborhood}</span>}
+                      </div>
+                      <div className="grid gap-1.5">
+                        <Label htmlFor="city" className="text-xs font-medium">Cidade *</Label>
+                        <Input id="city" value={formData.city} onChange={handleChange} className="h-8 text-sm" />
+                        {errors.city && <span className="text-xs text-destructive">{errors.city}</span>}
+                      </div>
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="reference_point" className="text-xs font-medium">Ponto de referência</Label>
+                      <Input id="reference_point" value={formData.reference_point} onChange={handleChange} placeholder="Opcional" className="h-8 text-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* CNH */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
+                    <CreditCard className="h-3.5 w-3.5 text-warning" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Detalhes da CNH
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="license_number" className="text-xs font-medium">Número da CNH *</Label>
+                      <Input
+                        id="license_number"
+                        value={formData.license_number}
+                        onChange={handleChange}
+                        placeholder="12345678901"
+                        maxLength={20}
+                        className={cn("h-8 text-sm", warnings.license_number.exists && "border-warning/60 bg-warning/5")}
+                      />
+                      {errors.license_number && <span className="text-xs text-destructive">{errors.license_number}</span>}
+                      <DuplicateWarningInline warning={warnings.license_number} />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs font-medium">Categoria *</Label>
+                      <Select onValueChange={(v) => handleSelectChange("license_category", v)} value={formData.license_category}>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LICENSE_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.license_category && <span className="text-xs text-destructive">{errors.license_category}</span>}
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="license_expiry_date" className="text-xs font-medium">Validade *</Label>
+                      <Input
+                        type="date"
+                        id="license_expiry_date"
+                        value={formData.license_expiry_date ? format(formData.license_expiry_date, "yyyy-MM-dd") : ""}
+                        onChange={(e) => handleDateChange("license_expiry_date", e.target.value ? new Date(e.target.value) : undefined)}
+                        className="h-8 text-sm"
+                      />
+                      {errors.license_expiry_date && <span className="text-xs text-destructive">{errors.license_expiry_date}</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Documentos */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
+                    <FileText className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Documentos <span className="font-normal normal-case text-muted-foreground/60">(opcional)</span>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs font-medium">Documento do Condutor (PDF)</Label>
+                      <Input type="file" accept=".pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} className="h-8 text-xs" />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs font-medium">CNH Digital (PDF)</Label>
+                      <Input type="file" accept=".pdf" onChange={(e) => setCnhFile(e.target.files?.[0] || null)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-4 py-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-blue-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Dados Pessoais</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5 col-span-2">
-                  <Label htmlFor="name" className="text-xs font-medium text-gray-700">Nome Completo *</Label>
-                  <Input id="name" value={formData.name} onChange={handleChange} placeholder="Digite o nome completo" className="h-9" />
-                  {errors.name && <span className="text-xs text-red-500">{errors.name}</span>}
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="cpf" className="text-xs font-medium text-gray-700">CPF *</Label>
-                  <Input
-                    id="cpf"
-                    value={formData.cpf}
-                    onChange={handleChange}
-                    placeholder="000.000.000-00"
-                    maxLength={14}
-                    className={cn("h-9", warnings.cpf.exists && "border-amber-300 bg-amber-50")}
-                  />
-                  {errors.cpf && <span className="text-xs text-red-500">{errors.cpf}</span>}
-                  <DuplicateWarningInline warning={warnings.cpf} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="birth_date" className="text-xs font-medium text-gray-700">Data de Nascimento *</Label>
-                  <Input
-                    type="date"
-                    id="birth_date"
-                    value={formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : ""}
-                    onChange={(e) => handleDateChange("birth_date", e.target.value ? new Date(e.target.value) : undefined)}
-                    className={cn("h-9", !isAgeValid && "border-red-300 bg-red-50")}
-                  />
-                  {errors.birth_date && <span className="text-xs text-red-500">{errors.birth_date}</span>}
-                </div>
-                <div className="grid gap-1.5 ">
-                  <Label htmlFor="gender" className="text-xs font-medium text-gray-700">Gênero *</Label>
-                  <Select onValueChange={(value) => handleSelectChange("gender", value)} value={formData.gender}>
-                    <SelectTrigger id="gender" className="w-65 h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M">Masculino</SelectItem>
-                      <SelectItem value="F">Feminino</SelectItem>
-                      <SelectItem value="O">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.gender && <span className="text-xs text-red-500">{errors.gender}</span>}
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="nationality" className="text-xs font-medium text-gray-700">Nacionalidade *</Label>
-                  <Input id="nationality" value={formData.nationality} onChange={handleChange} placeholder="Brasileira" className="h-9" />
-                  {errors.nationality && <span className="text-xs text-red-500">{errors.nationality}</span>}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Phone className="h-4 w-4 text-green-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Contato</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="email" className="text-xs font-medium text-gray-700">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="email@exemplo.com"
-                    className={cn("h-9", warnings.email.exists && "border-amber-300 bg-amber-50")}
-                  />
-                  {errors.email && <span className="text-xs text-red-500">{errors.email}</span>}
-                  <DuplicateWarningInline warning={warnings.email} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="phone" className="text-xs font-medium text-gray-700">Telefone/Celular *</Label>
-                  <Input id="phone" value={formData.phone} onChange={handleChange} placeholder="(00) 00000-0000" maxLength={15} className="h-9" />
-                  {errors.phone && <span className="text-xs text-red-500">{errors.phone}</span>}
-                </div>
-                <div className="grid gap-1.5 col-span-2">
-                  <Label htmlFor="whatsapp" className="text-xs font-medium text-gray-700">WhatsApp</Label>
-                  <Input
-                    id="whatsapp"
-                    value={formData.whatsapp || ""}
-                    onChange={handleChange}
-                    placeholder="(00) 00000-0000"
-                    maxLength={15}
-                    className="h-9"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-4 w-4 text-purple-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Endereço</h3>
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="grid gap-1.5 col-span-3">
-                  <Label htmlFor="street" className="text-xs font-medium text-gray-700">Rua/Avenida *</Label>
-                  <Input id="street" value={formData.street} onChange={handleChange} className="h-9" />
-                  {errors.street && <span className="text-xs text-red-500">{errors.street}</span>}
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="number" className="text-xs font-medium text-gray-700">Número *</Label>
-                  <Input id="number" value={formData.number} onChange={handleChange} className="h-9" />
-                  {errors.number && <span className="text-xs text-red-500">{errors.number}</span>}
-                </div>
-                <div className="grid gap-1.5 col-span-2">
-                  <Label htmlFor="neighborhood" className="text-xs font-medium text-gray-700">Bairro *</Label>
-                  <Input id="neighborhood" value={formData.neighborhood} onChange={handleChange} className="h-9" />
-                  {errors.neighborhood && <span className="text-xs text-red-500">{errors.neighborhood}</span>}
-                </div>
-                <div className="grid gap-1.5 col-span-2">
-                  <Label htmlFor="city" className="text-xs font-medium text-gray-700">Cidade *</Label>
-                  <Input id="city" value={formData.city} onChange={handleChange} className="h-9" />
-                  {errors.city && <span className="text-xs text-red-500">{errors.city}</span>}
-                </div>
-                <div className="grid gap-1.5 col-span-4">
-                  <Label htmlFor="reference_point" className="text-xs font-medium text-gray-700">Ponto de referência</Label>
-                  <Input id="reference_point" value={formData.reference_point} onChange={handleChange} placeholder="Opcional" className="h-9" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="h-4 w-4 text-amber-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Detalhes da CNH</h3>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="license_number" className="text-xs font-medium text-gray-700">Número da CNH *</Label>
-                  <Input
-                    id="license_number"
-                    value={formData.license_number}
-                    onChange={handleChange}
-                    placeholder="12345678901"
-                    maxLength={20}
-                    className={cn("h-9", warnings.license_number.exists && "border-amber-300 bg-amber-50")}
-                  />
-                  {errors.license_number && <span className="text-xs text-red-500">{errors.license_number}</span>}
-                  <DuplicateWarningInline warning={warnings.license_number} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs font-medium text-gray-700">Categoria CNH *</Label>
-                  <Select onValueChange={(value) => handleSelectChange("license_category", value)} value={formData.license_category}>
-                    <SelectTrigger className="w-42 h-9">
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LICENSE_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.license_category && <span className="text-xs text-red-500">{errors.license_category}</span>}
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="license_expiry_date" className="text-xs font-medium text-gray-700">Validade da CNH *</Label>
-                  <Input
-                    type="date"
-                    id="license_expiry_date"
-                    value={formData.license_expiry_date ? format(formData.license_expiry_date, "yyyy-MM-dd") : ""}
-                    onChange={(e) => handleDateChange("license_expiry_date", e.target.value ? new Date(e.target.value) : undefined)}
-                    className="h-9"
-                  />
-                  {errors.license_expiry_date && <span className="text-xs text-red-500">{errors.license_expiry_date}</span>}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-4 w-4 text-indigo-600" />
-                <h3 className="text-sm font-semibold text-gray-700">Documentos (Opcional)</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-700">Documento do Condutor (PDF)</Label>
-                  <Input type="file" accept=".pdf" onChange={(e) => setDocumentFile(e.target.files?.[0] || null)} className="h-9" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-gray-700">CNH Digital (PDF)</Label>
-                  <Input type="file" accept=".pdf" onChange={(e) => setCnhFile(e.target.files?.[0] || null)} className="h-9" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex justify-end gap-2">
+          <DialogFooter className="mt-5 flex justify-end gap-2 border-t border-border pt-4">
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting || !isAgeValid}>
-              {isSubmitting ? "Salvando..." : "Salvar"}
+              {isSubmitting ? "Salvando..." : initialData ? "Salvar alterações" : "Cadastrar condutor"}
             </Button>
           </DialogFooter>
         </form>

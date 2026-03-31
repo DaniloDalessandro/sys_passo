@@ -101,7 +101,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   return (
     <div className={cn("space-y-8", className)} {...props}>
       <div className="text-center space-y-4">
-        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+        <div className="mx-auto w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
           <svg
             className="w-10 h-10 text-white"
             xmlns="http://www.w3.org/2000/svg"
@@ -184,7 +184,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
             <Button
               type="submit"
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="w-full"
+              size="xl"
             >
               Acessar
             </Button>
@@ -201,7 +202,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <svg
-                className="w-6 h-6 text-blue-600"
+                className="w-6 h-6 text-primary"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -242,11 +243,11 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             )}
 
             {forgotPasswordSuccess && (
-              <div className="bg-green-500/10 dark:bg-green-500/20 border-l-4 border-green-500 p-4 rounded-md">
+              <div className="bg-success/10 dark:bg-success/15 border-l-4 border-success p-4 rounded-md">
                 <div className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-green-600 dark:text-green-400 mr-3"
+                    className="h-5 w-5 text-success mr-3"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -256,7 +257,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-green-700 dark:text-green-400 text-sm">{forgotPasswordSuccess}</span>
+                  <span className="text-success text-sm">{forgotPasswordSuccess}</span>
                 </div>
               </div>
             )}
@@ -287,14 +288,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                   setForgotPasswordError("")
                   setForgotPasswordSuccess("")
                 }}
-                className="flex-1 h-12"
+                className="flex-1"
+                size="xl"
                 disabled={isSubmittingForgotPassword}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                className="flex-1 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                className="flex-1"
+                size="xl"
                 disabled={isSubmittingForgotPassword}
               >
                 {isSubmittingForgotPassword ? (

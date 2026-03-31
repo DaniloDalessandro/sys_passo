@@ -100,27 +100,27 @@ export function MultiPhotoUpload({
         className="hidden"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-5 gap-3">
         {Array.from({ length: maxPhotos }).map((_, index) => (
           <div
             key={index}
-            className="relative aspect-square border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors"
+            className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border bg-muted/40 transition-colors hover:bg-muted/70"
           >
             {photos[index] && previews[index] ? (
               <>
                 <img
                   src={previews[index]}
                   alt={`Foto ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => removePhoto(index)}
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground transition-colors hover:bg-destructive/90"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
                 </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs py-1 px-2 text-center">
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-1 text-center text-xs text-white">
                   Foto {index + 1}
                 </div>
               </>
@@ -128,9 +128,9 @@ export function MultiPhotoUpload({
               <button
                 type="button"
                 onClick={triggerFileInput}
-                className="w-full h-full flex flex-col items-center justify-center text-gray-400 hover:text-gray-600"
+                className="flex h-full w-full flex-col items-center justify-center text-muted-foreground hover:text-foreground"
               >
-                <ImageIcon className="h-8 w-8 mb-2" />
+                <ImageIcon className="mb-1.5 h-6 w-6" />
                 <span className="text-xs">Foto {index + 1}</span>
               </button>
             )}
@@ -138,7 +138,7 @@ export function MultiPhotoUpload({
         ))}
       </div>
 
-      <p className="text-sm text-gray-500">
+      <p className="text-xs text-muted-foreground">
         {photos.filter((p) => p !== null).length} de {maxPhotos} fotos adicionadas
       </p>
     </div>

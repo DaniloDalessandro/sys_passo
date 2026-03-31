@@ -103,6 +103,12 @@ services:
       - backend
     networks:
       - syspasso_network
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   celery-beat:
     build:
@@ -129,6 +135,12 @@ services:
       - backend
     networks:
       - syspasso_network
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   frontend:
     build:

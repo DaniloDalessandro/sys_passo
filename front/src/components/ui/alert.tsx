@@ -4,15 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+        default:
+          "bg-background text-foreground border-border [&>svg]:text-foreground",
         destructive:
-          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+          "border-destructive/30 bg-destructive/8 text-destructive dark:border-destructive/40 dark:bg-destructive/15 [&>svg]:text-destructive",
+        success:
+          "border-success/30 bg-success/8 text-success dark:border-success/40 dark:bg-success/15 [&>svg]:text-success",
         warning:
-          "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200 [&>svg]:text-amber-600",
+          "border-warning/40 bg-warning/10 text-warning-foreground dark:border-warning/30 dark:bg-warning/15 dark:text-warning [&>svg]:text-warning",
+        info:
+          "border-info/30 bg-info/8 text-info dark:border-info/40 dark:bg-info/15 [&>svg]:text-info",
       },
     },
     defaultVariants: {
@@ -40,7 +45,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
+    className={cn("mb-1 font-semibold leading-none tracking-tight", className)}
     {...props}
   />
 ))
@@ -52,7 +57,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm [&_p]:leading-relaxed", className)}
+    className={cn("text-sm [&_p]:leading-relaxed opacity-90", className)}
     {...props}
   />
 ))
