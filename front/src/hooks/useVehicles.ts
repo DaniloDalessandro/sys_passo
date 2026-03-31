@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { authFetch } from "@/lib/api-client"
+import { authFetch, buildApiUrl } from "@/lib/api-client"
 
 export interface Vehicle {
   id: number;
@@ -63,8 +63,6 @@ export interface VehicleFormData {
   photo_5?: File | null;
 }
 
-const API_BASE_URL = "http://localhost:8000/api"
-
 interface FetchParams {
   page?: number
   pageSize?: number
@@ -111,7 +109,7 @@ export function useVehicles() {
         queryParams.append('ordering', ordering)
       }
 
-      const url = `${API_BASE_URL}/vehicles/?${queryParams.toString()}`
+      const url = buildApiUrl(`api/vehicles/?${queryParams.toString()}`)
       const response = await authFetch(url)
 
       if (!response.ok) {
@@ -146,7 +144,7 @@ export function useVehicles() {
     })
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/vehicles/`, {
+      const response = await authFetch(buildApiUrl("api/vehicles/"), {
         method: "POST",
         body: formData,
       })
@@ -177,7 +175,7 @@ export function useVehicles() {
     })
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`, {
+      const response = await authFetch(buildApiUrl(`api/vehicles/${id}/`), {
         method: "PATCH",
         body: formData,
       })
@@ -196,7 +194,7 @@ export function useVehicles() {
   const deleteVehicle = async (id: number): Promise<void> => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`, {
+      const response = await authFetch(buildApiUrl(`api/vehicles/${id}/`), {
         method: "DELETE",
       })
       if (!response.ok) {
@@ -213,7 +211,7 @@ export function useVehicles() {
   const getVehicle = async (id: number): Promise<Vehicle> => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/vehicles/${id}/`)
+      const response = await authFetch(buildApiUrl(`api/vehicles/${id}/`))
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao carregar veículo")
@@ -229,7 +227,7 @@ export function useVehicles() {
   const fetchStats = useCallback(async () => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/vehicles/stats/`)
+      const response = await authFetch(buildApiUrl("api/vehicles/stats/"))
       if (!response.ok) {
         throw new Error("Erro ao carregar estatísticas")
       }

@@ -21,53 +21,67 @@ def dashboard_stats(request):
     try:
         thirty_days_ago = timezone.now() - timedelta(days=30)
 
-        total_vehicles = Vehicle.objects.count()
-        active_vehicles = Vehicle.objects.filter(status='ativo').count()
-        inactive_vehicles = Vehicle.objects.filter(status='inativo').count()
-        vehicles_last_month = Vehicle.objects.filter(created_at__gte=thirty_days_ago).count()
-        vehicle_growth = (vehicles_last_month / total_vehicles * 100) if total_vehicles > 0 else 0
+        vehicle_stats = Vehicle.objects.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(status='ativo')),
+            inactive=Count('id', filter=Q(status='inativo')),
+            last_month=Count('id', filter=Q(created_at__gte=thirty_days_ago)),
+        )
+        total_vehicles = vehicle_stats['total'] or 0
+        vehicle_growth = round(
+            (vehicle_stats['last_month'] / total_vehicles * 100) if total_vehicles > 0 else 0, 2
+        )
 
-        total_conductors = Conductor.objects.count()
-        active_conductors = Conductor.objects.filter(is_active=True).count()
-        inactive_conductors = Conductor.objects.filter(is_active=False).count()
-        conductors_last_month = Conductor.objects.filter(created_at__gte=thirty_days_ago).count()
-        conductor_growth = (conductors_last_month / total_conductors * 100) if total_conductors > 0 else 0
+        conductor_stats = Conductor.objects.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(is_active=True)),
+            inactive=Count('id', filter=Q(is_active=False)),
+            last_month=Count('id', filter=Q(created_at__gte=thirty_days_ago)),
+        )
+        total_conductors = conductor_stats['total'] or 0
+        conductor_growth = round(
+            (conductor_stats['last_month'] / total_conductors * 100) if total_conductors > 0 else 0, 2
+        )
 
-        total_requests = DriverRequest.objects.count()
-        approved_requests = DriverRequest.objects.filter(status='aprovado').count()
-        pending_requests = DriverRequest.objects.filter(status='em_analise').count()
-        rejected_requests = DriverRequest.objects.filter(status='reprovado').count()
+        request_stats = DriverRequest.objects.aggregate(
+            total=Count('id'),
+            approved=Count('id', filter=Q(status='aprovado')),
+            pending=Count('id', filter=Q(status='em_analise')),
+            rejected=Count('id', filter=Q(status='reprovado')),
+        )
 
-        total_complaints = Complaint.objects.count()
-        pending_complaints = Complaint.objects.filter(status='proposto').count()
-        resolved_complaints = Complaint.objects.filter(status='concluido').count()
-        investigating_complaints = Complaint.objects.filter(status='em_analise').count()
+        complaint_stats = Complaint.objects.aggregate(
+            total=Count('id'),
+            pending=Count('id', filter=Q(status='proposto')),
+            resolved=Count('id', filter=Q(status='concluido')),
+            investigating=Count('id', filter=Q(status='em_analise')),
+        )
 
         data = {
             'vehicles': {
                 'total': total_vehicles,
-                'active': active_vehicles,
-                'inactive': inactive_vehicles,
-                'growth_percentage': round(vehicle_growth, 2)
+                'active': vehicle_stats['active'],
+                'inactive': vehicle_stats['inactive'],
+                'growth_percentage': vehicle_growth,
             },
             'conductors': {
                 'total': total_conductors,
-                'active': active_conductors,
-                'inactive': inactive_conductors,
-                'growth_percentage': round(conductor_growth, 2)
+                'active': conductor_stats['active'],
+                'inactive': conductor_stats['inactive'],
+                'growth_percentage': conductor_growth,
             },
             'requests': {
-                'total': total_requests,
-                'approved': approved_requests,
-                'pending': pending_requests,
-                'rejected': rejected_requests
+                'total': request_stats['total'],
+                'approved': request_stats['approved'],
+                'pending': request_stats['pending'],
+                'rejected': request_stats['rejected'],
             },
             'complaints': {
-                'total': total_complaints,
-                'pending': pending_complaints,
-                'resolved': resolved_complaints,
-                'investigating': investigating_complaints
-            }
+                'total': complaint_stats['total'],
+                'pending': complaint_stats['pending'],
+                'resolved': complaint_stats['resolved'],
+                'investigating': complaint_stats['investigating'],
+            },
         }
 
         return Response(data, status=status.HTTP_200_OK)

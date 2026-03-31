@@ -11,6 +11,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 from core.throttling import AuthThrottle, PasswordResetThrottle, PublicReadThrottle
 from core.exceptions import safe_error_response, get_error_message
@@ -44,6 +45,7 @@ from .utils import (
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     View de login JWT com dados adicionais do usuário.
+    Tokens são definidos como cookies HttpOnly para proteger contra XSS.
     """
     serializer_class = CustomTokenObtainPairSerializer
 
@@ -51,6 +53,31 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
+            access = response.data.get('access')
+            refresh = response.data.get('refresh')
+            is_secure = not settings.DEBUG
+
+            if access:
+                response.set_cookie(
+                    'access',
+                    access,
+                    max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+                    httponly=True,
+                    secure=is_secure,
+                    samesite='Strict',
+                    path='/',
+                )
+            if refresh:
+                response.set_cookie(
+                    'refresh',
+                    refresh,
+                    max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()),
+                    httponly=True,
+                    secure=is_secure,
+                    samesite='Strict',
+                    path='/',
+                )
+
             try:
                 serializer = self.get_serializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -64,6 +91,56 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 )
             except Exception:
                 pass
+
+        return response
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    """
+    View de refresh JWT que lê o token do cookie se não fornecido no body.
+    Define novos tokens como cookies HttpOnly.
+    """
+
+    def post(self, request, *args, **kwargs):
+        # Se o refresh token não está no body, tenta o cookie
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        if 'refresh' not in data:
+            refresh_cookie = request.COOKIES.get('refresh')
+            if refresh_cookie:
+                data['refresh'] = refresh_cookie
+
+        serializer = self.get_serializer(data=data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+
+        response = Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+        access = serializer.validated_data.get('access')
+        refresh_new = serializer.validated_data.get('refresh')
+        is_secure = not settings.DEBUG
+
+        if access:
+            response.set_cookie(
+                'access',
+                access,
+                max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+                httponly=True,
+                secure=is_secure,
+                samesite='Strict',
+                path='/',
+            )
+        if refresh_new:
+            response.set_cookie(
+                'refresh',
+                refresh_new,
+                max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds()),
+                httponly=True,
+                secure=is_secure,
+                samesite='Strict',
+                path='/',
+            )
 
         return response
 
@@ -130,7 +207,8 @@ class UserLogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data.get('refresh')
+            # Aceita refresh token do body ou do cookie
+            refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh')
             if refresh_token:
                 token = RefreshToken(refresh_token)
                 token.blacklist()
@@ -141,11 +219,17 @@ class UserLogoutView(APIView):
                 ip_address=get_client_ip(request),
                 details={'user_agent': get_user_agent(request)}
             )
-            
-            return Response({
+
+            response = Response({
                 'message': 'Logout realizado com sucesso'
             }, status=status.HTTP_200_OK)
-            
+
+            # Limpa os cookies de autenticação
+            response.delete_cookie('access', path='/')
+            response.delete_cookie('refresh', path='/')
+
+            return response
+
         except Exception as e:
             return safe_error_response(
                 message='Falha ao realizar logout',
@@ -426,7 +510,7 @@ class ResendEmailVerificationView(APIView):
     throttle_classes = [PasswordResetThrottle]
 
     def post(self, request):
-        serializer = ResendEmailVerificationSerializer(data=request.data)
+        serializer = EmailResendSerializer(data=request.data)
         if serializer.is_valid():
             try:
                 user = serializer.validated_data['email']  # campo 'email' retorna o objeto User
@@ -477,8 +561,19 @@ def user_info(request):
 @permission_classes([permissions.IsAuthenticated])
 def delete_account(request):
     """
-    Exclusão da conta do usuário autenticado.
+    Exclusão da conta do usuário autenticado. Requer confirmação de senha.
     """
+    password = request.data.get('password')
+    if not password:
+        return Response({
+            'error': 'A senha atual é obrigatória para excluir a conta.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if not request.user.check_password(password):
+        return Response({
+            'error': 'Senha incorreta.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     try:
         user = request.user
         username = user.username
@@ -495,7 +590,7 @@ def delete_account(request):
         return Response({
             'message': f'Conta de {username} excluída com sucesso'
         }, status=status.HTTP_200_OK)
-        
+
     except Exception as e:
         return safe_error_response(
             message='Falha ao deletar conta',
@@ -532,15 +627,11 @@ def verify_token(request):
 @throttle_classes([PublicReadThrottle])
 def auth_status(request):
     """
-    Retorna o status e configurações do sistema de autenticação.
+    Retorna o status do sistema de autenticação.
     """
     return Response({
+        'status': 'ok',
         'authentication_type': 'JWT',
-        'access_token_lifetime_minutes': settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds() / 60,
-        'refresh_token_lifetime_days': settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].days,
-        'email_verification_required': getattr(settings, 'ACCOUNT_EMAIL_VERIFICATION', 'mandatory') == 'mandatory',
-        'password_reset_timeout_hours': settings.PASSWORD_RESET_TIMEOUT / 3600,
-        'email_verification_timeout_hours': settings.EMAIL_VERIFICATION_TIMEOUT / 3600,
     }, status=status.HTTP_200_OK)
 
 

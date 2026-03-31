@@ -38,6 +38,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       const response = await fetch(buildApiUrl("/api/auth/login/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ username: normalizedEmail, email: normalizedEmail, password }),
       })
 
@@ -45,8 +46,6 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
       if (response.ok) {
         login({
-          access: data.access,
-          refresh: data.refresh,
           user: data.user,
         })
         router.push("/dashboard")

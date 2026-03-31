@@ -127,7 +127,7 @@ class ConductorListCreateView(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            logger.info(f"Creating conductor: {request.data.get('name', 'Unknown')}")
+            logger.info(f"Criando condutor: {request.data.get('name', 'Desconhecido')}")
             return super().create(request, *args, **kwargs)
         except Exception as e:
             return safe_error_response(
@@ -181,7 +181,7 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
 
     def update(self, request, *args, **kwargs):
         try:
-            logger.info(f"Updating conductor {kwargs.get('pk')}")
+            logger.info(f"Atualizando condutor {kwargs.get('pk')}")
             return super().update(request, *args, **kwargs)
         except Exception as e:
             return safe_error_response(
@@ -195,7 +195,7 @@ class ConductorDetailView(RetrieveUpdateDestroyAPIView):
             return super().destroy(request, *args, **kwargs)
         except Exception as e:
             return safe_error_response(
-                message=get_error_message('deletion_failed'),
+                message='Falha ao excluir condutor',
                 exception=e,
                 context={'action': 'conductor_delete', 'user': request.user.username, 'conductor_id': kwargs.get('pk')}
             )
@@ -255,15 +255,13 @@ class ConductorStatsView(APIView):
                 is_active=True
             ).count()
 
-            categories_stats = {}
-            categories = ['A', 'B', 'C', 'D', 'E', 'AB', 'AC', 'AD', 'AE']
-            for category in categories:
-                count = Conductor.objects.filter(
-                    license_category=category,
-                    is_active=True
-                ).count()
-                if count > 0:
-                    categories_stats[category] = count
+            from django.db.models import Count
+            categories_stats = dict(
+                Conductor.objects.filter(is_active=True)
+                .values('license_category')
+                .annotate(count=Count('id'))
+                .values_list('license_category', 'count')
+            )
 
             return Response({
                 'total_conductors': total_conductors,

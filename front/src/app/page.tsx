@@ -2,19 +2,20 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuthContext } from "@/contexts/AuthContext"
 
 export default function RootPage() {
   const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuthContext()
 
   useEffect(() => {
-    // Verificar se já está logado
-    const token = localStorage.getItem("access_token")
-    if (token) {
+    if (isLoading) return
+    if (isAuthenticated) {
       router.push("/dashboard")
     } else {
       router.push("/login")
     }
-  }, [router])
+  }, [router, isAuthenticated, isLoading])
 
   // Loading enquanto redireciona
   return (

@@ -2,18 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { buildApiUrl } from "@/lib/api-client";
 
 // Flag global para serializar tentativas de refresh simultâneas
 let isRefreshing = false;
 // Fila de requisições que falharam aguardando o novo token
 let failedQueue: any[] = [];
 
-const processQueue = (error: Error | null, token: string | null = null) => {
+const processQueue = (error: Error | null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
     } else {
-      prom.resolve(token);
+      prom.resolve();
     }
   });
   failedQueue = [];
@@ -49,30 +50,25 @@ export function InterceptorProvider({ children }: { children: React.ReactNode })
 
       const { refreshAccessToken, logout } = authContextRef.current;
 
-      const token = localStorage.getItem('access_token');
-      const headers = new Headers(init?.headers);
-
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-
-      const newInit = { ...init, headers };
+      // Tokens são enviados automaticamente pelo navegador via cookies HttpOnly.
+      // Garante que credentials='include' esteja presente em todas as requisições.
+      const newInit: RequestInit = {
+        ...init,
+        credentials: init?.credentials ?? 'include',
+      };
 
       let response = await fetcher(input, newInit);
 
       const url = typeof input === 'string' ? input : input.toString();
       const isRefreshRequest = url.includes('/api/auth/refresh/');
+      const isAuthRequest = url.includes('/api/auth/login/') || url.includes('/api/auth/register/');
 
-      if (response.status === 401 && !isRefreshRequest) {
+      if (response.status === 401 && !isRefreshRequest && !isAuthRequest) {
         if (isRefreshing) {
           return new Promise((resolve, reject) => {
             failedQueue.push({
-              resolve: (newToken: string) => {
-                const newHeaders = new Headers(init?.headers);
-                newHeaders.set('Authorization', `Bearer ${newToken}`);
-                resolve(fetcher(input, { ...init, headers: newHeaders }));
-              },
-              reject
+              resolve: () => resolve(fetcher(input, newInit)),
+              reject,
             });
           });
         }
@@ -82,23 +78,16 @@ export function InterceptorProvider({ children }: { children: React.ReactNode })
         try {
           const refreshed = await refreshAccessToken();
           if (refreshed) {
-            const newToken = localStorage.getItem('access_token');
-            processQueue(null, newToken);
-
-            const newHeaders = new Headers(init?.headers);
-            if (newToken) {
-              newHeaders.set('Authorization', `Bearer ${newToken}`);
-            }
-
-            return await fetcher(input, { ...init, headers: newHeaders });
+            processQueue(null);
+            return await fetcher(input, newInit);
           } else {
             const error = new Error("Sessão expirada. Por favor, faça login novamente.");
-            processQueue(error, null);
+            processQueue(error);
             logout();
             return Promise.reject(error);
           }
         } catch (error: any) {
-          processQueue(error, null);
+          processQueue(error);
           logout();
           return Promise.reject(error);
         } finally {

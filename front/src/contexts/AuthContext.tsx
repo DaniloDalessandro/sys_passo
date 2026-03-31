@@ -1,7 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react"
-import { jwtDecode } from "jwt-decode"
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react"
 import { buildApiUrl } from "@/lib/api-client"
 
 export interface UserProfile {
@@ -26,237 +25,176 @@ export interface UserData {
 
 export interface AuthContextType {
   user: UserData | null
-  accessToken: string | null
   role: UserRole | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
   canApprove: boolean
   canAdmin: boolean
-  login: (data: { access: string; refresh: string; user: UserData }) => void
+  login: (data: { user: UserData }) => void
   logout: () => void
   refreshAccessToken: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-function getRoleFromToken(token: string): UserRole | null {
+const USER_DATA_KEYS = [
+  "user_id", "user_email", "user_username",
+  "user_first_name", "user_last_name", "user_role",
+]
+
+function saveUserToStorage(user: UserData): void {
   try {
-    const decoded = jwtDecode<{ role?: UserRole }>(token)
-    return decoded.role ?? null
+    localStorage.setItem("user_id", user.id)
+    localStorage.setItem("user_email", user.email)
+    localStorage.setItem("user_username", user.username)
+    localStorage.setItem("user_first_name", user.first_name)
+    localStorage.setItem("user_last_name", user.last_name)
+    if (user.role) localStorage.setItem("user_role", user.role)
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function loadUserFromStorage(): UserData | null {
+  try {
+    const id = localStorage.getItem("user_id")
+    if (!id) return null
+    return {
+      id,
+      email: localStorage.getItem("user_email") || '',
+      username: localStorage.getItem("user_username") || '',
+      first_name: localStorage.getItem("user_first_name") || '',
+      last_name: localStorage.getItem("user_last_name") || '',
+      role: (localStorage.getItem("user_role") as UserRole | null) ?? undefined,
+    }
   } catch {
     return null
   }
 }
 
+function clearUserFromStorage(): void {
+  try {
+    USER_DATA_KEYS.forEach(key => localStorage.removeItem(key))
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Cache por instância (useRef) para evitar leituras repetidas do localStorage
-  const authDataCache = useRef<{ token: string | null; userData: UserData | null; timestamp: number } | null>(null)
-  const CACHE_DURATION = 5000 // 5 segundos
-
-  const getAuthData = useCallback(() => {
-    const now = Date.now()
-
-    if (authDataCache.current && (now - authDataCache.current.timestamp) < CACHE_DURATION) {
-      return authDataCache.current
-    }
-
+  const login = useCallback((data: { user: UserData }) => {
     try {
-      const token = localStorage.getItem("access_token")
-      const tokenRole = token ? getRoleFromToken(token) : null
-      const userData = {
-        id: localStorage.getItem("user_id") || '',
-        email: localStorage.getItem("user_email") || '',
-        username: localStorage.getItem("user_username") || '',
-        first_name: localStorage.getItem("user_first_name") || '',
-        last_name: localStorage.getItem("user_last_name") || '',
-        role: (tokenRole ?? (localStorage.getItem("user_role") as UserRole | null) ?? undefined),
-      }
-
-      const result = {
-        token,
-        userData: token && userData.id ? userData : null,
-        timestamp: now
-      }
-
-      authDataCache.current = result
-      return result
-    } catch (error) {
-      console.error("Error reading auth data", error)
-      return { token: null, userData: null, timestamp: now }
-    }
-  }, [CACHE_DURATION])
-
-  const isTokenExpired = useCallback((token: string): boolean => {
-    try {
-      const decoded = jwtDecode<{ exp: number }>(token)
-      return decoded.exp < Date.now() / 1000
-    } catch {
-      return true
-    }
-  }, [])
-
-  const login = useCallback((data: { access: string; refresh: string; user: UserData }) => {
-    try {
-      const tokenRole = getRoleFromToken(data.access)
-      const writes: [string, string][] = [
-        ["access_token", data.access],
-        ["refresh", data.refresh],
-        ["user_id", data.user.id],
-        ["user_email", data.user.email],
-        ["user_username", data.user.username],
-        ["user_first_name", data.user.first_name],
-        ["user_last_name", data.user.last_name],
-        ["user_role", tokenRole ?? data.user.role ?? 'viewer'],
-      ]
-
-      writes.forEach(([key, value]) => localStorage.setItem(key, value))
-
-      const cookieOptions = "; path=/; SameSite=strict"
-      document.cookie = `access=${data.access}${cookieOptions}`
-      document.cookie = `refresh=${data.refresh}${cookieOptions}`
-
-      const resolvedRole = (tokenRole ?? data.user.role ?? 'viewer') as UserRole
-      setAccessToken(data.access)
-      setUser({ ...data.user, role: resolvedRole })
-      setRole(resolvedRole)
+      const resolvedRole = data.user.role ?? 'viewer'
+      const userData = { ...data.user, role: resolvedRole as UserRole }
+      saveUserToStorage(userData)
+      setUser(userData)
+      setRole(resolvedRole as UserRole)
       setError(null)
-      authDataCache.current = null
-    } catch (error) {
-      setError("Failed to save authentication data")
-      console.error("Login error:", error)
+    } catch (err) {
+      setError("Erro ao salvar dados de autenticação")
+      console.error("Login error:", err)
     }
   }, [])
 
   const logout = useCallback(() => {
     try {
-      const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name", "user_role"]
-      keys.forEach(key => localStorage.removeItem(key))
-
-      const expireDate = "Thu, 01 Jan 1970 00:00:01 GMT"
-      document.cookie = `access=; path=/; expires=${expireDate}`
-      document.cookie = `refresh=; path=/; expires=${expireDate}`
-
-      setAccessToken(null)
+      clearUserFromStorage()
       setUser(null)
       setRole(null)
       setError(null)
-      authDataCache.current = null
-    } catch (error) {
-      setError("Failed to clear authentication data")
-      console.error("Logout error:", error)
+    } catch (err) {
+      setError("Erro ao limpar dados de autenticação")
+      console.error("Logout error:", err)
     }
   }, [])
 
-  const tokenExpiringSoon = useMemo(() => {
-    return (token: string, thresholdSeconds = 300): boolean => {
-      try {
-        const decoded = jwtDecode<{ exp: number }>(token)
-        const now = Math.floor(Date.now() / 1000)
-        return decoded.exp - now < thresholdSeconds
-      } catch {
-        return true
-      }
-    }
-  }, [])
-
-  // Sem dependências no array para evitar loops infinitos com o interceptor
   const refreshAccessToken = useCallback(async (): Promise<boolean> => {
-    const refresh = localStorage.getItem("refresh")
-    if (!refresh) {
-      try {
-        const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
-        keys.forEach(key => localStorage.removeItem(key))
-
-        const expireDate = "Thu, 01 Jan 1970 00:00:01 GMT"
-        document.cookie = `access=; path=/; expires=${expireDate}`
-        document.cookie = `refresh=; path=/; expires=${expireDate}`
-
-        setAccessToken(null)
-        setUser(null)
-        setError(null)
-        authDataCache.current = null
-      } catch (error) {
-        console.error("Logout error:", error)
-      }
-      return false
-    }
-
     try {
       setIsLoading(true)
       const response = await fetch(buildApiUrl("/api/auth/refresh/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
+        credentials: "include",
       })
 
       if (!response.ok) throw new Error("Refresh failed")
 
-      const data = await response.json()
-      const newRole = getRoleFromToken(data.access)
-      localStorage.setItem("access_token", data.access)
-      if (newRole) localStorage.setItem("user_role", newRole)
-      setAccessToken(data.access)
-      setRole(newRole)
-      setError(null)
-      authDataCache.current = null
-      return true
-    } catch (error) {
-      setError("Session expired. Please login again.")
-      try {
-        const keys = ["access_token", "refresh", "user_id", "user_email", "user_username", "user_first_name", "user_last_name"]
-        keys.forEach(key => localStorage.removeItem(key))
-
-        const expireDate = "Thu, 01 Jan 1970 00:00:01 GMT"
-        document.cookie = `access=; path=/; expires=${expireDate}`
-        document.cookie = `refresh=; path=/; expires=${expireDate}`
-
-        setAccessToken(null)
-        setUser(null)
-        setError(null)
-        authDataCache.current = null
-      } catch (error) {
-        console.error("Logout error:", error)
+      // After successful refresh the backend sets new HttpOnly cookies.
+      // Fetch updated user info to keep state in sync.
+      const userResponse = await fetch(buildApiUrl("/api/auth/user-info/"), {
+        credentials: "include",
+      })
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        if (userData.user) {
+          const resolvedRole = userData.user.role ?? 'viewer'
+          const updatedUser = { ...userData.user, role: resolvedRole as UserRole }
+          saveUserToStorage(updatedUser)
+          setUser(updatedUser)
+          setRole(resolvedRole as UserRole)
+        }
       }
+
+      setError(null)
+      return true
+    } catch (err) {
+      setError("Sessão expirada. Faça login novamente.")
+      clearUserFromStorage()
+      setUser(null)
+      setRole(null)
       return false
     } finally {
       setIsLoading(false)
     }
   }, [])
 
+  // Initialize auth state from backend on mount
   useEffect(() => {
     let isMounted = true
-    let hasInitialized = false
 
     const initializeAuth = async () => {
-      if (hasInitialized) return
-      hasInitialized = true
+      // First try to restore user data from localStorage for instant UI
+      const storedUser = loadUserFromStorage()
+      if (storedUser && isMounted) {
+        setUser(storedUser)
+        setRole(storedUser.role ?? null)
+      }
 
+      // Then verify with backend (relies on HttpOnly cookie being present)
       try {
-        const { token, userData } = getAuthData()
+        const response = await fetch(buildApiUrl("/api/auth/user-info/"), {
+          credentials: "include",
+        })
 
         if (!isMounted) return
 
-        if (token && userData) {
-          if (isTokenExpired(token)) {
-            const refreshed = await refreshAccessToken()
-            if (!refreshed || !isMounted) return
-          } else {
-            const tokenRole = getRoleFromToken(token)
-            setAccessToken(token)
-            setRole(tokenRole)
-            setUser({ ...userData, role: tokenRole ?? undefined })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            const resolvedRole = data.user.role ?? 'viewer'
+            const userData = { ...data.user, role: resolvedRole as UserRole }
+            saveUserToStorage(userData)
+            setUser(userData)
+            setRole(resolvedRole as UserRole)
+          }
+        } else if (response.status === 401) {
+          // Try to refresh
+          const refreshed = await refreshAccessToken()
+          if (!refreshed && isMounted) {
+            clearUserFromStorage()
+            setUser(null)
+            setRole(null)
           }
         }
-      } catch (error) {
+      } catch (err) {
         if (isMounted) {
-          setError("Failed to initialize authentication")
+          // Network error — keep stored user data, don't force logout
+          console.error("Auth init error:", err)
         }
       } finally {
         if (isMounted) {
@@ -273,27 +211,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sincroniza estado entre abas do navegador
+  // Sync user data changes across tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "access_token") {
-        authDataCache.current = null
-        try {
-          const token = localStorage.getItem("access_token")
-          const userData = {
-            id: localStorage.getItem("user_id") || '',
-            email: localStorage.getItem("user_email") || '',
-            username: localStorage.getItem("user_username") || '',
-            first_name: localStorage.getItem("user_first_name") || '',
-            last_name: localStorage.getItem("user_last_name") || '',
-          }
-          const tokenRole = token ? getRoleFromToken(token) : null
-          setAccessToken(token)
-          setRole(tokenRole)
-          setUser(token && userData.id ? { ...userData, role: tokenRole ?? undefined } : null)
-        } catch (error) {
-          console.error("Error reading auth data on storage change", error)
-        }
+      if (e.key === "user_id") {
+        const storedUser = loadUserFromStorage()
+        setUser(storedUser)
+        setRole(storedUser?.role ?? null)
       }
     }
 
@@ -303,9 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const contextValue = useMemo(() => ({
     user,
-    accessToken,
     role,
-    isAuthenticated: !!accessToken,
+    isAuthenticated: !!user,
     isLoading,
     error,
     canApprove: role === 'admin' || role === 'approver',
@@ -313,7 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     refreshAccessToken,
-  }), [user, accessToken, role, isLoading, error, login, logout, refreshAccessToken])
+  }), [user, role, isLoading, error, login, logout, refreshAccessToken])
 
   return (
     <AuthContext.Provider value={contextValue}>

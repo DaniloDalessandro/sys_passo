@@ -114,7 +114,7 @@ export function CreateUserDialog({ open, onOpenChange, onSubmit, isLoading = fal
           <div className="space-y-1.5">
             <Label>Papel</Label>
             <Select value={form.role} onValueChange={val => handleChange('role', val as UserRole)}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

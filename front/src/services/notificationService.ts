@@ -11,26 +11,18 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
       ? pathOrUrl
       : buildApiUrl(pathOrUrl);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem("access_token") : null;
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string> || {}),
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers,
   });
 
   if (response.status === 401 && typeof window !== 'undefined') {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
     window.location.href = "/";
   }
 

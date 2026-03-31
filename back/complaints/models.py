@@ -179,26 +179,28 @@ class Complaint(models.Model):
         return f"Denúncia #{self.id} - {self.vehicle_plate} - {self.get_complaint_type_display()}"
 
     def _generate_protocol(self):
-        """Gera protocolo único no formato CMP-YYYYNNNN."""
+        """Gera protocolo único no formato CMP-YYYYNNNN usando lock de banco de dados."""
         from django.utils import timezone
         from django.db.models import Max
+        from django.db import transaction
 
         current_year = timezone.now().year
         year_prefix = f"CMP-{current_year}"
 
-        last_complaint = Complaint.objects.filter(
-            protocol__startswith=year_prefix
-        ).aggregate(Max('protocol'))
+        with transaction.atomic():
+            last_complaint = Complaint.objects.select_for_update().filter(
+                protocol__startswith=year_prefix
+            ).aggregate(Max('protocol'))
 
-        last_protocol = last_complaint['protocol__max']
+            last_protocol = last_complaint['protocol__max']
 
-        if last_protocol:
-            last_number = int(last_protocol[-4:])
-            new_number = last_number + 1
-        else:
-            new_number = 1
+            if last_protocol:
+                last_number = int(last_protocol[-4:])
+                new_number = last_number + 1
+            else:
+                new_number = 1
 
-        return f"{year_prefix}{new_number:04d}"
+            return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
         """

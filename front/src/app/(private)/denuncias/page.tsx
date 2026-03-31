@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { useAuthContext } from "@/contexts/AuthContext"
 import {
   Card,
   CardContent,
@@ -65,6 +66,7 @@ import {
 
 export default function DenunciasPage() {
   const router = useRouter()
+  const { isAuthenticated } = useAuthContext()
 
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -122,14 +124,13 @@ export default function DenunciasPage() {
   }, [statusFilter, priorityFilter, sortField, sortOrder])
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    if (!token) {
+    if (isAuthenticated === false) {
       router.push("/")
       return
     }
 
     loadComplaints()
-  }, [router, loadComplaints])
+  }, [router, loadComplaints, isAuthenticated])
 
   const handleSort = (field: string) => {
     if (sortField === field) {

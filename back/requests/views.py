@@ -255,12 +255,16 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
             if not os.path.exists(file_path):
                 raise Http404("Arquivo não encontrado no servidor")
 
-            response = FileResponse(
-                open(file_path, 'rb'),
-                content_type='application/pdf'
-            )
+            try:
+                f = open(file_path, 'rb')
+            except OSError as e:
+                logger.error(f"Erro ao abrir PDF do documento: {str(e)}")
+                raise Http404("Erro ao carregar documento")
+            response = FileResponse(f, content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="documento.pdf"'
             return response
+        except Http404:
+            raise
         except Exception as e:
             logger.error(f"Erro ao servir PDF do documento: {str(e)}")
             raise Http404("Erro ao carregar documento")
@@ -280,12 +284,16 @@ class DriverRequestViewSet(viewsets.ModelViewSet):
             if not os.path.exists(file_path):
                 raise Http404("Arquivo não encontrado no servidor")
 
-            response = FileResponse(
-                open(file_path, 'rb'),
-                content_type='application/pdf'
-            )
+            try:
+                f = open(file_path, 'rb')
+            except OSError as e:
+                logger.error(f"Erro ao abrir PDF da CNH: {str(e)}")
+                raise Http404("Erro ao carregar CNH digital")
+            response = FileResponse(f, content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="cnh_digital.pdf"'
             return response
+        except Http404:
+            raise
         except Exception as e:
             logger.error(f"Erro ao servir PDF da CNH: {str(e)}")
             raise Http404("Erro ao carregar CNH digital")
@@ -521,12 +529,16 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
             if not os.path.exists(file_path):
                 raise Http404("Arquivo não encontrado no servidor")
 
-            response = FileResponse(
-                open(file_path, 'rb'),
-                content_type='application/pdf'
-            )
+            try:
+                f = open(file_path, 'rb')
+            except OSError as e:
+                logger.error(f"Erro ao abrir PDF do CRLV: {str(e)}")
+                raise Http404("Erro ao carregar CRLV")
+            response = FileResponse(f, content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="crlv.pdf"'
             return response
+        except Http404:
+            raise
         except Exception as e:
             logger.error(f"Erro ao servir PDF do CRLV: {str(e)}")
             raise Http404("Erro ao carregar CRLV")
@@ -546,12 +558,16 @@ class VehicleRequestViewSet(viewsets.ModelViewSet):
             if not os.path.exists(file_path):
                 raise Http404("Arquivo não encontrado no servidor")
 
-            response = FileResponse(
-                open(file_path, 'rb'),
-                content_type='application/pdf'
-            )
+            try:
+                f = open(file_path, 'rb')
+            except OSError as e:
+                logger.error(f"Erro ao abrir PDF do seguro: {str(e)}")
+                raise Http404("Erro ao carregar seguro")
+            response = FileResponse(f, content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="seguro.pdf"'
             return response
+        except Http404:
+            raise
         except Exception as e:
             logger.error(f"Erro ao servir PDF do seguro: {str(e)}")
             raise Http404("Erro ao carregar seguro")

@@ -103,7 +103,7 @@ export function middleware(request: NextRequest) {
     }
     
     // Se tem refresh token mas access token inválido/ausente, permitir e deixar o frontend tentar renovar
-    if (refreshToken && !isTokenValidSync(refreshToken)) {
+    if (refreshToken) {
       console.log(`[MIDDLEWARE] Tem refresh token - Permitindo para tentar renovação`)
       return NextResponse.next()
     }

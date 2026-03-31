@@ -255,25 +255,27 @@ class DriverRequest(models.Model):
             self.license_number = self.license_number.strip()
 
     def _generate_protocol(self):
-        """Gera protocolo único no formato DRV-YYYYNNNN."""
+        """Gera protocolo único no formato DRV-YYYYNNNN usando lock de banco de dados."""
         from django.db.models import Max
+        from django.db import transaction
 
         current_year = timezone.now().year
         year_prefix = f"DRV-{current_year}"
 
-        last_request = DriverRequest.objects.filter(
-            protocol__startswith=year_prefix
-        ).aggregate(Max('protocol'))
+        with transaction.atomic():
+            last_request = DriverRequest.objects.select_for_update().filter(
+                protocol__startswith=year_prefix
+            ).aggregate(Max('protocol'))
 
-        last_protocol = last_request['protocol__max']
+            last_protocol = last_request['protocol__max']
 
-        if last_protocol:
-            last_number = int(last_protocol[-4:])
-            new_number = last_number + 1
-        else:
-            new_number = 1
+            if last_protocol:
+                last_number = int(last_protocol[-4:])
+                new_number = last_number + 1
+            else:
+                new_number = 1
 
-        return f"{year_prefix}{new_number:04d}"
+            return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
         if not self.protocol:
@@ -514,26 +516,28 @@ class VehicleRequest(models.Model):
             self.plate = self.plate.upper().strip().replace(' ', '')
 
     def _generate_protocol(self):
-        """Gera protocolo único no formato VHC-YYYYNNNN."""
+        """Gera protocolo único no formato VHC-YYYYNNNN usando lock de banco de dados."""
         from django.db.models import Max
         from django.utils import timezone
+        from django.db import transaction
 
         current_year = timezone.now().year
         year_prefix = f"VHC-{current_year}"
 
-        last_request = VehicleRequest.objects.filter(
-            protocol__startswith=year_prefix
-        ).aggregate(Max('protocol'))
+        with transaction.atomic():
+            last_request = VehicleRequest.objects.select_for_update().filter(
+                protocol__startswith=year_prefix
+            ).aggregate(Max('protocol'))
 
-        last_protocol = last_request['protocol__max']
+            last_protocol = last_request['protocol__max']
 
-        if last_protocol:
-            last_number = int(last_protocol[-4:])
-            new_number = last_number + 1
-        else:
-            new_number = 1
+            if last_protocol:
+                last_number = int(last_protocol[-4:])
+                new_number = last_number + 1
+            else:
+                new_number = 1
 
-        return f"{year_prefix}{new_number:04d}"
+            return f"{year_prefix}{new_number:04d}"
 
     def save(self, *args, **kwargs):
         if not self.protocol:

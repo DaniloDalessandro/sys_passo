@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Vehicle
 
+
 class VehicleSerializer(serializers.ModelSerializer):
     # Aliases em português para compatibilidade com o frontend
     placa = serializers.CharField(source='plate', required=False)
@@ -18,7 +19,18 @@ class VehicleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehicle
-        fields = '__all__'
+        fields = [
+            'id',
+            'plate', 'brand', 'model', 'year', 'color',
+            'chassis_number', 'renavam', 'fuel_type', 'category', 'passenger_capacity',
+            'photo_1', 'photo_2', 'photo_3', 'photo_4', 'photo_5',
+            'status', 'is_active',
+            'created_at', 'updated_at', 'created_by', 'updated_by',
+            # Portuguese aliases
+            'placa', 'marca', 'modelo', 'ano', 'cor',
+            'chassi', 'combustivel', 'categoria', 'capacidade',
+            'created_by_username', 'updated_by_username',
+        ]
         extra_kwargs = {
             'plate': {'required': False},
             'brand': {'required': False},
@@ -30,18 +42,3 @@ class VehicleSerializer(serializers.ModelSerializer):
             'category': {'required': False},
             'passenger_capacity': {'required': False},
         }
-
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        representation['placa'] = instance.plate
-        representation['marca'] = instance.brand
-        representation['modelo'] = instance.model
-        representation['ano'] = instance.year
-        representation['cor'] = instance.color
-        representation['chassi'] = instance.chassis_number
-        representation['combustivel'] = instance.fuel_type
-        representation['categoria'] = instance.category
-        representation['capacidade'] = instance.passenger_capacity
-        representation['created_by_username'] = instance.created_by.username if instance.created_by else None
-        representation['updated_by_username'] = instance.updated_by.username if instance.updated_by else None
-        return representation

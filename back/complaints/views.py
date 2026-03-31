@@ -198,7 +198,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
         resolution_notes = request.data.get('resolution_notes', '')
 
-        complaint.status = 'resolvida'
+        complaint.status = 'concluido'
         complaint.reviewed_by = request.user
         complaint.reviewed_at = timezone.now()
 

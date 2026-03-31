@@ -16,21 +16,17 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   return fetch(url, options)
 }
 
+/**
+ * Fetch autenticado que usa cookies HttpOnly gerenciados pelo backend.
+ * O navegador envia os cookies automaticamente via `credentials: 'include'`.
+ * Não adiciona o header Authorization manualmente.
+ */
 export async function authFetch(path: string, options: RequestInit = {}) {
   const url = path.startsWith("http://") || path.startsWith("https://") ? path : buildApiUrl(path)
 
-  // Obtém o token do localStorage
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
-
-  // Adiciona o token aos headers se existir
-  const headers = new Headers(options.headers)
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
-
   return fetch(url, {
     ...options,
-    headers,
+    credentials: 'include',
   })
 }
 

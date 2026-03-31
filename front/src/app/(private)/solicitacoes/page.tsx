@@ -96,7 +96,7 @@ type RequestType = 'driver' | 'vehicle';
 
 export default function SolicitacoesPage() {
   const router = useRouter()
-  const { canApprove } = useAuthContext()
+  const { canApprove, isAuthenticated } = useAuthContext()
 
   const [activeTab, setActiveTab] = useState<RequestType>('driver')
   const [driverRequests, setDriverRequests] = useState<DriverRequest[]>([])
@@ -227,14 +227,13 @@ export default function SolicitacoesPage() {
   }, [activeTab, loadDriverRequests, loadVehicleRequests])
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    if (!token) {
+    if (isAuthenticated === false) {
       router.push("/")
       return
     }
 
     loadData()
-  }, [router, loadData])
+  }, [router, loadData, isAuthenticated])
 
   const handleSort = (field: string) => {
     if (sortField === field) {

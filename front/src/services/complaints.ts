@@ -5,24 +5,20 @@ async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
     throw new Error('fetchWithAuth só pode ser chamado no lado do cliente');
   }
 
-  const token = localStorage.getItem('access_token');
   const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
     ? pathOrUrl
     : buildApiUrl(pathOrUrl);
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
       ...options.headers,
     },
   });
 
   if (response.status === 401) {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
     window.location.href = '/';
     throw new Error('Sessão expirada');
   }

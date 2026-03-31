@@ -12,7 +12,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 
 export default function ConductorDetailsPage() {
   const params = useParams();
-  const { accessToken } = useAuthContext();
+  const { isAuthenticated } = useAuthContext();
   const [conductor, setConductor] = useState<Conductor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +35,15 @@ export default function ConductorDetailsPage() {
         }
 
         // Check if user is authenticated
-        if (!accessToken) {
-          throw new Error('Token de acesso não encontrado');
+        if (!isAuthenticated) {
+          throw new Error('Usuário não autenticado');
         }
 
         const response = await fetch(`http://localhost:8000/api/conductors/${conductorId}/`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
         });
 
         if (!response.ok) {
@@ -79,10 +79,10 @@ export default function ConductorDetailsPage() {
       }
     };
 
-    if (params.id && accessToken) {
+    if (params.id && isAuthenticated) {
       fetchConductor();
     }
-  }, [params.id, accessToken]);
+  }, [params.id, isAuthenticated]);
 
   const isLicenseExpiringSoon = (dateString: string) => {
     try {

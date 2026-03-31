@@ -65,7 +65,7 @@ export default function DriverRequestDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  const { canApprove } = useAuthContext()
+  const { canApprove, isAuthenticated } = useAuthContext()
 
   const [request, setRequest] = useState<DriverRequest | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -110,19 +110,11 @@ export default function DriverRequestDetailsPage() {
 
   const openPdfInNewTab = async (requestId: number, type: 'document' | 'cnh', title: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        toast.error('Token de autenticação não encontrado');
-        return;
-      }
-
       const url = getPdfEndpointUrl(requestId, type);
 
-      // Fetch PDF with authentication
+      // Fetch PDF with authentication via HttpOnly cookie
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -140,14 +132,13 @@ export default function DriverRequestDetailsPage() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
-    if (!token) {
+    if (isAuthenticated === false) {
       router.push("/")
       return
     }
 
     loadRequest()
-  }, [id, router])
+  }, [id, router, isAuthenticated])
 
   const loadRequest = async () => {
     try {

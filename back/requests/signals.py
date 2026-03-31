@@ -35,11 +35,6 @@ def notify_new_driver_request(sender, instance, created, **kwargs):
                         'id': instance.id,
                         'protocol': protocol,
                         'name': instance.name,
-                        'cpf': instance.cpf,
-                        'email': instance.email,
-                        'phone': instance.phone,
-                        'license_number': instance.license_number,
-                        'license_category': instance.license_category,
                         'status': instance.status,
                         'created_at': instance.created_at.isoformat() if instance.created_at else None,
                     }

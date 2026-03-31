@@ -52,16 +52,15 @@ interface FetchComplaintsParams {
 }
 
 async function fetchWithAuth(pathOrUrl: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('access_token')
   const url = pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')
     ? pathOrUrl
     : buildApiUrl(pathOrUrl)
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : '',
       ...options.headers,
     },
   })

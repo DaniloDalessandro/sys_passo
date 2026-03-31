@@ -78,25 +78,20 @@ def vehicle_stats(request):
             is_active=True
         ).count()
 
-        categories_stats = {}
-        categories = ['Van', 'Caminhão', 'Ônibus', 'Carreta', 'Carro']
-        for category in categories:
-            count = Vehicle.objects.filter(
-                category=category,
-                is_active=True
-            ).count()
-            if count > 0:
-                categories_stats[category] = count
+        from django.db.models import Count
+        categories_stats = dict(
+            Vehicle.objects.filter(is_active=True)
+            .values('category')
+            .annotate(count=Count('id'))
+            .values_list('category', 'count')
+        )
 
-        fuel_type_stats = {}
-        fuel_types = ['gasoline', 'ethanol', 'diesel', 'flex', 'electric', 'hybrid']
-        for fuel_type in fuel_types:
-            count = Vehicle.objects.filter(
-                fuel_type=fuel_type,
-                is_active=True
-            ).count()
-            if count > 0:
-                fuel_type_stats[fuel_type] = count
+        fuel_type_stats = dict(
+            Vehicle.objects.filter(is_active=True)
+            .values('fuel_type')
+            .annotate(count=Count('id'))
+            .values_list('fuel_type', 'count')
+        )
 
         return Response({
             'total_vehicles': total_vehicles,
@@ -191,12 +186,8 @@ def get_vehicle_by_plate(request, plate):
 
         if current_conductor:
             vehicle_data['current_conductor'] = {
-                'full_name': current_conductor.name,
-                'cpf': current_conductor.cpf,
-                'cnh_number': current_conductor.license_number,
-                'cnh_category': current_conductor.license_category,
-                'phone': current_conductor.phone,
-                'email': current_conductor.email,
+                'first_name': current_conductor.name.split()[0] if current_conductor.name else '',
+                'license_category': current_conductor.license_category,
             }
         else:
             vehicle_data['current_conductor'] = None

@@ -91,4 +91,14 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 
 ---
 
+---
+
+## Idioma
+
+Todas as mensagens visíveis ao usuário estão em **português do Brasil (PT-BR)**, incluindo:
+- Notificações de sucesso, erro e alerta (toasts)
+- Mensagens de validação de formulários
+- Textos de diálogos de confirmação
+- Respostas de erro da API
+
 Desenvolvido para ViaLumiar.

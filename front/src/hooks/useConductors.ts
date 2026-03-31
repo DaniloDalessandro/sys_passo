@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { authFetch } from "@/lib/api-client"
+import { authFetch, buildApiUrl } from "@/lib/api-client"
 
 export interface Vehicle {
   id: number
@@ -67,8 +67,6 @@ export interface ConductorFormData {
   is_active: boolean
 }
 
-const API_BASE_URL = "http://localhost:8000/api"
-
 interface FetchParams {
   page?: number
   pageSize?: number
@@ -114,7 +112,7 @@ export function useConductors() {
         queryParams.append('ordering', ordering);
       }
 
-      const url = `${API_BASE_URL}/conductors/?${queryParams.toString()}`
+      const url = buildApiUrl(`api/conductors/?${queryParams.toString()}`)
       const response = await authFetch(url)
 
       if (!response.ok) {
@@ -146,7 +144,7 @@ export function useConductors() {
     })
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/conductors/`, {
+      const response = await authFetch(buildApiUrl("api/conductors/"), {
         method: "POST",
         body: formData,
       })
@@ -174,7 +172,7 @@ export function useConductors() {
     })
 
     try {
-      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`, {
+      const response = await authFetch(buildApiUrl(`api/conductors/${id}/`), {
         method: "PATCH",
         body: formData,
       })
@@ -193,7 +191,7 @@ export function useConductors() {
   const deleteConductor = async (id: number): Promise<void> => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`, {
+      const response = await authFetch(buildApiUrl(`api/conductors/${id}/`), {
         method: "DELETE",
       })
       if (!response.ok) {
@@ -210,7 +208,7 @@ export function useConductors() {
   const getConductor = async (id: number): Promise<Conductor> => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/conductors/${id}/`)
+      const response = await authFetch(buildApiUrl(`api/conductors/${id}/`))
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.detail || "Erro ao carregar condutor")
@@ -233,7 +231,7 @@ export function useConductors() {
       if (excludeId) {
         params.append('exclude_id', excludeId.toString())
       }
-      const response = await authFetch(`${API_BASE_URL}/conductors/check-duplicate/?${params}`)
+      const response = await authFetch(buildApiUrl(`api/conductors/check-duplicate/?${params}`))
       if (!response.ok) {
         throw new Error("Erro ao verificar duplicatas")
       }
@@ -246,7 +244,7 @@ export function useConductors() {
   const fetchStats = useCallback(async () => {
     setError(null)
     try {
-      const response = await authFetch(`${API_BASE_URL}/conductors/stats/`)
+      const response = await authFetch(buildApiUrl("api/conductors/stats/"))
       if (!response.ok) {
         throw new Error("Erro ao carregar estatísticas")
       }
