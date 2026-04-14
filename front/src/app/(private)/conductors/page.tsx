@@ -12,14 +12,12 @@ import {
 import { SortingState } from "@tanstack/react-table"
 
 export default function ConductorsPage() {
-  // State for dialogs and editing
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingConductor, setEditingConductor] = useState<Conductor | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false)
   const [conductorToDeactivate, setConductorToDeactivate] = useState<Conductor | null>(null)
 
-  // State for server-side pagination and filtering
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [filters, setFilters] = useState<Record<string, any>>({ is_active: 'true' });
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -36,16 +34,14 @@ export default function ConductorsPage() {
     getConductor,
   } = useConductors()
 
-  // Fetch stats when component mounts
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  // Fetch data when pagination or filters change
   useEffect(() => {
     const ordering = sorting.map(s => (s.desc ? "-" : "") + s.id).join(",");
     const fetchParams = {
-      page: pagination.pageIndex + 1, // API is 1-based, table is 0-based
+      page: pagination.pageIndex + 1, // A API usa índice 1, a tabela usa 0
       pageSize: pagination.pageSize,
       filters: filters,
       ordering: ordering,
@@ -62,7 +58,7 @@ export default function ConductorsPage() {
       ordering: ordering,
     };
     fetchConductors(fetchParams);
-    fetchStats(); // Atualiza estatísticas também
+    fetchStats();
   }, [pagination, filters, sorting, fetchConductors, fetchStats]);
 
   const handleSubmit = async (data: ConductorFormData) => {
@@ -77,7 +73,7 @@ export default function ConductorsPage() {
       }
       setIsDialogOpen(false)
       setEditingConductor(null)
-      handleRefreshData() // Refresh data
+      handleRefreshData()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao salvar condutor")
     } finally {
@@ -111,7 +107,7 @@ export default function ConductorsPage() {
       toast.success("Condutor inativado com sucesso!")
       setIsDeactivateDialogOpen(false)
       setConductorToDeactivate(null)
-      handleRefreshData() // Refresh data
+      handleRefreshData()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao inativar condutor")
     } finally {

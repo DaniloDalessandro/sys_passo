@@ -10,7 +10,6 @@ interface ConductorStatsProps {
 }
 
 export function ConductorStats({ stats }: ConductorStatsProps) {
-  // Se as estatísticas ainda não foram carregadas, mostra valores zerados
   const displayStats = stats || {
     total_conductors: 0,
     active_conductors: 0,
@@ -24,9 +23,7 @@ export function ConductorStats({ stats }: ConductorStatsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Estatísticas Principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total de Condutores */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Total de Condutores</CardTitle>
@@ -47,7 +44,6 @@ export function ConductorStats({ stats }: ConductorStatsProps) {
           </CardContent>
         </Card>
 
-        {/* CNHs Ativas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">CNHs Válidas</CardTitle>
@@ -63,7 +59,6 @@ export function ConductorStats({ stats }: ConductorStatsProps) {
           </CardContent>
         </Card>
 
-        {/* CNHs Vencendo */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Vencem em 30 dias</CardTitle>
@@ -77,7 +72,6 @@ export function ConductorStats({ stats }: ConductorStatsProps) {
           </CardContent>
         </Card>
 
-        {/* CNHs Vencidas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">CNHs Vencidas</CardTitle>

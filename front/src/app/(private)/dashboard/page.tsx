@@ -74,23 +74,23 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
+      <div className="animate-fade-in-up">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do sistema ViaLumiar</p>
+        <p className="text-muted-foreground mt-1">Visão geral do sistema ViaLumiar</p>
       </div>
 
       <StatsOverview stats={stats} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 animate-fade-in-up animate-delay-300">
         <MonthlyRegistrationsChart data={charts.monthlyRegistrations} />
         <CategoryDistributionChart data={charts.categoryDistribution} />
       </div>
 
-      <div className="w-full">
+      <div className="w-full animate-fade-in-up animate-delay-400">
         <RequestsStatusChart data={charts.requestsStatus} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 animate-fade-in-up animate-delay-500">
         <AlertsList alerts={alerts} />
         <RecentActivityList activities={recentActivity} />
       </div>

@@ -304,7 +304,7 @@ export default function SiteHomePage() {
             setVehicleCount(count);
           }
         } catch {
-          // contagem de veículos requer autenticação
+          // Contagem de veículos requer autenticação; falha silenciosa é esperada para usuários não autenticados
         }
 
         try {
@@ -315,10 +315,10 @@ export default function SiteHomePage() {
             setConductorCount(count);
           }
         } catch {
-          // contagem de condutores requer autenticação
+          // Contagem de condutores requer autenticação; falha silenciosa é esperada para usuários não autenticados
         }
       } catch {
-        // contagens não críticas
+        // Contagens são informativas; erro no bloco externo não deve interromper a página
       } finally {
         setIsLoadingCounts(false);
       }
@@ -645,7 +645,7 @@ export default function SiteHomePage() {
         setPlateOptions(data);
       }
     } catch {
-      // silencia erros de busca de placas
+      // Erros de autocomplete de placas são ignorados silenciosamente para não bloquear o formulário
     } finally {
       setIsLoadingPlates(false);
     }

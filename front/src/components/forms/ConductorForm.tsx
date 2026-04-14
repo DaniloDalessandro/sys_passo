@@ -191,7 +191,6 @@ export default function ConductorForm({
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
-            {/* Foto — barra horizontal compacta */}
             <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/40 px-4 py-3">
               <div className="relative shrink-0">
                 {photoFile || (formData.photo && !photoFile) ? (
@@ -238,11 +237,8 @@ export default function ConductorForm({
               />
             </div>
 
-            {/* Layout 2 colunas */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-              {/* ── COLUNA ESQUERDA ── */}
               <div className="space-y-4">
-                {/* Dados Pessoais */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <User className="h-3.5 w-3.5 text-primary" />
@@ -306,7 +302,6 @@ export default function ConductorForm({
                   </div>
                 </div>
 
-                {/* Contato */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <Phone className="h-3.5 w-3.5 text-success" />
@@ -343,9 +338,7 @@ export default function ConductorForm({
                 </div>
               </div>
 
-              {/* ── COLUNA DIREITA ── */}
               <div className="space-y-4">
-                {/* Endereço */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <MapPin className="h-3.5 w-3.5 text-info" />
@@ -385,7 +378,6 @@ export default function ConductorForm({
                   </div>
                 </div>
 
-                {/* CNH */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <CreditCard className="h-3.5 w-3.5 text-warning" />
@@ -435,7 +427,6 @@ export default function ConductorForm({
                   </div>
                 </div>
 
-                {/* Documentos */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <FileText className="h-3.5 w-3.5 text-primary" />

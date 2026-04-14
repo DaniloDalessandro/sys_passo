@@ -59,7 +59,7 @@ export function NotificationBadge() {
       await fetchUnreadCount();
       await fetchUnreadNotifications();
     } catch {
-      // silencia erro de rede
+      // Erros de rede são ignorados silenciosamente para não interromper a UI
     }
   };
 
@@ -69,7 +69,7 @@ export function NotificationBadge() {
       await fetchUnreadCount();
       await fetchUnreadNotifications();
     } catch {
-      // silencia erro de rede
+      // Erros de rede são ignorados silenciosamente para não interromper a UI
     }
   };
 

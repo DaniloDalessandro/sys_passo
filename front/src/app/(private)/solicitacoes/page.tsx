@@ -183,7 +183,6 @@ export default function SolicitacoesPage() {
     onError: () => {},
   })
 
-  // Load data
   const loadDriverRequests = useCallback(async () => {
     try {
       const filters: any = {}
@@ -191,11 +190,10 @@ export default function SolicitacoesPage() {
       if (sortField) filters.ordering = sortOrder === 'desc' ? `-${sortField}` : sortField
 
       const data = await getDriverRequests(filters)
-      // Garantir que sempre seja um array, mesmo se o service retornar algo inesperado
       setDriverRequests(Array.isArray(data) ? data : [])
     } catch (error: any) {
       toast.error(error.message || 'Erro ao carregar solicitações de motoristas')
-      setDriverRequests([]) // Define array vazio em caso de erro
+      setDriverRequests([])
     }
   }, [statusFilter, sortField, sortOrder])
 
@@ -286,7 +284,6 @@ export default function SolicitacoesPage() {
     }
   }
 
-  // Handle reject
   const handleReject = async () => {
     if (!rejectDialog.id || !rejectDialog.type) return
 
@@ -315,7 +312,6 @@ export default function SolicitacoesPage() {
     }
   }
 
-  // Render driver table
   const renderDriverTable = () => {
     if (isLoading) {
       return (
@@ -453,7 +449,6 @@ export default function SolicitacoesPage() {
     )
   }
 
-  // Render vehicle table
   const renderVehicleTable = () => {
     if (isLoading) {
       return (
@@ -609,7 +604,6 @@ export default function SolicitacoesPage() {
     )
   }
 
-  // Render details modal
   const renderDetailsModal = () => {
     if (!detailsDialog.data || !detailsDialog.type) return null
 
@@ -841,7 +835,6 @@ export default function SolicitacoesPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 pt-2">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Gestão de Solicitações</h1>
@@ -875,7 +868,6 @@ export default function SolicitacoesPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as RequestType)} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="driver" className="flex items-center gap-2">
@@ -917,10 +909,8 @@ export default function SolicitacoesPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Details Modal */}
       {renderDetailsModal()}
 
-      {/* Approve Confirmation Dialog */}
       <AlertDialog open={approveDialog.open} onOpenChange={(open) => setApproveDialog({ ...approveDialog, open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -955,7 +945,6 @@ export default function SolicitacoesPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reject Dialog */}
       <Dialog open={rejectDialog.open} onOpenChange={(open) => {
         setRejectDialog({ ...rejectDialog, open })
         if (!open) setRejectionReason('')

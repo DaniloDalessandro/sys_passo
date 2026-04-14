@@ -20,7 +20,6 @@ export function PDFViewer({ open, onOpenChange, pdfUrl, title }: PDFViewerProps)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  // Reset loading state quando o dialog abre
   useEffect(() => {
     if (open) {
       setIsLoading(true)
@@ -40,7 +39,6 @@ export function PDFViewer({ open, onOpenChange, pdfUrl, title }: PDFViewerProps)
   }
 
   const handleDownload = () => {
-    // Cria um link temporário para download
     const link = document.createElement('a')
     link.href = pdfUrl
     link.download = `${title}.pdf`
@@ -59,7 +57,6 @@ export function PDFViewer({ open, onOpenChange, pdfUrl, title }: PDFViewerProps)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl h-[95vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-slate-900 to-gray-900">
-        {/* Header moderno */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
@@ -102,7 +99,6 @@ export function PDFViewer({ open, onOpenChange, pdfUrl, title }: PDFViewerProps)
           </div>
         </div>
 
-        {/* Content área */}
         <div className="flex-1 relative bg-gray-100 overflow-hidden">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 z-10">
@@ -168,7 +164,6 @@ export function PDFViewer({ open, onOpenChange, pdfUrl, title }: PDFViewerProps)
           )}
         </div>
 
-        {/* Footer com dica */}
         <div className="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-3 border-t border-white/10">
           <p className="text-xs text-gray-400 text-center">
             💡 <span className="font-semibold text-gray-300">Dica:</span> Use os controles do visualizador PDF para navegar, ampliar ou imprimir o documento

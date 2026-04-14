@@ -30,7 +30,7 @@ const capitalize = (s: string) => {
   )
 }
 
-// Memoize o componente de breadcrumb para evitar re-renderizações
+// Evita re-renderizações desnecessárias ao navegar entre páginas
 const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => {
   return (
     <Breadcrumb>
@@ -71,9 +71,8 @@ export default function Layout({
 }>) {
   const pathname = usePathname()
   
-  // Memoize o cálculo dos segmentos do path
-  const pathSegments = useMemo(() => 
-    pathname.split("/").filter((segment) => segment),
+  const pathSegments = useMemo(
+    () => pathname.split("/").filter((segment) => segment),
     [pathname]
   )
 
@@ -81,7 +80,7 @@ export default function Layout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="flex flex-col overflow-hidden w-full">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background/80 backdrop-blur-md px-4 sticky top-0 z-10 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <SidebarTrigger className="-ml-1" />
           <Separator
             orientation="vertical"
@@ -92,7 +91,7 @@ export default function Layout({
             <NotificationBadge />
           </div>
         </header>
-        <main className="flex-1 p-4 overflow-hidden w-full">{children}</main>
+        <main className="flex-1 p-4 overflow-hidden w-full animate-fade-in">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

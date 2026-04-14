@@ -34,14 +34,12 @@ export function useDuplicateWarnings(excludeId?: number) {
     license_number: { exists: false, isLoading: false },
   });
 
-  // Refs to store timeout IDs for debouncing
   const timeoutRefs = useRef<{
     cpf?: NodeJS.Timeout;
     email?: NodeJS.Timeout;
     license_number?: NodeJS.Timeout;
   }>({});
 
-  // Function to clear all timeouts
   const clearTimeouts = useCallback(() => {
     Object.values(timeoutRefs.current).forEach(timeout => {
       if (timeout) clearTimeout(timeout);
@@ -49,32 +47,26 @@ export function useDuplicateWarnings(excludeId?: number) {
     timeoutRefs.current = {};
   }, []);
 
-  // Function to check for duplicates with debouncing
   const checkDuplicate = useCallback(
     (field: 'cpf' | 'email' | 'license_number', value: string) => {
-      // Clear existing timeout for this field
       if (timeoutRefs.current[field]) {
         clearTimeout(timeoutRefs.current[field]);
       }
 
-      // Reset warning state for this field
       setWarnings(prev => ({
         ...prev,
         [field]: { exists: false, isLoading: false }
       }));
 
-      // Skip validation if value is empty or too short
       if (!value || value.trim().length < 3) {
         return;
       }
 
-      // Set loading state
       setWarnings(prev => ({
         ...prev,
         [field]: { exists: false, isLoading: true }
       }));
 
-      // Set new timeout for debounced API call
       timeoutRefs.current[field] = setTimeout(async () => {
         try {
           const result = await checkDuplicateField(field, value, excludeId);
@@ -111,7 +103,6 @@ export function useDuplicateWarnings(excludeId?: number) {
     }));
   }, []);
 
-  // Function to clear all warnings
   const clearAllWarnings = useCallback(() => {
     clearTimeouts();
     setWarnings({
@@ -121,7 +112,6 @@ export function useDuplicateWarnings(excludeId?: number) {
     });
   }, [clearTimeouts]);
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       clearTimeouts();

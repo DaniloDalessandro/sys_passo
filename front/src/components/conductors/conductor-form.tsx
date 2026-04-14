@@ -201,7 +201,6 @@ export function ConductorForm({
         </div>
       )}
 
-      {/* ── Dados Pessoais ── */}
       <div>
         <SectionHeader>Dados Pessoais</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -248,7 +247,6 @@ export function ConductorForm({
         </div>
       </div>
 
-      {/* ── Endereço ── */}
       <div className="pt-2 border-t border-gray-100">
         <SectionHeader>Endereço</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -280,7 +278,6 @@ export function ConductorForm({
         </div>
       </div>
 
-      {/* ── Contato ── */}
       <div className="pt-2 border-t border-gray-100">
         <SectionHeader>Contato</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -296,7 +293,6 @@ export function ConductorForm({
         </div>
       </div>
 
-      {/* ── CNH ── */}
       <div className="pt-2 border-t border-gray-100">
         <SectionHeader>Carteira Nacional de Habilitação (CNH)</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -329,7 +325,6 @@ export function ConductorForm({
         </div>
       </div>
 
-      {/* ── Documentos ── */}
       <div className="pt-2 border-t border-gray-100">
         <SectionHeader>Documentos</SectionHeader>
         <div className={cn(

@@ -18,8 +18,7 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
 /**
  * Fetch autenticado que usa cookies HttpOnly gerenciados pelo backend.
- * O navegador envia os cookies automaticamente via `credentials: 'include'`.
- * Não adiciona o header Authorization manualmente.
+ * Não adiciona o header Authorization manualmente pois o cookie é enviado automaticamente.
  */
 export async function authFetch(path: string, options: RequestInit = {}) {
   const url = path.startsWith("http://") || path.startsWith("https://") ? path : buildApiUrl(path)

@@ -11,42 +11,50 @@ interface StatsOverviewProps {
 export function StatsOverview({ stats }: StatsOverviewProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <StatsCard
-        title="Total de Veículos"
-        value={stats.vehicles.total}
-        icon={Car}
-        iconColor="text-blue-500 dark:text-blue-400"
-        subtitle={`${stats.vehicles.active} ativos, ${stats.vehicles.inactive} inativos`}
-        trend={{
-          value: stats.vehicles.growth_percentage,
-          isPositive: stats.vehicles.growth_percentage > 0
-        }}
-      />
-      <StatsCard
-        title="Total de Condutores"
-        value={stats.conductors.total}
-        icon={Users}
-        iconColor="text-green-500 dark:text-green-400"
-        subtitle={`${stats.conductors.active} ativos, ${stats.conductors.inactive} inativos`}
-        trend={{
-          value: stats.conductors.growth_percentage,
-          isPositive: stats.conductors.growth_percentage > 0
-        }}
-      />
-      <StatsCard
-        title="Solicitações"
-        value={stats.requests.total}
-        icon={FileText}
-        iconColor="text-orange-500 dark:text-orange-400"
-        subtitle={`${stats.requests.pending} pendentes, ${stats.requests.approved} aprovadas`}
-      />
-      <StatsCard
-        title="Reclamações"
-        value={stats.complaints.total}
-        icon={MessageSquare}
-        iconColor="text-red-500 dark:text-red-400"
-        subtitle={`${stats.complaints.pending} pendentes, ${stats.complaints.resolved} resolvidas`}
-      />
+      <div className="animate-fade-in-up animate-delay-75">
+        <StatsCard
+          title="Total de Veículos"
+          value={stats.vehicles.total}
+          icon={Car}
+          iconColor="text-blue-500 dark:text-blue-400"
+          subtitle={`${stats.vehicles.active} ativos, ${stats.vehicles.inactive} inativos`}
+          trend={{
+            value: stats.vehicles.growth_percentage,
+            isPositive: stats.vehicles.growth_percentage > 0
+          }}
+        />
+      </div>
+      <div className="animate-fade-in-up animate-delay-150">
+        <StatsCard
+          title="Total de Condutores"
+          value={stats.conductors.total}
+          icon={Users}
+          iconColor="text-green-500 dark:text-green-400"
+          subtitle={`${stats.conductors.active} ativos, ${stats.conductors.inactive} inativos`}
+          trend={{
+            value: stats.conductors.growth_percentage,
+            isPositive: stats.conductors.growth_percentage > 0
+          }}
+        />
+      </div>
+      <div className="animate-fade-in-up animate-delay-225">
+        <StatsCard
+          title="Solicitações"
+          value={stats.requests.total}
+          icon={FileText}
+          iconColor="text-orange-500 dark:text-orange-400"
+          subtitle={`${stats.requests.pending} pendentes, ${stats.requests.approved} aprovadas`}
+        />
+      </div>
+      <div className="animate-fade-in-up animate-delay-300">
+        <StatsCard
+          title="Reclamações"
+          value={stats.complaints.total}
+          icon={MessageSquare}
+          iconColor="text-red-500 dark:text-red-400"
+          subtitle={`${stats.complaints.pending} pendentes, ${stats.complaints.resolved} resolvidas`}
+        />
+      </div>
     </div>
   )
 }

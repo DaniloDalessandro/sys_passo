@@ -162,9 +162,7 @@ export default function VehicleForm({
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
-            {/* Layout 2 colunas principais */}
             <div className="grid grid-cols-2 gap-x-6">
-              {/* ── COLUNA ESQUERDA: Informações Básicas ── */}
               <div>
                 <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                   <Truck className="h-3.5 w-3.5 text-primary" />
@@ -258,9 +256,7 @@ export default function VehicleForm({
                 </div>
               </div>
 
-              {/* ── COLUNA DIREITA: Documentação + Condutores ── */}
               <div className="space-y-4">
-                {/* Documentação */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <FileText className="h-3.5 w-3.5 text-warning" />
@@ -282,7 +278,6 @@ export default function VehicleForm({
                   </div>
                 </div>
 
-                {/* Condutores */}
                 <div>
                   <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                     <Users className="h-3.5 w-3.5 text-success" />
@@ -323,7 +318,6 @@ export default function VehicleForm({
               </div>
             </div>
 
-            {/* Fotos — linha completa */}
             <div>
               <div className="mb-3 flex items-center gap-2 border-b border-border pb-1.5">
                 <Image className="h-3.5 w-3.5 text-info" />

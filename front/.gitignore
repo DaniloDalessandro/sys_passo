@@ -32,6 +32,16 @@ debug.log
 # Deployment
 .vercel
 
+# PWA — arquivos gerados pelo next-pwa (não comitar, são rebuiltados)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
+public/worker-*.js
+public/worker-*.js.map
+public/fallback-*.js
+public/fallback-*.js.map
+
 # Tooling
 .mcp.json
 # Note: components.json is required for shadcn/ui configuration

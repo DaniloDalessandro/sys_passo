@@ -56,8 +56,6 @@ export function ConductorDataTable({
       if (saved) return JSON.parse(saved);
     }
 
-    // Se não há nada salvo, usar DEFAULT_VISIBLE_COLUMNS
-    // Todas as colunas disponíveis
     const allColumns = [
       "name", "cpf", "license_number", "license_category", "phone",
       "whatsapp", "email", "address", "nationality", "gender_display",
@@ -65,7 +63,6 @@ export function ConductorDataTable({
       "created_at", "updated_at", "is_active"
     ];
 
-    // Criar objeto de visibilidade: true apenas para as colunas em DEFAULT_VISIBLE_COLUMNS
     const initialVisibility: Record<string, boolean> = {};
     allColumns.forEach(col => {
       initialVisibility[col] = DEFAULT_VISIBLE_COLUMNS.includes(col);
@@ -83,7 +80,6 @@ export function ConductorDataTable({
   const handleFilterChange = (columnId: string, value: any) => {
     const newFilters = { ...filters };
 
-    // Se o valor é vazio, remove a chave do objeto
     if (value === '' || value === null || value === undefined) {
       delete newFilters[columnId];
     } else {

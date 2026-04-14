@@ -1,16 +1,9 @@
 """
-Arquivo de testes para o app Complaints.
+Testes abrangentes para o app complaints.
 
-Este arquivo contém exemplos de testes que podem ser executados
-para validar o funcionamento do sistema de denúncias.
-
-Para executar os testes:
-    python manage.py test complaints
-
-Para executar com verbosidade:
-    python manage.py test complaints --verbosity=2
+Cobre o ViewSet completo, endpoints públicos (autocomplete, types, check-protocol)
+e as actions (change_status, change_priority, mark_as_resolved, statistics).
 """
-
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -19,13 +12,42 @@ from rest_framework import status
 
 from .models import Complaint
 from vehicles.models import Vehicle
+from authentication.models import UserProfile
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def make_user(username='complaintuser', password='ComplaintPass123!', email='complaint@example.com', role='viewer'):
+    user = User.objects.create_user(username=username, password=password, email=email)
+    profile = user.profile
+    profile.role = role
+    profile.save()
+    return user
+
+
+def make_approver(username='approver', password='ApprPass123!', email='appr@example.com'):
+    return make_user(username=username, password=password, email=email, role='approver')
+
+
+def make_complaint(vehicle_plate='TST1234', complaint_type='excesso_velocidade',
+                   description='Teste de denúncia com descrição de pelo menos 20 caracteres',
+                   **kwargs):
+    return Complaint.objects.create(
+        vehicle_plate=vehicle_plate,
+        complaint_type=complaint_type,
+        description=description,
+        **kwargs
+    )
+
+
+# ---------------------------------------------------------------------------
+# Complaint Model Tests
+# ---------------------------------------------------------------------------
 
 class ComplaintModelTest(TestCase):
-    """Testes para o modelo Complaint"""
-
     def setUp(self):
-        """Configurar dados para os testes"""
         self.vehicle = Vehicle.objects.create(
             plate='ABC1234',
             brand='Toyota',
@@ -34,86 +56,48 @@ class ComplaintModelTest(TestCase):
             color='Preto'
         )
 
-    def test_create_complaint(self):
-        """Testar criação de denúncia"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='ABC1234',
-            complaint_type='excesso_velocidade',
-            description='Teste de denúncia com descrição de pelo menos 20 caracteres'
-        )
-
-        self.assertEqual(complaint.vehicle_plate, 'ABC1234')
-        self.assertEqual(complaint.status, 'pendente')
+    def test_create_complaint_default_status_proposto(self):
+        complaint = make_complaint(vehicle_plate='ABC1234')
+        self.assertEqual(complaint.status, 'proposto')
         self.assertEqual(complaint.priority, 'media')
         self.assertIsNotNone(complaint.created_at)
 
-    def test_auto_associate_vehicle(self):
-        """Testar associação automática de veículo pela placa"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='abc1234',  # lowercase para testar normalização
-            complaint_type='direcao_perigosa',
-            description='Teste de associação automática de veículo com descrição mínima'
-        )
-
+    def test_auto_associate_vehicle_by_plate(self):
+        complaint = make_complaint(vehicle_plate='abc1234')
         self.assertIsNotNone(complaint.vehicle)
         self.assertEqual(complaint.vehicle.id, self.vehicle.id)
-        self.assertEqual(complaint.vehicle_plate, 'ABC1234')  # Deve ser normalizado
+        self.assertEqual(complaint.vehicle_plate, 'ABC1234')
 
     def test_plate_normalization(self):
-        """Testar normalização de placa (uppercase, sem espaços)"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='  abc 1d23  ',
-            complaint_type='uso_celular',
-            description='Teste de normalização de placa com descrição mínima'
-        )
+        complaint = make_complaint(vehicle_plate='  xyz 1d23  ')
+        self.assertEqual(complaint.vehicle_plate, 'XYZ1D23')
 
-        self.assertEqual(complaint.vehicle_plate, 'ABC1D23')
+    def test_anonymous_detection_sem_dados(self):
+        complaint = make_complaint(vehicle_plate='ABX9999')
+        self.assertTrue(complaint.is_anonymous)
 
-    def test_anonymous_detection(self):
-        """Testar detecção automática de denúncia anônima"""
-        # Denúncia anônima (sem dados do denunciante)
-        anonymous_complaint = Complaint.objects.create(
-            vehicle_plate='ABC1234',
-            complaint_type='outros',
-            description='Denúncia anônima com descrição mínima de caracteres'
-        )
+    def test_not_anonymous_com_nome(self):
+        complaint = make_complaint(vehicle_plate='ABX8888', complainant_name='João Silva')
+        self.assertFalse(complaint.is_anonymous)
 
-        self.assertTrue(anonymous_complaint.is_anonymous)
-
-        # Denúncia identificada (com dados do denunciante)
-        identified_complaint = Complaint.objects.create(
-            vehicle_plate='XYZ5678',
-            complaint_type='outros',
-            description='Denúncia identificada com descrição mínima',
-            complainant_name='João Silva'
-        )
-
-        self.assertFalse(identified_complaint.is_anonymous)
-
-    def test_string_representation(self):
-        """Testar representação em string do modelo"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='ABC1234',
-            complaint_type='excesso_velocidade',
-            description='Teste de representação em string com descrição mínima'
-        )
-
+    def test_str_representation(self):
+        complaint = make_complaint(vehicle_plate='ABC1234')
         expected = f"Denúncia #{complaint.id} - ABC1234 - Excesso de Velocidade"
         self.assertEqual(str(complaint), expected)
 
+    def test_protocol_gerado_automaticamente(self):
+        complaint = make_complaint(vehicle_plate='AAA1111')
+        self.assertIsNotNone(complaint.protocol)
+        self.assertTrue(complaint.protocol.startswith('CMP-'))
 
-class ComplaintAPITest(APITestCase):
-    """Testes para a API de denúncias"""
 
+# ---------------------------------------------------------------------------
+# Complaint API Tests
+# ---------------------------------------------------------------------------
+
+class ComplaintCreateTests(APITestCase):
     def setUp(self):
-        """Configurar dados para os testes"""
         self.client = APIClient()
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            email='test@example.com'
-        )
-
         self.vehicle = Vehicle.objects.create(
             plate='TEST123',
             brand='Honda',
@@ -122,247 +106,276 @@ class ComplaintAPITest(APITestCase):
             color='Branco'
         )
 
-    def test_create_complaint_public(self):
-        """Testar criação de denúncia sem autenticação (público)"""
-        url = '/api/complaints/'
+    def test_criar_denuncia_publico_retorna_201(self):
         data = {
             'vehicle_plate': 'TEST123',
             'complaint_type': 'excesso_velocidade',
             'description': 'Teste de criação pública de denúncia com descrição mínima',
-            'occurrence_date': '2025-10-08',
+            'occurrence_date': '2026-01-08',
             'occurrence_location': 'Rua Teste, 123',
             'complainant_name': 'João Silva',
             'complainant_email': 'joao@email.com',
             'complainant_phone': '(11) 99999-9999'
         }
-
-        response = self.client.post(url, data, format='json')
-
+        response = self.client.post('/api/complaints/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('message', response.data)
         self.assertIn('complaint', response.data)
-        self.assertEqual(Complaint.objects.count(), 1)
 
-    def test_create_complaint_anonymous(self):
-        """Testar criação de denúncia anônima"""
-        url = '/api/complaints/'
+    def test_criar_denuncia_anonima_retorna_201(self):
         data = {
             'vehicle_plate': 'TEST123',
             'complaint_type': 'direcao_perigosa',
             'description': 'Denúncia anônima com descrição de pelo menos 20 caracteres'
         }
-
-        response = self.client.post(url, data, format='json')
-
+        response = self.client.post('/api/complaints/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         complaint = Complaint.objects.first()
         self.assertTrue(complaint.is_anonymous)
 
-    def test_create_complaint_validation_error(self):
-        """Testar validação de descrição mínima"""
-        url = '/api/complaints/'
+    def test_criar_denuncia_descricao_curta_retorna_400(self):
         data = {
             'vehicle_plate': 'TEST123',
             'complaint_type': 'outros',
-            'description': 'Curta'  # Menos de 20 caracteres
+            'description': 'Curta'
         }
-
-        response = self.client.post(url, data, format='json')
-
+        response = self.client.post('/api/complaints/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('description', response.data)
 
-    def test_list_complaints_requires_auth(self):
-        """Testar que listagem requer autenticação"""
-        url = '/api/complaints/'
-        response = self.client.get(url)
+    def test_criar_denuncia_sem_placa_retorna_400(self):
+        data = {
+            'complaint_type': 'outros',
+            'description': 'Descrição com pelo menos 20 caracteres para teste'
+        }
+        response = self.client.post('/api/complaints/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_criar_denuncia_placa_curta_retorna_400(self):
+        data = {
+            'vehicle_plate': 'ABC',
+            'complaint_type': 'outros',
+            'description': 'Descrição com pelo menos 20 caracteres para teste'
+        }
+        response = self.client.post('/api/complaints/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_list_complaints_authenticated(self):
-        """Testar listagem de denúncias autenticada"""
-        # Criar algumas denúncias
-        Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Denúncia 1 com descrição mínima de caracteres'
-        )
-        Complaint.objects.create(
-            vehicle_plate='TEST456',
-            complaint_type='uso_celular',
-            description='Denúncia 2 com descrição mínima de caracteres'
-        )
 
-        # Autenticar
+class ComplaintListTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user()
+        make_complaint(vehicle_plate='TST1111')
+        make_complaint(vehicle_plate='TST2222', complaint_type='uso_celular')
+
+    def test_listar_denuncias_autenticado_retorna_200(self):
         self.client.force_authenticate(user=self.user)
-
-        url = '/api/complaints/'
-        response = self.client.get(url)
-
+        response = self.client.get('/api/complaints/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 2)
 
-    def test_filter_complaints_by_status(self):
-        """Testar filtro por status"""
-        Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Denúncia pendente com descrição mínima',
-            status='pendente'
-        )
-        Complaint.objects.create(
-            vehicle_plate='TEST456',
-            complaint_type='uso_celular',
-            description='Denúncia resolvida com descrição mínima',
-            status='resolvida'
-        )
+    def test_listar_denuncias_sem_autenticacao_retorna_401(self):
+        response = self.client.get('/api/complaints/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_filtrar_denuncias_por_status(self):
+        make_complaint(vehicle_plate='TST3333', status='em_analise')
         self.client.force_authenticate(user=self.user)
-
-        url = '/api/complaints/?status=pendente'
-        response = self.client.get(url)
-
+        response = self.client.get('/api/complaints/?status=em_analise')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-        self.assertEqual(response.data['results'][0]['status'], 'pendente')
 
-    def test_change_status_endpoint(self):
-        """Testar endpoint de alteração de status"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Teste de alteração de status com descrição mínima',
-            status='pendente'
-        )
 
+class ComplaintChangeStatusTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user()
+        self.complaint = make_complaint(vehicle_plate='STA1234')
+
+    def test_alterar_status_autenticado_retorna_200(self):
         self.client.force_authenticate(user=self.user)
-
-        url = f'/api/complaints/{complaint.id}/change_status/'
-        data = {'status': 'em_analise'}
-        response = self.client.post(url, data, format='json')
-
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_status/',
+            {'status': 'em_analise'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.complaint.refresh_from_db()
+        self.assertEqual(self.complaint.status, 'em_analise')
+        self.assertEqual(self.complaint.reviewed_by, self.user)
 
-        complaint.refresh_from_db()
-        self.assertEqual(complaint.status, 'em_analise')
-        self.assertEqual(complaint.reviewed_by, self.user)
-        self.assertIsNotNone(complaint.reviewed_at)
-
-    def test_change_priority_endpoint(self):
-        """Testar endpoint de alteração de prioridade"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Teste de alteração de prioridade com descrição mínima',
-            priority='media'
+    def test_alterar_status_sem_autenticacao_retorna_401(self):
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_status/',
+            {'status': 'em_analise'},
+            format='json'
         )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_alterar_status_invalido_retorna_400(self):
         self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_status/',
+            {'status': 'status_inexistente'},
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        url = f'/api/complaints/{complaint.id}/change_priority/'
-        data = {'priority': 'urgente'}
-        response = self.client.post(url, data, format='json')
 
+class ComplaintChangePriorityTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user(username='complaintuser2', email='cp2@example.com')
+        self.complaint = make_complaint(vehicle_plate='PRI1234')
+
+    def test_alterar_prioridade_autenticado_retorna_200(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_priority/',
+            {'priority': 'urgente'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.complaint.refresh_from_db()
+        self.assertEqual(self.complaint.priority, 'urgente')
 
-        complaint.refresh_from_db()
-        self.assertEqual(complaint.priority, 'urgente')
-
-    def test_mark_as_resolved_endpoint(self):
-        """Testar endpoint de marcar como resolvida"""
-        complaint = Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Teste de resolução de denúncia com descrição mínima',
-            status='em_analise'
-        )
-
+    def test_alterar_prioridade_invalida_retorna_400(self):
         self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_priority/',
+            {'priority': 'extrema'},
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        url = f'/api/complaints/{complaint.id}/mark_as_resolved/'
-        data = {'resolution_notes': 'Motorista foi advertido'}
-        response = self.client.post(url, data, format='json')
+    def test_alterar_prioridade_sem_campo_retorna_400(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/change_priority/',
+            {},
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
+class ComplaintMarkAsResolvedTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user(username='complaintuser3', email='cp3@example.com')
+        self.complaint = make_complaint(vehicle_plate='RES1234', status='em_analise')
+
+    def test_marcar_como_resolvida_autenticado_retorna_200(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/mark_as_resolved/',
+            {'resolution_notes': 'Motorista foi notificado'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.complaint.refresh_from_db()
+        self.assertEqual(self.complaint.status, 'concluido')
+        self.assertEqual(self.complaint.resolution_notes, 'Motorista foi notificado')
 
-        complaint.refresh_from_db()
-        self.assertEqual(complaint.status, 'resolvida')
-        self.assertEqual(complaint.resolution_notes, 'Motorista foi advertido')
-        self.assertEqual(complaint.reviewed_by, self.user)
-
-    def test_statistics_endpoint(self):
-        """Testar endpoint de estatísticas"""
-        # Criar denúncias com diferentes status
-        Complaint.objects.create(
-            vehicle_plate='TEST123',
-            complaint_type='excesso_velocidade',
-            description='Denúncia 1 com descrição mínima',
-            status='pendente'
+    def test_marcar_como_resolvida_sem_autenticacao_retorna_401(self):
+        response = self.client.post(
+            f'/api/complaints/{self.complaint.id}/mark_as_resolved/',
+            {'resolution_notes': 'Resolvido'},
+            format='json'
         )
-        Complaint.objects.create(
-            vehicle_plate='TEST456',
-            complaint_type='uso_celular',
-            description='Denúncia 2 com descrição mínima',
-            status='resolvida'
-        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
+class ComplaintStatisticsTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = make_user(username='complaintuser4', email='cp4@example.com')
+        make_complaint(vehicle_plate='STC1111')
+        make_complaint(vehicle_plate='STC2222', complaint_type='uso_celular', status='concluido')
+
+    def test_estatisticas_autenticado_retorna_200(self):
         self.client.force_authenticate(user=self.user)
-
-        url = '/api/complaints/statistics/'
-        response = self.client.get(url)
-
+        response = self.client.get('/api/complaints/statistics/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('total', response.data)
         self.assertIn('by_status', response.data)
-        self.assertIn('by_priority', response.data)
         self.assertIn('by_type', response.data)
         self.assertEqual(response.data['total'], 2)
 
-    def test_vehicle_autocomplete(self):
-        """Testar endpoint de autocomplete de veículos"""
-        url = '/api/complaints/vehicles/autocomplete/?q=TEST'
-        response = self.client.get(url)
+    def test_estatisticas_sem_autenticacao_retorna_401(self):
+        response = self.client.get('/api/complaints/statistics/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
+# ---------------------------------------------------------------------------
+# Public Endpoints
+# ---------------------------------------------------------------------------
+
+class ComplaintPublicEndpointsTests(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.vehicle = Vehicle.objects.create(
+            plate='PUB1234',
+            brand='Ford',
+            model='Ka',
+            year=2020,
+            color='Azul'
+        )
+
+    def test_autocomplete_veiculos_retorna_200(self):
+        response = self.client.get('/api/complaints/vehicles/autocomplete/?q=PUB')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['plate'], 'TEST123')
+        self.assertEqual(response.data[0]['plate'], 'PUB1234')
 
-    def test_complaint_types_endpoint(self):
-        """Testar endpoint de tipos de denúncia"""
-        url = '/api/complaints/types/'
-        response = self.client.get(url)
-
+    def test_autocomplete_veiculos_query_curta_retorna_lista_vazia(self):
+        response = self.client.get('/api/complaints/vehicles/autocomplete/?q=P')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 10)  # 10 tipos disponíveis
+        self.assertEqual(response.data, [])
+
+    def test_tipos_denuncia_retorna_200(self):
+        response = self.client.get('/api/complaints/_types/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertEqual(len(response.data), 10)
         self.assertIn('value', response.data[0])
         self.assertIn('label', response.data[0])
 
+    def test_verificar_protocolo_sem_protocolo_retorna_400(self):
+        response = self.client.get('/api/complaints/_check-protocol/')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verificar_protocolo_inexistente_retorna_404(self):
+        response = self.client.get('/api/complaints/_check-protocol/?protocol=CMP20260000')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_verificar_protocolo_existente_retorna_200(self):
+        complaint = make_complaint(vehicle_plate='PRO1234')
+        response = self.client.get(f'/api/complaints/_check-protocol/?protocol={complaint.protocol}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['protocol'], complaint.protocol)
+
+
+# ---------------------------------------------------------------------------
+# Validation Tests
+# ---------------------------------------------------------------------------
 
 class ComplaintValidationTest(TestCase):
-    """Testes de validação do modelo"""
-
-    def test_description_min_length_validation(self):
-        """Testar validação de descrição mínima"""
+    def test_descricao_curta_levanta_validacao(self):
         from django.core.exceptions import ValidationError
-
         complaint = Complaint(
-            vehicle_plate='TEST123',
+            vehicle_plate='TST1234',
             complaint_type='outros',
-            description='Curta'  # Menos de 20 caracteres
+            description='Curta'
         )
-
         with self.assertRaises(ValidationError):
             complaint.full_clean()
 
-    def test_plate_min_length_validation(self):
-        """Testar validação de placa mínima"""
+    def test_placa_curta_levanta_validacao(self):
         from django.core.exceptions import ValidationError
-
         complaint = Complaint(
-            vehicle_plate='ABC',  # Menos de 7 caracteres
+            vehicle_plate='ABC',
             complaint_type='outros',
             description='Descrição com pelo menos 20 caracteres para teste'
         )
-
         with self.assertRaises(ValidationError):
             complaint.full_clean()

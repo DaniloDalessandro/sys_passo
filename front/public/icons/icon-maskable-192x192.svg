@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- Fundo pleno (maskable: sem arredondamento, preenche tudo) -->
+  <rect width="192" height="192" fill="#1e40af"/>
+  <!-- Texto centralizado dentro da safe zone (40% padding = 38px cada lado) -->
+  <text
+    x="96"
+    y="116"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-size="68"
+    font-weight="700"
+    text-anchor="middle"
+    fill="#ffffff"
+    letter-spacing="-2"
+  >VL</text>
+</svg>

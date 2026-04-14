@@ -13,7 +13,7 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 
-// Extend ColumnMeta to include custom filter properties
+// Extensão necessária para adicionar propriedades de filtro customizadas ao ColumnMeta do TanStack Table
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
     showFilterIcon?: boolean;
@@ -117,27 +117,22 @@ export function DataTable<TData extends { id?: any }>({
   columnVisibility: externalColumnVisibility = null,
   onColumnVisibilityChange: externalOnColumnVisibilityChange = null,
 }: DataTableProps<TData>) {
-  // Initialize column visibility with audit fields hidden by default
   const getInitialColumnVisibility = React.useCallback(() => {
-    // If parent provides default visible columns, use those
     if (defaultVisibleColumns) {
       const initialVisibility = {};
       columns.forEach(column => {
         const columnId = column.accessorKey || column.id;
-        // Only show columns that are in the defaultVisibleColumns array
         initialVisibility[columnId] = defaultVisibleColumns.includes(columnId);
       });
       return initialVisibility;
     }
 
-    // Otherwise, use the legacy system (hide audit fields by default)
+    // Fallback: oculta campos de auditoria e campos secundários por padrão
     const hiddenByDefaultFields = [
-      // Audit fields
       'created_at', 'criado_em', 'createdAt',
       'created_by', 'criado_por', 'createdBy',
       'updated_at', 'atualizado_em', 'updatedAt',
       'updated_by', 'atualizado_por', 'updatedBy',
-      // Budget Lines secondary fields
       'management_center.name',
       'requesting_center.name',
       'expense_type',
@@ -146,7 +141,6 @@ export function DataTable<TData extends { id?: any }>({
       'main_fiscal.full_name',
       'secondary_fiscal.full_name',
       'process_status',
-      // Optional fields that should be hidden by default
       'phone', 'telefone'
     ];
 
@@ -155,7 +149,6 @@ export function DataTable<TData extends { id?: any }>({
       const columnId = column.accessorKey || column.id;
       const headerText = (column.header || '').toString().toLowerCase();
 
-      // Check if this field should be hidden by default
       const shouldHide = hiddenByDefaultFields.some(field =>
         columnId === field ||
         headerText.includes('criado') ||
@@ -179,11 +172,9 @@ export function DataTable<TData extends { id?: any }>({
   const [columnFilters, setColumnFilters] = React.useState<any[]>([]);
   const [openFilterId, setOpenFilterId] = React.useState<string | null>(null);
 
-  // Use external column visibility if provided, otherwise use internal state
   const columnVisibility: VisibilityState = externalColumnVisibility !== null ? externalColumnVisibility : internalColumnVisibility;
   const setColumnVisibility: React.Dispatch<React.SetStateAction<VisibilityState>> = externalOnColumnVisibilityChange !== null ? externalOnColumnVisibilityChange : setInternalColumnVisibility;
 
-  // Update column visibility when columns change (only for internal state)
   React.useEffect(() => {
     if (externalColumnVisibility === null) {
       setInternalColumnVisibility(prev => ({ ...getInitialColumnVisibility(), ...prev }));
@@ -211,7 +202,6 @@ export function DataTable<TData extends { id?: any }>({
     onSortingChange: (updater) => {
       const newSorting = typeof updater === "function" ? updater(sorting) : updater;
       setSorting(newSorting);
-      // Call parent callback to trigger API call with new sorting
       if (onSortingChange) {
         onSortingChange(newSorting);
       }
@@ -224,7 +214,6 @@ export function DataTable<TData extends { id?: any }>({
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  // Apply initial filters when component mounts
   React.useEffect(() => {
     if (initialFilters && initialFilters.length > 0) {
       initialFilters.forEach(filter => {
@@ -236,12 +225,8 @@ export function DataTable<TData extends { id?: any }>({
     }
   }, [initialFilters]);
 
-  // Filtragem, ordenação etc precisam ser refletidos na query backend
-  // Para simplificação, agora a paginação já é controlada externamente
-
   const handleFilterChange = (columnId, value) => {
     table.getColumn(columnId)?.setFilterValue(value);
-    // Call parent callback to trigger API call with filter
     if (onFilterChange) {
       onFilterChange(columnId, value);
     }
@@ -250,19 +235,16 @@ export function DataTable<TData extends { id?: any }>({
   const clearFilter = (columnId) => {
     table.getColumn(columnId)?.setFilterValue("");
     setOpenFilterId(null);
-    // Call parent callback to clear filter
     if (onFilterChange) {
       onFilterChange(columnId, "");
     }
   };
 
   const clearAllFilters = () => {
-    // Limpar filtros de texto
     table.getAllColumns().forEach((col) => {
       col.setFilterValue("");
     });
 
-    // Restaurar filtros padrão (select filters)
     table.getAllColumns().forEach((col) => {
       if (col.columnDef.meta?.filterType === "select") {
         const defaultFilter = initialFilters?.find(f => f.id === col.id);
@@ -276,7 +258,6 @@ export function DataTable<TData extends { id?: any }>({
 
     setOpenFilterId(null);
 
-    // Notificar o componente pai sobre a limpeza
     if (onFilterChange) {
       table.getAllColumns().forEach((col) => {
         const defaultFilter = initialFilters?.find(f => f.id === col.id);
@@ -293,25 +274,20 @@ export function DataTable<TData extends { id?: any }>({
     (f) => f.value !== undefined && f.value !== ""
   );
 
-  // Determinar quais são os filtros padrão
   const defaultFilterIds = (initialFilters || []).map(f => f.id);
   const isDefaultFilter = (filterId: string, value: any) => {
     const defaultFilter = initialFilters?.find(f => f.id === filterId);
     if (!defaultFilter) return false;
-    // Comparar valores (considerar que podem ser strings ou outros tipos)
     return String(defaultFilter.value).toLowerCase() === String(value).toLowerCase();
   };
 
-  // Filtrar os badges exibíveis
   const displayableFilters = activeFilters.filter(
     (f) => {
       const value = String(f.value || '').toLowerCase();
-      // Não exibir se for filtro padrão ou se o valor for "todos"/"all"
       return !isDefaultFilter(f.id, f.value) && value !== 'todos' && value !== 'all' && value !== '';
     }
   );
 
-  // Verificar se há filtros exibíveis
   const hasDisplayableFilters = displayableFilters.length > 0 ||
     table.getAllColumns().some((col) => {
       const filterValue = col.columnDef.meta?.filterValue;
@@ -422,7 +398,6 @@ export function DataTable<TData extends { id?: any }>({
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col overflow-hidden">
-        {/* TAGS DE FILTROS */}
         {hasDisplayableFilters && (
           <div className="flex flex-wrap gap-2 mb-3">
             {displayableFilters.map((filter) => {
@@ -454,7 +429,6 @@ export function DataTable<TData extends { id?: any }>({
               const filterValue = column.columnDef.meta?.filterValue;
               if (column.columnDef.meta?.filterType === "select" && filterValue && filterValue !== "") {
                 const value = String(filterValue).toLowerCase();
-                // Não exibir badge se for filtro padrão ou "todos"/"all"
                 if (isDefaultFilter(column.id, filterValue) || value === 'todos' || value === 'all') {
                   return null;
                 }
@@ -572,7 +546,6 @@ export function DataTable<TData extends { id?: any }>({
                                             if (header.column.columnDef.meta?.onFilterChange) {
                                               header.column.columnDef.meta.onFilterChange(value);
                                             }
-                                            // Close the popover after selection
                                             setOpenFilterId(null);
                                           }}
                                         >
@@ -683,7 +656,6 @@ export function DataTable<TData extends { id?: any }>({
           </div>
         </div>
 
-        {/* PAGINAÇÃO */}
         <div className="flex items-center justify-between space-x-2 py-2">
           <div className="flex-1 text-sm text-muted-foreground">
             Página {pageIndex + 1} de {Math.ceil(totalCount / pageSize)} —{" "}

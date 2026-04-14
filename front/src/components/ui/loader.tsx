@@ -1,4 +1,3 @@
-// src/components/ui/loader.tsx
 export function Loader({ progress }: { progress: number }) {
   return (
     <div className="relative flex h-24 w-24 items-center justify-center rounded-full">

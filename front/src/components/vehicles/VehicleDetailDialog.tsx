@@ -30,10 +30,7 @@ export function VehicleDetailDialog({
   onOpenChange,
   onEdit,
 }: VehicleDetailDialogProps) {
-  // Force re-render when state changes
-  useEffect(() => {
-    // Effect for handling dialog state changes
-  }, [open, vehicle]);
+  useEffect(() => {}, [open, vehicle]);
 
   const isMaintenanceDue = (dateString: string) => {
     const date = new Date(dateString);

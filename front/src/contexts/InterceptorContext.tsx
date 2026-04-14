@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { buildApiUrl } from "@/lib/api-client";
 
-// Flag global para serializar tentativas de refresh simultâneas
+// Flag global para serializar tentativas de refresh simultâneas; evita múltiplas chamadas paralelas ao endpoint de refresh
 let isRefreshing = false;
-// Fila de requisições que falharam aguardando o novo token
+// Fila de requisições que falharam com 401 aguardando o novo token ser obtido
 let failedQueue: any[] = [];
 
 const processQueue = (error: Error | null) => {
@@ -25,7 +25,7 @@ export function InterceptorProvider({ children }: { children: React.ReactNode })
   const originalFetch = useRef<typeof window.fetch | null>(null);
   const interceptorSetup = useRef(false);
 
-  // Ref garante acesso à versão mais recente do contexto dentro do closure do fetch
+  // Ref mantém referência estável ao contexto sem recriar o interceptor quando os callbacks mudam
   const authContextRef = useRef(authContext);
 
   useEffect(() => {
@@ -50,8 +50,8 @@ export function InterceptorProvider({ children }: { children: React.ReactNode })
 
       const { refreshAccessToken, logout } = authContextRef.current;
 
-      // Tokens são enviados automaticamente pelo navegador via cookies HttpOnly.
-      // Garante que credentials='include' esteja presente em todas as requisições.
+      // Tokens HttpOnly são enviados automaticamente pelo navegador;
+      // credentials='include' é obrigatório para que os cookies sejam encaminhados
       const newInit: RequestInit = {
         ...init,
         credentials: init?.credentials ?? 'include',

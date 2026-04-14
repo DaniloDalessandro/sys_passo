@@ -55,7 +55,6 @@ export function UserDataTable({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
@@ -96,7 +95,6 @@ export function UserDataTable({
         </Button>
       </div>
 
-      {/* Table */}
       <div className="rounded-md border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">

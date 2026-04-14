@@ -34,7 +34,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  // Refs evitam recriação da conexão quando callbacks mudam
+  // Refs mantêm referências estáveis aos callbacks para evitar recriar o WebSocket quando eles mudam
   const onMessageRef = useRef(onMessage);
   const onConnectRef = useRef(onConnect);
   const onDisconnectRef = useRef(onDisconnect);
@@ -67,7 +67,7 @@ export const useWebSocket = (url: string, options: UseWebSocketOptions = {}) => 
           const data = JSON.parse(event.data);
           onMessageRef.current?.(data);
         } catch {
-          // mensagem inválida ignorada
+          // Mensagem com JSON inválido é descartada silenciosamente
         }
       };
 

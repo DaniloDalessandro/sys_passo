@@ -24,17 +24,14 @@ export default function ConductorDetailsPage() {
           throw new Error('ID do condutor inválido');
         }
 
-        // Clean the ID string - remove any whitespace or special characters
         const cleanId = String(params.id).trim();
 
-        // More robust ID validation
         const conductorId = parseInt(cleanId, 10);
 
         if (isNaN(conductorId) || conductorId <= 0 || !Number.isInteger(conductorId)) {
           throw new Error(`ID do condutor deve ser um número válido. Recebido: "${params.id}" (limpo: "${cleanId}")`);
         }
 
-        // Check if user is authenticated
         if (!isAuthenticated) {
           throw new Error('Usuário não autenticado');
         }
@@ -58,12 +55,9 @@ export default function ConductorDetailsPage() {
 
         const conductorData = await response.json();
 
-        // Map backend fields to frontend expected format
         const mappedConductor: Conductor = {
           ...conductorData,
-          // Backend already provides combined address field through serializer
           address: conductorData.address || 'Endereço não informado',
-          // Ensure required fields have default values
           phone: conductorData.phone || '',
           photo: conductorData.photo || undefined,
           document: conductorData.document || undefined,

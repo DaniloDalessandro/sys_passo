@@ -52,7 +52,7 @@ function saveUserToStorage(user: UserData): void {
     localStorage.setItem("user_last_name", user.last_name)
     if (user.role) localStorage.setItem("user_role", user.role)
   } catch {
-    // ignore storage errors
+    // Ignora erros do localStorage (ex.: modo privado bloqueando acesso ao storage)
   }
 }
 
@@ -77,7 +77,7 @@ function clearUserFromStorage(): void {
   try {
     USER_DATA_KEYS.forEach(key => localStorage.removeItem(key))
   } catch {
-    // ignore storage errors
+    // Ignora erros do localStorage (ex.: modo privado bloqueando acesso ao storage)
   }
 }
 
@@ -124,8 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) throw new Error("Refresh failed")
 
-      // After successful refresh the backend sets new HttpOnly cookies.
-      // Fetch updated user info to keep state in sync.
+      // Após o refresh, o backend renova os cookies HttpOnly;
+      // busca os dados atualizados do usuário para manter o estado sincronizado
       const userResponse = await fetch(buildApiUrl("/api/auth/user-info/"), {
         credentials: "include",
       })
@@ -153,19 +153,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  // Initialize auth state from backend on mount
+  // Inicializa o estado de autenticação verificando o backend; restaura dados do localStorage para evitar flash de tela vazia
   useEffect(() => {
     let isMounted = true
 
     const initializeAuth = async () => {
-      // First try to restore user data from localStorage for instant UI
+      // Restaura dados do localStorage imediatamente para evitar tela em branco durante a verificação
       const storedUser = loadUserFromStorage()
       if (storedUser && isMounted) {
         setUser(storedUser)
         setRole(storedUser.role ?? null)
       }
 
-      // Then verify with backend (relies on HttpOnly cookie being present)
+      // Confirma autenticidade com o backend via cookie HttpOnly
       try {
         const response = await fetch(buildApiUrl("/api/auth/user-info/"), {
           credentials: "include",
@@ -183,7 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setRole(resolvedRole as UserRole)
           }
         } else if (response.status === 401) {
-          // Try to refresh
           const refreshed = await refreshAccessToken()
           if (!refreshed && isMounted) {
             clearUserFromStorage()
@@ -193,7 +192,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         if (isMounted) {
-          // Network error — keep stored user data, don't force logout
+          // Erro de rede: mantém dados armazenados em vez de forçar logout
           console.error("Auth init error:", err)
         }
       } finally {
@@ -211,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync user data changes across tabs
+  // Sincroniza o estado de autenticação entre abas via evento de storage
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "user_id") {

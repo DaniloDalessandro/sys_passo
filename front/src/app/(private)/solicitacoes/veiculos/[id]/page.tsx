@@ -74,7 +74,7 @@ export default function VehicleRequestDetailsPage() {
     try {
       const url = getPdfEndpointUrl(requestId, type);
 
-      // Fetch PDF with authentication via HttpOnly cookie
+      // Busca o PDF com autenticação via cookie HttpOnly; credentials='include' é obrigatório para o cookie ser encaminhado
       const response = await fetch(url, {
         credentials: 'include',
       });
@@ -124,7 +124,7 @@ export default function VehicleRequestDetailsPage() {
         try {
           await markVehicleRequestAsViewed(Number(id))
         } catch {
-          // silencia erro ao marcar como visualizado
+          // Ignora erro ao marcar como visualizado para não bloquear o carregamento da página
         }
       }
     } catch (error: any) {
@@ -156,7 +156,6 @@ export default function VehicleRequestDetailsPage() {
       return
     }
 
-    // Validar apenas se foi preenchido algo e é muito curto
     if (rejectionReason && rejectionReason.trim().length > 0 && rejectionReason.trim().length < 10) {
       toast.error('Se informar o motivo da reprovação, ele deve ter pelo menos 10 caracteres')
       return
@@ -199,7 +198,6 @@ export default function VehicleRequestDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-full mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -221,12 +219,9 @@ export default function VehicleRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-full mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Main Content */}
           <div className="lg:col-span-3 space-y-4">
-            {/* Dados do Veículo */}
             <div className="bg-white rounded-lg p-4">
               <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Car className="h-4 w-4 text-indigo-600" />
@@ -272,7 +267,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Documentação */}
             {(request.chassis_number || request.renavam) && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -296,7 +290,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             )}
 
-            {/* Documentos PDF */}
             {(request.crlv_pdf || request.insurance_pdf) && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -344,7 +337,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             )}
 
-            {/* Fotos */}
             {(request.photo_1 || request.photo_2 || request.photo_3 || request.photo_4 || request.photo_5) && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -372,7 +364,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             )}
 
-            {/* Mensagem */}
             {request.message && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -384,9 +375,7 @@ export default function VehicleRequestDetailsPage() {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-4">
-            {/* Ações */}
             {request.status === 'em_analise' && canApprove && (
               <div className="bg-white rounded-lg p-4">
                 <h3 className="text-base font-semibold text-gray-900 mb-3">Ações</h3>
@@ -410,7 +399,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             )}
 
-            {/* Informações */}
             <div className="bg-white rounded-lg p-4">
               <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-600" />
@@ -436,7 +424,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Reprovação */}
             {request.rejection_reason && (
               <div className="bg-red-50 rounded-lg p-4">
                 <h3 className="text-base font-semibold text-red-900 mb-2 flex items-center gap-2">
@@ -447,7 +434,6 @@ export default function VehicleRequestDetailsPage() {
               </div>
             )}
 
-            {/* Veículo Criado */}
             {request.vehicle && (
               <div className="bg-green-50 rounded-lg p-4">
                 <h3 className="text-base font-semibold text-green-900 mb-2 flex items-center gap-2">
@@ -463,7 +449,6 @@ export default function VehicleRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
       <AlertDialog open={approveDialog} onOpenChange={setApproveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

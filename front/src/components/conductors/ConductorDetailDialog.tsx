@@ -30,10 +30,7 @@ export function ConductorDetailDialog({
   onOpenChange,
   onEdit,
 }: ConductorDetailDialogProps) {
-  // Force re-render when state changes
-  useEffect(() => {
-    // Effect for handling dialog state changes
-  }, [open, conductor]);
+  useEffect(() => {}, [open, conductor]);
   const isLicenseExpiringSoon = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();

@@ -17,7 +17,6 @@ export default function RootPage() {
     }
   }, [router, isAuthenticated, isLoading])
 
-  // Loading enquanto redireciona
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-100 to-blue-50">
       <div className="text-center">

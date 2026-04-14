@@ -35,7 +35,6 @@ export function MultiPhotoUpload({
     const newPreviews = [...previews];
 
     files.forEach((file) => {
-      // Encontra o primeiro slot vazio
       const emptyIndex = newPhotos.findIndex((p) => p === null);
       if (emptyIndex !== -1 && emptyIndex < maxPhotos) {
         newPhotos[emptyIndex] = file;
@@ -46,7 +45,6 @@ export function MultiPhotoUpload({
       }
     });
 
-    // Preenche com nulls até maxPhotos
     while (newPhotos.length < maxPhotos) {
       newPhotos.push(null);
       newPreviews.push("");

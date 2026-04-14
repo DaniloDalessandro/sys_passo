@@ -60,8 +60,7 @@ export function VehicleDataTable({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const savedVisibility = JSON.parse(saved);
-        // Garante que as colunas de auditoria sempre comecem desmarcadas
-        DEFAULT_HIDDEN_COLUMNS.forEach(col => {
+          DEFAULT_HIDDEN_COLUMNS.forEach(col => {
           savedVisibility[col] = false;
         });
         return savedVisibility;
@@ -91,7 +90,6 @@ export function VehicleDataTable({
   const handleFilterChange = (columnId: string, value: any) => {
     const newFilters = { ...filters };
 
-    // Se o valor é vazio, remove a chave do objeto
     if (value === '' || value === null || value === undefined) {
       delete newFilters[columnId];
     } else {

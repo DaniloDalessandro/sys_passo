@@ -112,7 +112,7 @@ export default function DriverRequestDetailsPage() {
     try {
       const url = getPdfEndpointUrl(requestId, type);
 
-      // Fetch PDF with authentication via HttpOnly cookie
+      // Busca o PDF com autenticação via cookie HttpOnly; credentials='include' é obrigatório para o cookie ser encaminhado
       const response = await fetch(url, {
         credentials: 'include',
       });
@@ -150,7 +150,7 @@ export default function DriverRequestDetailsPage() {
         try {
           await markDriverRequestAsViewed(Number(id))
         } catch {
-          // silencia erro ao marcar como visualizado
+          // Ignora erro ao marcar como visualizado para não bloquear o carregamento da página
         }
       }
     } catch (error: any) {
@@ -182,7 +182,6 @@ export default function DriverRequestDetailsPage() {
       return
     }
 
-    // Validar apenas se foi preenchido algo e é muito curto
     if (rejectionReason && rejectionReason.trim().length > 0 && rejectionReason.trim().length < 10) {
       toast.error('Se informar o motivo da reprovação, ele deve ter pelo menos 10 caracteres')
       return
@@ -225,7 +224,6 @@ export default function DriverRequestDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-full mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -247,12 +245,9 @@ export default function DriverRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-full mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Main Content */}
           <div className="lg:col-span-3 space-y-4">
-            {/* Dados Pessoais */}
             <div className="bg-white rounded-lg p-4">
               <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <User className="h-4 w-4 text-blue-600" />
@@ -288,7 +283,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Contato */}
             <div className="bg-white rounded-lg p-4">
               <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Phone className="h-4 w-4 text-green-600" />
@@ -312,7 +306,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Endereço */}
             {request.address && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -334,7 +327,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             )}
 
-            {/* CNH */}
             <div className="bg-white rounded-lg p-4">
               <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-purple-600" />
@@ -358,7 +350,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Documentos */}
             {(request.document || request.cnh_digital || request.photo) && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -428,7 +419,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             )}
 
-            {/* Mensagem */}
             {request.message && (
               <div className="bg-white rounded-lg p-4">
                 <h2 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -440,9 +430,7 @@ export default function DriverRequestDetailsPage() {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-4">
-            {/* Ações */}
             {request.status === 'em_analise' && canApprove && (
               <div className="bg-white rounded-lg p-4">
                 <h3 className="text-base font-semibold text-gray-900 mb-3">Ações</h3>
@@ -466,7 +454,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             )}
 
-            {/* Informações */}
             <div className="bg-white rounded-lg p-4">
               <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-600" />
@@ -492,7 +479,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             </div>
 
-            {/* Reprovação */}
             {request.rejection_reason && (
               <div className="bg-red-50 rounded-lg p-4">
                 <h3 className="text-base font-semibold text-red-900 mb-2 flex items-center gap-2">
@@ -503,7 +489,6 @@ export default function DriverRequestDetailsPage() {
               </div>
             )}
 
-            {/* Condutor Criado */}
             {request.conductor && (
               <div className="bg-green-50 rounded-lg p-4">
                 <h3 className="text-base font-semibold text-green-900 mb-2 flex items-center gap-2">
@@ -519,7 +504,6 @@ export default function DriverRequestDetailsPage() {
         </div>
       </div>
 
-      {/* Dialogs */}
       <AlertDialog open={approveDialog} onOpenChange={setApproveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -615,7 +599,6 @@ export default function DriverRequestDetailsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Document Viewer Modal */}
       {documentModal.open && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setDocumentModal({ open: false, url: '', title: '' })}>
           <div className="relative max-w-5xl w-full max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>

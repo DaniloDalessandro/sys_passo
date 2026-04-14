@@ -10,7 +10,6 @@ interface VehicleStatsProps {
 }
 
 export function VehicleStats({ stats }: VehicleStatsProps) {
-  // Se as estatísticas ainda não foram carregadas, mostra valores zerados
   const displayStats = stats || {
     total_vehicles: 0,
     active_vehicles: 0,
@@ -23,9 +22,7 @@ export function VehicleStats({ stats }: VehicleStatsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Estatísticas Principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Total de Veículos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Total de Veículos</CardTitle>
@@ -46,7 +43,6 @@ export function VehicleStats({ stats }: VehicleStatsProps) {
           </CardContent>
         </Card>
 
-        {/* Veículos com mais de 10 anos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Veículos +10 anos</CardTitle>
@@ -62,7 +58,6 @@ export function VehicleStats({ stats }: VehicleStatsProps) {
           </CardContent>
         </Card>
 
-        {/* Frota Eletrificada */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
             <CardTitle className="text-xs font-medium">Frota Eletrificada</CardTitle>
