@@ -30,7 +30,6 @@ const capitalize = (s: string) => {
   )
 }
 
-// Evita re-renderizações desnecessárias ao navegar entre páginas
 const MemoizedBreadcrumb = memo(({ pathSegments }: { pathSegments: string[] }) => {
   return (
     <Breadcrumb>

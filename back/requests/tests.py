@@ -14,11 +14,6 @@ from conductors.models import Conductor
 from vehicles.models import Vehicle
 from authentication.models import UserProfile
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='testuser', password='TestPass123!', email='test@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
@@ -26,14 +21,11 @@ def make_user(username='testuser', password='TestPass123!', email='test@example.
     profile.save()
     return user
 
-
 def make_approver(username='approver', password='ApproverPass123!', email='approver@example.com'):
     return make_user(username=username, password=password, email=email, role='approver')
 
-
 def make_admin(username='adminuser', password='AdminPass123!', email='admin@example.com'):
     return make_user(username=username, password=password, email=email, role='admin')
-
 
 VALID_DRIVER_REQUEST_DATA = {
     'name': 'Ana Paula',
@@ -63,7 +55,6 @@ VALID_VEHICLE_REQUEST_DATA = {
     'passenger_capacity': 5,
 }
 
-
 def make_driver_request(**kwargs):
     data = {
         'name': 'Carlos Lima',
@@ -84,7 +75,6 @@ def make_driver_request(**kwargs):
     data.update(kwargs)
     return DriverRequest.objects.create(**data)
 
-
 def make_vehicle_request(**kwargs):
     data = {
         'plate': 'JKL7890',
@@ -98,11 +88,6 @@ def make_vehicle_request(**kwargs):
     }
     data.update(kwargs)
     return VehicleRequest.objects.create(**data)
-
-
-# ---------------------------------------------------------------------------
-# DriverRequest: Create (público)
-# ---------------------------------------------------------------------------
 
 class DriverRequestCreateTests(TestCase):
     def setUp(self):
@@ -145,11 +130,6 @@ class DriverRequestCreateTests(TestCase):
         response = self.client.post('/api/requests/drivers/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# DriverRequest: List (autenticado)
-# ---------------------------------------------------------------------------
-
 class DriverRequestListTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -164,11 +144,6 @@ class DriverRequestListTests(TestCase):
     def test_listar_solicitacoes_motoristas_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/requests/drivers/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# DriverRequest: Mark as Viewed
-# ---------------------------------------------------------------------------
 
 class DriverRequestMarkViewedTests(TestCase):
     def setUp(self):
@@ -186,11 +161,6 @@ class DriverRequestMarkViewedTests(TestCase):
     def test_marcar_visualizado_sem_autenticacao_retorna_401(self):
         response = self.client.post(f'/api/requests/drivers/{self.req.pk}/mark_as_viewed/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# DriverRequest: Approve
-# ---------------------------------------------------------------------------
 
 class DriverRequestApproveTests(TestCase):
     def setUp(self):
@@ -222,11 +192,6 @@ class DriverRequestApproveTests(TestCase):
         # Tenta aprovar de novo
         response = self.client.post(f'/api/requests/drivers/{self.req.pk}/approve/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# DriverRequest: Reject
-# ---------------------------------------------------------------------------
 
 class DriverRequestRejectTests(TestCase):
     def setUp(self):
@@ -264,11 +229,6 @@ class DriverRequestRejectTests(TestCase):
         response = self.client.post(f'/api/requests/drivers/{self.req.pk}/reject/', {'status': 'reprovado'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# VehicleRequest: Create (público)
-# ---------------------------------------------------------------------------
-
 class VehicleRequestCreateTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -299,11 +259,6 @@ class VehicleRequestCreateTests(TestCase):
         response = self.client.post('/api/requests/vehicles/', {'brand': 'Honda'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# VehicleRequest: List (autenticado)
-# ---------------------------------------------------------------------------
-
 class VehicleRequestListTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -318,11 +273,6 @@ class VehicleRequestListTests(TestCase):
     def test_listar_solicitacoes_veiculos_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/requests/vehicles/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# VehicleRequest: Mark as Viewed
-# ---------------------------------------------------------------------------
 
 class VehicleRequestMarkViewedTests(TestCase):
     def setUp(self):
@@ -340,11 +290,6 @@ class VehicleRequestMarkViewedTests(TestCase):
     def test_marcar_visualizado_sem_autenticacao_retorna_401(self):
         response = self.client.post(f'/api/requests/vehicles/{self.req.pk}/mark_as_viewed/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# VehicleRequest: Approve
-# ---------------------------------------------------------------------------
 
 class VehicleRequestApproveTests(TestCase):
     def setUp(self):
@@ -388,11 +333,6 @@ class VehicleRequestApproveTests(TestCase):
         self.client.force_authenticate(user=self.approver)
         response = self.client.post(f'/api/requests/vehicles/{req_sem_chassis.pk}/approve/')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# VehicleRequest: Reject
-# ---------------------------------------------------------------------------
 
 class VehicleRequestRejectTests(TestCase):
     def setUp(self):

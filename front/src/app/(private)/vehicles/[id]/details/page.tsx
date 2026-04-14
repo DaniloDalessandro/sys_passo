@@ -119,7 +119,6 @@ export default function VehicleDetailsPage() {
           </div>
 
           <div className="space-y-6">
-            {/* Card Dados do Veículo */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
@@ -128,7 +127,6 @@ export default function VehicleDetailsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Informações Principais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   <div className="space-y-3">
                     <div className="flex flex-col">
@@ -176,7 +174,6 @@ export default function VehicleDetailsPage() {
                   </div>
                 </div>
 
-                {/* Documentação */}
                 <div className="mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col">
@@ -190,7 +187,6 @@ export default function VehicleDetailsPage() {
                   </div>
                 </div>
 
-                {/* Proprietário */}
                 <div className="mb-8">
                   <div className="flex flex-col">
                     <strong className="text-gray-600 mb-1 text-sm">Proprietário:</strong>
@@ -198,7 +194,6 @@ export default function VehicleDetailsPage() {
                   </div>
                 </div>
 
-                {/* Linha divisória para campos de auditoria */}
                 <div className="border-t border-gray-200 pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="flex flex-col">
@@ -234,7 +229,6 @@ export default function VehicleDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Card Manutenção */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
@@ -270,7 +264,6 @@ export default function VehicleDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Card Condutores Vinculados */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">

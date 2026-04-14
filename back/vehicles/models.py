@@ -13,7 +13,6 @@ class Vehicle(models.Model):
     photo_4 = models.ImageField(upload_to='vehicles/', blank=True, null=True, verbose_name='Foto 4')
     photo_5 = models.ImageField(upload_to='vehicles/', blank=True, null=True, verbose_name='Foto 5')
     
-    # Dados técnicos do veículo
     chassis_number = models.CharField(max_length=50, unique=True, default='', verbose_name='Chassi')
     renavam = models.CharField(max_length=20, unique=True, default='', verbose_name='RENAVAM')
     fuel_type = models.CharField(max_length=20, choices=[
@@ -24,8 +23,6 @@ class Vehicle(models.Model):
         ('electric', 'Elétrico'),
         ('hybrid', 'Híbrido'),
     ], default='flex', verbose_name='Tipo de Combustível')
-
-    # Categoria e capacidade
     category = models.CharField(max_length=50, choices=[
         ('Van', 'Van'),
         ('Caminhão', 'Caminhão'),
@@ -34,9 +31,6 @@ class Vehicle(models.Model):
         ('Carro', 'Carro'),
     ], default='Van', verbose_name='Categoria')
     passenger_capacity = models.PositiveIntegerField(default=5, verbose_name='Capacidade de Passageiros')
-
-        
-    # Status e relacionamentos
     conductors = models.ManyToManyField('conductors.Conductor', blank=True, related_name='vehicles', verbose_name='Condutores')
     status = models.CharField(max_length=20, choices=[
         ('ativo', 'Ativo'),

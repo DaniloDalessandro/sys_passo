@@ -5,7 +5,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from .models import UserProfile, EmailVerification, PasswordResetToken
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
@@ -58,7 +57,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         raise serializers.ValidationError('Credenciais inválidas ou conta inativa.')
 
-
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
@@ -101,13 +99,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         
         return user
 
-
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('is_email_verified', 'email_verified_at', 'role')
         read_only_fields = ('is_email_verified', 'email_verified_at', 'role')
-
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(read_only=True)
@@ -117,7 +113,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 
                  'date_joined', 'last_login', 'is_active', 'profile')
         read_only_fields = ('id', 'date_joined', 'last_login')
-
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
@@ -147,7 +142,6 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         
         return instance
 
-
 class PasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -170,14 +164,12 @@ class PasswordChangeSerializer(serializers.Serializer):
         user.save()
         return user
 
-
 class PasswordResetRequestSerializer(serializers.Serializer):
     """
     Serializer para solicitação de redefinição de senha.
     A existência do e-mail não é validada aqui para prevenir enumeração de contas.
     """
     email = serializers.EmailField()
-
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
     """
@@ -203,7 +195,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError("Token de redefinição inválido ou expirado.")
 
         return attrs
-
 
 class EmailVerificationSerializer(serializers.Serializer):
     """
@@ -238,7 +229,6 @@ class EmailVerificationSerializer(serializers.Serializer):
 
         return user
 
-
 class EmailResendSerializer(serializers.Serializer):
     """
     Serializer para reenvio de e-mail de verificação.
@@ -254,11 +244,6 @@ class EmailResendSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Nenhum usuário encontrado com este e-mail.")
 
-
-# ---------------------------------------------------------------------------
-# Gestão de usuários (admin only)
-# ---------------------------------------------------------------------------
-
 class UserManagementSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source='profile.role', read_only=True)
     is_email_verified = serializers.BooleanField(source='profile.is_email_verified', read_only=True)
@@ -271,7 +256,6 @@ class UserManagementSerializer(serializers.ModelSerializer):
             'role', 'is_email_verified',
         )
         read_only_fields = ('id', 'date_joined', 'last_login', 'is_email_verified')
-
 
 class AdminCreateUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -317,7 +301,6 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
             user.profile.email_verified_at = timezone.now()
             user.profile.save()
         return user
-
 
 class AdminUpdateUserSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=UserProfile.ROLE_CHOICES, required=False)

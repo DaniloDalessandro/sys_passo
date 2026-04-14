@@ -207,7 +207,6 @@ class UserLogoutView(APIView):
 
     def post(self, request):
         try:
-            # Aceita refresh token do body ou do cookie
             refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh')
             if refresh_token:
                 token = RefreshToken(refresh_token)
@@ -224,7 +223,6 @@ class UserLogoutView(APIView):
                 'message': 'Logout realizado com sucesso'
             }, status=status.HTTP_200_OK)
 
-            # Limpa os cookies de autenticação
             response.delete_cookie('access', path='/')
             response.delete_cookie('refresh', path='/')
 
@@ -634,10 +632,6 @@ def auth_status(request):
         'authentication_type': 'JWT',
     }, status=status.HTTP_200_OK)
 
-
-# ---------------------------------------------------------------------------
-# Gestão de usuários (admin only)
-# ---------------------------------------------------------------------------
 
 class UserManagementListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminRole]

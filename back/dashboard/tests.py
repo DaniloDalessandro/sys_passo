@@ -10,22 +10,12 @@ from rest_framework import status
 
 from authentication.models import UserProfile
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='dashuser', password='DashPass123!', email='dash@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
     profile.role = role
     profile.save()
     return user
-
-
-# ---------------------------------------------------------------------------
-# Dashboard Stats
-# ---------------------------------------------------------------------------
 
 class DashboardStatsTests(TestCase):
     def setUp(self):
@@ -61,11 +51,6 @@ class DashboardStatsTests(TestCase):
         self.assertIn('active', conductor_data)
         self.assertIn('inactive', conductor_data)
 
-
-# ---------------------------------------------------------------------------
-# Dashboard Charts
-# ---------------------------------------------------------------------------
-
 class DashboardChartsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -89,11 +74,6 @@ class DashboardChartsTests(TestCase):
         self.assertIsInstance(monthly, list)
         self.assertEqual(len(monthly), 6)  # 6 meses
 
-
-# ---------------------------------------------------------------------------
-# Dashboard Recent Activity
-# ---------------------------------------------------------------------------
-
 class DashboardRecentActivityTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -108,11 +88,6 @@ class DashboardRecentActivityTests(TestCase):
     def test_atividade_recente_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/dashboard/recent-activity/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Dashboard Alerts
-# ---------------------------------------------------------------------------
 
 class DashboardAlertsTests(TestCase):
     def setUp(self):

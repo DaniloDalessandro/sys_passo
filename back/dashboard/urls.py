@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-URLs do Dashboard
-"""
 from django.urls import re_path
 from . import views
 

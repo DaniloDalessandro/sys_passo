@@ -810,7 +810,6 @@ export default function SiteHomePage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── Navbar ── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
         isScrolled
           ? 'bg-white/90 backdrop-blur-md border-gray-200 shadow-sm'
@@ -836,7 +835,6 @@ export default function SiteHomePage() {
               )}
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center gap-1">
               {[
                 { label: 'Início', id: 'inicio' },
@@ -878,7 +876,6 @@ export default function SiteHomePage() {
               </Link>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -892,7 +889,6 @@ export default function SiteHomePage() {
             </button>
           </div>
 
-          {/* Mobile Navigation */}
           {isMobileMenuOpen && (
             <div className="lg:hidden py-3 border-t border-gray-100">
               <div className="flex flex-col gap-1">
@@ -953,7 +949,6 @@ export default function SiteHomePage() {
         </div>
       </nav>
 
-      {/* ── Hero Section ── */}
       <section id="inicio" className="relative pt-24 pb-20 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="sitehome-orb w-[500px] h-[500px] bg-blue-200/40 top-[-80px] left-[-100px]" style={{ animationDelay: '0s' }} />
         <div className="sitehome-orb w-[400px] h-[400px] bg-indigo-200/30 bottom-[-60px] right-[-80px]" style={{ animationDelay: '4s' }} />
@@ -971,7 +966,6 @@ export default function SiteHomePage() {
               {config.hero_subtitle}
             </p>
 
-            {/* Search Input */}
             <div className="mt-8 w-full max-w-2xl mx-auto sitehome-slide-up-delay-1">
               <div className="relative search-container">
                 <div className="relative flex items-center">
@@ -1009,7 +1003,6 @@ export default function SiteHomePage() {
                   )}
                 </div>
 
-                {/* Autocomplete Suggestions */}
                 {showSuggestions && plateSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-72 overflow-y-auto">
                     {plateSuggestions.map((suggestion, index) => (
@@ -1035,7 +1028,6 @@ export default function SiteHomePage() {
               </div>
             </div>
 
-            {/* Animated Counters */}
             {!isLoadingCounts && (vehicleCount > 0 || conductorCount > 0) && (
               <div className="mt-8 flex items-center justify-center gap-4 sitehome-slide-up-delay-2">
                 {vehicleCount > 0 && (
@@ -1063,11 +1055,9 @@ export default function SiteHomePage() {
               </div>
             )}
 
-            {/* Vehicle Search Result */}
             {vehicleData && (
               <div id="vehicle-result-section" className="mt-10 text-left">
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                  {/* Result Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-blue-600">
                     <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                       <Car className="w-5 h-5" />
@@ -1084,7 +1074,6 @@ export default function SiteHomePage() {
                   </div>
 
                   <div className="p-6">
-                    {/* Vehicle Fields */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                       {[
                         { label: 'Placa', value: vehicleData.plate, highlight: true },
@@ -1116,7 +1105,6 @@ export default function SiteHomePage() {
                       ))}
                     </div>
 
-                    {/* Vehicle Photos */}
                     <div className="mb-6">
                       <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Camera className="w-4 h-4 text-blue-600" />
@@ -1155,7 +1143,6 @@ export default function SiteHomePage() {
                       )}
                     </div>
 
-                    {/* Driver Information */}
                     {vehicleData.current_conductor ? (
                       <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100">
                         <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1195,7 +1182,6 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* ── About Section ── */}
       <section id="about" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
@@ -1212,7 +1198,6 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* ── Registration Section ── */}
       <section id="cadastro" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -1228,7 +1213,6 @@ export default function SiteHomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Driver Registration Card */}
             <button
               onClick={() => setIsDriverDialogOpen(true)}
               className="group text-left bg-white rounded-2xl border border-gray-100 shadow-sm sitehome-card-lift p-7"
@@ -1248,7 +1232,6 @@ export default function SiteHomePage() {
               </span>
             </button>
 
-            {/* Vehicle Registration Card */}
             <button
               onClick={() => setIsVehicleDialogOpen(true)}
               className="group text-left bg-white rounded-2xl border border-gray-100 shadow-sm sitehome-card-lift p-7"
@@ -1271,7 +1254,6 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* ── Complaints Section ── */}
       <section id="denuncias" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
@@ -1333,7 +1315,6 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* ── Contact Section ── */}
       <section id="contato" className="py-20 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -1404,7 +1385,6 @@ export default function SiteHomePage() {
         </div>
       </section>
 
-      {/* ── Driver Registration Dialog ── */}
       <Dialog open={isDriverDialogOpen} onOpenChange={setIsDriverDialogOpen}>
         <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1426,7 +1406,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Vehicle Registration Dialog ── */}
       <Dialog open={isVehicleDialogOpen} onOpenChange={setIsVehicleDialogOpen}>
         <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1448,7 +1427,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Complaint Dialog ── */}
       <Dialog open={isComplaintDialogOpen} onOpenChange={setIsComplaintDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1462,7 +1440,6 @@ export default function SiteHomePage() {
           </DialogHeader>
 
           <form onSubmit={complaintForm.handleSubmit(onComplaintSubmit)} className="space-y-5 mt-2">
-            {/* Placa do Veículo */}
             <div className="space-y-2">
               <Label htmlFor="vehiclePlate" className="text-sm font-medium">
                 Placa do Veículo *
@@ -1497,7 +1474,6 @@ export default function SiteHomePage() {
                   </div>
                 )}
 
-                {/* Autocomplete Dropdown */}
                 {showComplaintSuggestions && complaintPlateSuggestions.length > 0 && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                     {complaintPlateSuggestions.map((suggestion, index) => (
@@ -1533,7 +1509,6 @@ export default function SiteHomePage() {
               )}
             </div>
 
-            {/* Tipo + Data */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="complaintType" className="flex items-center gap-2 text-sm font-medium">
@@ -1581,7 +1556,6 @@ export default function SiteHomePage() {
               </div>
             </div>
 
-            {/* Descrição */}
             <div className="space-y-2">
               <Label htmlFor="description" className="flex items-center gap-2 text-sm font-medium">
                 <FileText className="w-4 h-4" />
@@ -1604,7 +1578,6 @@ export default function SiteHomePage() {
               </div>
             </div>
 
-            {/* Informações do Denunciante */}
             <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-blue-600" />
@@ -1654,7 +1627,6 @@ export default function SiteHomePage() {
               </div>
             </div>
 
-            {/* Fotos com Drag and Drop */}
             <div className="space-y-3">
               <Label className="flex items-center gap-2 text-sm font-medium">
                 <Camera className="w-4 h-4" />
@@ -1720,14 +1692,12 @@ export default function SiteHomePage() {
               )}
             </div>
 
-            {/* Warning */}
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
               <p className="text-xs text-amber-900">
                 <strong>Atenção:</strong> Denúncias falsas podem ser enquadradas como crime de denunciação caluniosa (Art. 339 do Código Penal).
               </p>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-3 justify-end pt-1">
               <Button
                 type="button"
@@ -1764,7 +1734,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Check Complaint Dialog ── */}
       <Dialog open={isCheckComplaintDialogOpen} onOpenChange={(open) => {
         setIsCheckComplaintDialogOpen(open);
         if (!open) {
@@ -1820,7 +1789,6 @@ export default function SiteHomePage() {
               )}
             </div>
 
-            {/* Complaint Data Display */}
             {complaintData && (
               <div className="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <h4 className="font-semibold text-gray-900">Informações da Denúncia</h4>
@@ -1926,7 +1894,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Vehicle Search Dialog ── */}
       <Dialog open={isVehicleSearchDialogOpen} onOpenChange={setIsVehicleSearchDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -2124,7 +2091,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Protocol Modal — Driver ── */}
       <Dialog open={isProtocolModalOpen} onOpenChange={setIsProtocolModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2181,7 +2147,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Protocol Modal — Vehicle ── */}
       <Dialog open={isVehicleProtocolModalOpen} onOpenChange={setIsVehicleProtocolModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2238,7 +2203,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Protocol Modal — Complaint ── */}
       <Dialog open={isComplaintProtocolModalOpen} onOpenChange={setIsComplaintProtocolModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -2295,7 +2259,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Photo Lightbox ── */}
       <Dialog open={!!selectedPhotoUrl} onOpenChange={(open) => !open && setSelectedPhotoUrl(null)}>
         <DialogContent className="max-w-4xl w-[95vw] p-0 bg-black/95 border-0">
           <div className="relative">
@@ -2319,7 +2282,6 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Footer ── */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

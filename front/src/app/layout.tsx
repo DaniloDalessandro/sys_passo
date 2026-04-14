@@ -68,7 +68,6 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        {/* manifest.json já injetado via metadata.manifest acima */}
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body

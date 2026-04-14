@@ -13,18 +13,12 @@ from django.utils import timezone
 from .models import Conductor
 from authentication.models import UserProfile
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='testuser', password='TestPass123!', email='test@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
     profile.role = role
     profile.save()
     return user
-
 
 def make_conductor(
     name='João Silva',
@@ -49,7 +43,6 @@ def make_conductor(
         created_by=created_by
     )
 
-
 VALID_CONDUCTOR_DATA = {
     'name': 'Maria Oliveira',
     'cpf': '11144477735',
@@ -66,11 +59,6 @@ VALID_CONDUCTOR_DATA = {
     'neighborhood': 'Centro',
     'city': 'São Paulo',
 }
-
-
-# ---------------------------------------------------------------------------
-# List / Create
-# ---------------------------------------------------------------------------
 
 class ConductorListCreateTests(TestCase):
     def setUp(self):
@@ -137,11 +125,6 @@ class ConductorListCreateTests(TestCase):
         response = self.client.post('/api/conductors/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# Detail / Update / Delete
-# ---------------------------------------------------------------------------
-
 class ConductorDetailTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -200,11 +183,6 @@ class ConductorDetailTests(TestCase):
         response = self.client.delete(f'/api/conductors/{self.conductor.pk}/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-
-# ---------------------------------------------------------------------------
-# Search
-# ---------------------------------------------------------------------------
-
 class ConductorSearchTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -233,11 +211,6 @@ class ConductorSearchTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 0)
 
-
-# ---------------------------------------------------------------------------
-# Stats
-# ---------------------------------------------------------------------------
-
 class ConductorStatsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -253,11 +226,6 @@ class ConductorStatsTests(TestCase):
     def test_stats_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/conductors/stats/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Check Duplicate
-# ---------------------------------------------------------------------------
 
 class CheckDuplicateTests(TestCase):
     def setUp(self):
@@ -297,11 +265,6 @@ class CheckDuplicateTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['exists'])
-
-
-# ---------------------------------------------------------------------------
-# Bulk Deactivate
-# ---------------------------------------------------------------------------
 
 class BulkDeactivateTests(TestCase):
     def setUp(self):

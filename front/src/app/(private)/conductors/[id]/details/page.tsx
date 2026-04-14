@@ -162,7 +162,6 @@ export default function ConductorDetailsPage() {
                 </AlertDescription>
               </Alert>
             )}
-            {/* Card Dados Pessoais */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">
@@ -181,7 +180,6 @@ export default function ConductorDetailsPage() {
                   )}
                 </div>
                 <div className="md:col-span-2">
-                  {/* Informações Principais */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="flex flex-col">
                       <strong className="text-gray-600 mb-1 text-sm">Nome Completo:</strong>
@@ -230,7 +228,6 @@ export default function ConductorDetailsPage() {
                     </div>
                   </div>
 
-                  {/* Endereço */}
                   {conductor.address && (
                     <div className="mb-6">
                       <div className="flex flex-col">
@@ -243,7 +240,6 @@ export default function ConductorDetailsPage() {
               </CardContent>
             </Card>
 
-            {/* Card CNH, Auditoria & Documentos */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
@@ -375,7 +371,6 @@ export default function ConductorDetailsPage() {
               </Card>
             </div>
 
-            {/* Card Veículos Vinculados */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-3">

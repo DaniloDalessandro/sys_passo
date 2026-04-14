@@ -14,7 +14,6 @@ export default function OfflinePage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-4">
       <div className="max-w-md w-full text-center space-y-6">
 
-        {/* Ícone offline */}
         <div className="flex justify-center">
           <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
             <svg
@@ -38,7 +37,6 @@ export default function OfflinePage() {
           </div>
         </div>
 
-        {/* Texto */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">
             Você está offline

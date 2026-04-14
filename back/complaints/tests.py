@@ -14,11 +14,6 @@ from .models import Complaint
 from vehicles.models import Vehicle
 from authentication.models import UserProfile
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='complaintuser', password='ComplaintPass123!', email='complaint@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
@@ -26,10 +21,8 @@ def make_user(username='complaintuser', password='ComplaintPass123!', email='com
     profile.save()
     return user
 
-
 def make_approver(username='approver', password='ApprPass123!', email='appr@example.com'):
     return make_user(username=username, password=password, email=email, role='approver')
-
 
 def make_complaint(vehicle_plate='TST1234', complaint_type='excesso_velocidade',
                    description='Teste de denúncia com descrição de pelo menos 20 caracteres',
@@ -40,11 +33,6 @@ def make_complaint(vehicle_plate='TST1234', complaint_type='excesso_velocidade',
         description=description,
         **kwargs
     )
-
-
-# ---------------------------------------------------------------------------
-# Complaint Model Tests
-# ---------------------------------------------------------------------------
 
 class ComplaintModelTest(TestCase):
     def setUp(self):
@@ -89,11 +77,6 @@ class ComplaintModelTest(TestCase):
         complaint = make_complaint(vehicle_plate='AAA1111')
         self.assertIsNotNone(complaint.protocol)
         self.assertTrue(complaint.protocol.startswith('CMP-'))
-
-
-# ---------------------------------------------------------------------------
-# Complaint API Tests
-# ---------------------------------------------------------------------------
 
 class ComplaintCreateTests(APITestCase):
     def setUp(self):
@@ -159,7 +142,6 @@ class ComplaintCreateTests(APITestCase):
         response = self.client.post('/api/complaints/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
 class ComplaintListTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -183,7 +165,6 @@ class ComplaintListTests(APITestCase):
         response = self.client.get('/api/complaints/?status=em_analise')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
-
 
 class ComplaintChangeStatusTests(APITestCase):
     def setUp(self):
@@ -220,7 +201,6 @@ class ComplaintChangeStatusTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
 class ComplaintChangePriorityTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -256,7 +236,6 @@ class ComplaintChangePriorityTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
 class ComplaintMarkAsResolvedTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -283,7 +262,6 @@ class ComplaintMarkAsResolvedTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-
 class ComplaintStatisticsTests(APITestCase):
     def setUp(self):
         self.client = APIClient()
@@ -303,11 +281,6 @@ class ComplaintStatisticsTests(APITestCase):
     def test_estatisticas_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/complaints/statistics/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Public Endpoints
-# ---------------------------------------------------------------------------
 
 class ComplaintPublicEndpointsTests(APITestCase):
     def setUp(self):
@@ -353,11 +326,6 @@ class ComplaintPublicEndpointsTests(APITestCase):
         response = self.client.get(f'/api/complaints/_check-protocol/?protocol={complaint.protocol}')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['protocol'], complaint.protocol)
-
-
-# ---------------------------------------------------------------------------
-# Validation Tests
-# ---------------------------------------------------------------------------
 
 class ComplaintValidationTest(TestCase):
     def test_descricao_curta_levanta_validacao(self):

@@ -20,11 +20,6 @@ from .serializers import (
     EmailResendSerializer
 )
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='testuser', password='TestPass123!', email='test@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
@@ -32,14 +27,8 @@ def make_user(username='testuser', password='TestPass123!', email='test@example.
     profile.save()
     return user
 
-
 def make_admin(username='adminuser', password='AdminPass123!', email='admin@example.com'):
     return make_user(username=username, password=password, email=email, role='admin')
-
-
-# ---------------------------------------------------------------------------
-# Auth Status
-# ---------------------------------------------------------------------------
 
 class AuthStatusTests(TestCase):
     def setUp(self):
@@ -49,11 +38,6 @@ class AuthStatusTests(TestCase):
         response = self.client.get('/api/auth/status/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data.get('status'), 'ok')
-
-
-# ---------------------------------------------------------------------------
-# Login
-# ---------------------------------------------------------------------------
 
 class LoginTests(TestCase):
     def setUp(self):
@@ -85,11 +69,6 @@ class LoginTests(TestCase):
     def test_login_sem_dados_retorna_400(self):
         response = self.client.post('/api/auth/login/', {})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# Register
-# ---------------------------------------------------------------------------
 
 class RegisterTests(TestCase):
     def setUp(self):
@@ -132,11 +111,6 @@ class RegisterTests(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# Logout
-# ---------------------------------------------------------------------------
-
 class LogoutTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -150,11 +124,6 @@ class LogoutTests(TestCase):
     def test_logout_sem_autenticacao_retorna_401(self):
         response = self.client.post('/api/auth/logout/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Profile
-# ---------------------------------------------------------------------------
 
 class ProfileTests(TestCase):
     def setUp(self):
@@ -180,11 +149,6 @@ class ProfileTests(TestCase):
         response = self.client.patch('/api/auth/profile/', {'first_name': 'Test'})
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-
-# ---------------------------------------------------------------------------
-# User Info
-# ---------------------------------------------------------------------------
-
 class UserInfoTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -200,11 +164,6 @@ class UserInfoTests(TestCase):
         response = self.client.get('/api/auth/user-info/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-
-# ---------------------------------------------------------------------------
-# Token Verify
-# ---------------------------------------------------------------------------
-
 class TokenVerifyTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -219,11 +178,6 @@ class TokenVerifyTests(TestCase):
     def test_verify_token_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/auth/token/verify/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Password Change
-# ---------------------------------------------------------------------------
 
 class PasswordChangeTests(TestCase):
     def setUp(self):
@@ -256,11 +210,6 @@ class PasswordChangeTests(TestCase):
         })
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# ---------------------------------------------------------------------------
-# Password Reset
-# ---------------------------------------------------------------------------
-
 class PasswordResetTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -278,11 +227,6 @@ class PasswordResetTests(TestCase):
     def test_reset_sem_email_retorna_400(self):
         response = self.client.post('/api/auth/password/reset/', {})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# Email Verify
-# ---------------------------------------------------------------------------
 
 class EmailVerifyTests(TestCase):
     def setUp(self):
@@ -303,11 +247,6 @@ class EmailVerifyTests(TestCase):
             response = self.client.post('/api/auth/email/verify/', {'token': verification.token})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-
-# ---------------------------------------------------------------------------
-# Email Resend
-# ---------------------------------------------------------------------------
-
 class EmailResendTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -320,11 +259,6 @@ class EmailResendTests(TestCase):
     def test_reenvio_email_invalido_retorna_400(self):
         response = self.client.post('/api/auth/email/resend/', {'email': 'naoexiste@example.com'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# Account Delete
-# ---------------------------------------------------------------------------
 
 class AccountDeleteTests(TestCase):
     def setUp(self):
@@ -351,11 +285,6 @@ class AccountDeleteTests(TestCase):
         self.client.force_authenticate(user=user)
         response = self.client.delete('/api/auth/account/delete/', {})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# User Management (admin only)
-# ---------------------------------------------------------------------------
 
 class UserManagementTests(TestCase):
     def setUp(self):
@@ -417,7 +346,6 @@ class UserManagementTests(TestCase):
         response = self.client.patch('/api/auth/users/99999/', {'first_name': 'Nao Existe'})
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-
 class UserProfileModelTest(TestCase):
     """Testes para o modelo UserProfile"""
 
@@ -442,7 +370,6 @@ class UserProfileModelTest(TestCase):
         """Testa a representação em string do profile"""
         expected = f"{self.user.username}'s Profile"
         self.assertEqual(str(self.user.profile), expected)
-
 
 class EmailVerificationModelTest(TestCase):
     """Testes para o modelo EmailVerification"""
@@ -507,7 +434,6 @@ class EmailVerificationModelTest(TestCase):
         verification.save()
         self.assertFalse(verification.is_valid())
 
-
 class PasswordResetTokenModelTest(TestCase):
     """Testes para o modelo PasswordResetToken"""
 
@@ -555,7 +481,6 @@ class PasswordResetTokenModelTest(TestCase):
         reset_token.expires_at = timezone.now() - timedelta(hours=1)
         reset_token.save()
         self.assertTrue(reset_token.is_expired())
-
 
 class UserRegistrationSerializerTest(TestCase):
     """Testes para UserRegistrationSerializer"""
@@ -619,7 +544,6 @@ class UserRegistrationSerializerTest(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertIn('username', serializer.errors)
 
-
 class EmailVerificationSerializerTest(TestCase):
     """Testes para EmailVerificationSerializer"""
 
@@ -677,7 +601,6 @@ class EmailVerificationSerializerTest(TestCase):
         verification.refresh_from_db()
         self.assertTrue(verification.is_used)
 
-
 class EmailResendSerializerTest(TestCase):
     """Testes para EmailResendSerializer"""
 
@@ -708,7 +631,6 @@ class EmailResendSerializerTest(TestCase):
         serializer = EmailResendSerializer(data={'email': 'nonexistent@example.com'})
         self.assertFalse(serializer.is_valid())
         self.assertIn('email', serializer.errors)
-
 
 class UtilityFunctionsTest(TestCase):
     """Testes para funções utilitárias"""

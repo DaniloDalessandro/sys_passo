@@ -12,18 +12,12 @@ from rest_framework import status
 from .models import Vehicle
 from authentication.models import UserProfile
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def make_user(username='testuser', password='TestPass123!', email='test@example.com', role='viewer'):
     user = User.objects.create_user(username=username, password=password, email=email)
     profile = user.profile
     profile.role = role
     profile.save()
     return user
-
 
 def make_vehicle(plate='ABC1234', brand='Toyota', model='Corolla', year=2022, created_by=None):
     return Vehicle.objects.create(
@@ -39,7 +33,6 @@ def make_vehicle(plate='ABC1234', brand='Toyota', model='Corolla', year=2022, cr
         created_by=created_by
     )
 
-
 VALID_VEHICLE_DATA = {
     'plate': 'XYZ9876',
     'brand': 'Honda',
@@ -52,11 +45,6 @@ VALID_VEHICLE_DATA = {
     'category': 'Carro',
     'passenger_capacity': 5,
 }
-
-
-# ---------------------------------------------------------------------------
-# ViewSet: List / Create
-# ---------------------------------------------------------------------------
 
 class VehicleListCreateTests(TestCase):
     def setUp(self):
@@ -91,11 +79,6 @@ class VehicleListCreateTests(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.post('/api/vehicles/', {'brand': 'Honda'})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-
-# ---------------------------------------------------------------------------
-# ViewSet: Retrieve / Update / Delete
-# ---------------------------------------------------------------------------
 
 class VehicleDetailTests(TestCase):
     def setUp(self):
@@ -151,11 +134,6 @@ class VehicleDetailTests(TestCase):
         response = self.client.delete(f'/api/vehicles/{self.vehicle.pk}/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-
-# ---------------------------------------------------------------------------
-# Stats
-# ---------------------------------------------------------------------------
-
 class VehicleStatsTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -171,11 +149,6 @@ class VehicleStatsTests(TestCase):
     def test_stats_sem_autenticacao_retorna_401(self):
         response = self.client.get('/api/vehicles/stats/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-
-# ---------------------------------------------------------------------------
-# Search by Plate (público)
-# ---------------------------------------------------------------------------
 
 class SearchByPlateTests(TestCase):
     def setUp(self):
@@ -196,11 +169,6 @@ class SearchByPlateTests(TestCase):
         response = self.client.get('/api/vehicles/search-by-plate/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
-
-
-# ---------------------------------------------------------------------------
-# Get Vehicle by Plate (público)
-# ---------------------------------------------------------------------------
 
 class GetVehicleByPlateTests(TestCase):
     def setUp(self):
