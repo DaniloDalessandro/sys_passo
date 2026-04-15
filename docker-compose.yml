@@ -116,7 +116,9 @@ services:
       dockerfile: Dockerfile
     container_name: syspasso_celery_beat
     restart: unless-stopped
-    command: celery -A core beat -l info
+    command: >
+      sh -c "mkdir -p /app/schedule &&
+             celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
       DEBUG: ${DEBUG:-False}
@@ -174,7 +176,7 @@ services:
       - ./back/media:/app/media:ro
       - ./back/staticfiles:/app/staticfiles:ro
     ports:
-      - "80:80"
+      - "8085:80"
     depends_on:
       - backend
       - frontend
