@@ -1,12 +1,11 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: syspasso_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-syspasso}
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -17,12 +16,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
-    container_name: syspasso_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     networks:
@@ -32,31 +31,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   backend:
     build:
       context: ./back
       dockerfile: Dockerfile
-    container_name: syspasso_backend
     restart: unless-stopped
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py collectstatic --noinput &&
              daphne -b 0.0.0.0 -p 8000 core.asgi:application"
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
-      DEBUG: ${DEBUG:-False}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-      DB_NAME: ${DB_NAME:-syspasso}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_HOST: db
-      DB_PORT: 5432
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002}
-      SECURE_SSL_REDIRECT: "False"
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-False}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      - DB_NAME=${DB_NAME:-syspasso}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3002}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-http://localhost:3002}
+      - SECURE_SSL_REDIRECT=False
     volumes:
       - backend_media:/app/media
       - backend_static:/app/staticfiles
@@ -75,19 +74,18 @@ services:
     build:
       context: ./back
       dockerfile: Dockerfile
-    container_name: syspasso_celery
     restart: unless-stopped
     command: celery -A core worker -l info
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
-      DEBUG: ${DEBUG:-False}
-      DB_NAME: ${DB_NAME:-syspasso}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_HOST: db
-      DB_PORT: 5432
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-False}
+      - DB_NAME=${DB_NAME:-syspasso}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
       - backend_media:/app/media
       - backend_logs:/app/logs
@@ -102,21 +100,18 @@ services:
     build:
       context: ./back
       dockerfile: Dockerfile
-    container_name: syspasso_celery_beat
     restart: unless-stopped
-    command: >
-      sh -c "mkdir -p /app/schedule &&
-             celery -A core beat -l info -s /app/schedule/celerybeat-schedule"
+    command: ["sh", "-c", "mkdir -p /app/schedule && celery -A core beat -l info -s /app/schedule/celerybeat-schedule"]
     environment:
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
-      DEBUG: ${DEBUG:-False}
-      DB_NAME: ${DB_NAME:-syspasso}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
-      DB_HOST: db
-      DB_PORT: 5432
-      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-False}
+      - DB_NAME=${DB_NAME:-syspasso}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
       - backend_logs:/app/logs
     depends_on:
@@ -132,10 +127,9 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8001}
-    container_name: syspasso_frontend
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      - NODE_ENV=production
     ports:
       - "3002:3000"
     depends_on:
@@ -145,17 +139,11 @@ services:
 
 volumes:
   postgres_data:
-    name: syspasso_postgres_data
   redis_data:
-    name: syspasso_redis_data
   backend_media:
-    name: syspasso_backend_media
   backend_static:
-    name: syspasso_backend_static
   backend_logs:
-    name: syspasso_backend_logs
 
 networks:
   syspasso_network:
-    name: syspasso_network
     driver: bridge
