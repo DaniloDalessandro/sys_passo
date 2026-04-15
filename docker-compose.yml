@@ -118,7 +118,7 @@ services:
     restart: unless-stopped
     command: >
       sh -c "mkdir -p /app/schedule &&
-             celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+             celery -A core beat -l info -s /app/schedule/celerybeat-schedule"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
       DEBUG: ${DEBUG:-False}
@@ -149,7 +149,7 @@ services:
       context: ./front
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8001}
     container_name: syspasso_frontend
     restart: unless-stopped
     environment:
@@ -166,22 +166,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  nginx:
-    image: nginx:alpine
-    container_name: syspasso_nginx
-    restart: unless-stopped
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./back/media:/app/media:ro
-      - ./back/staticfiles:/app/staticfiles:ro
-    ports:
-      - "8085:80"
-    depends_on:
-      - backend
-      - frontend
-    networks:
-      - syspasso_network
 
 volumes:
   postgres_data:
