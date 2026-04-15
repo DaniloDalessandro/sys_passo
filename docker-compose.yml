@@ -40,7 +40,7 @@ services:
     container_name: syspasso_backend
     restart: unless-stopped
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "python manage.py migrate --noinput &&
              python manage.py collectstatic --noinput &&
              daphne -b 0.0.0.0 -p 8000 core.asgi:application"
     environment:
@@ -54,13 +54,13 @@ services:
       DB_PORT: 5432
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002,http://localhost:3000,http://127.0.0.1:3000}
-      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002,http://localhost:3000,http://127.0.0.1:3000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-http://localhost:3002,http://127.0.0.1:3002}
       SECURE_SSL_REDIRECT: "False"
     volumes:
-      - ./back/media:/app/media
-      - ./back/staticfiles:/app/staticfiles
-      - ./back/logs:/app/logs
+      - backend_media:/app/media
+      - backend_static:/app/staticfiles
+      - backend_logs:/app/logs
     ports:
       - "8001:8000"
     depends_on:
@@ -70,12 +70,6 @@ services:
         condition: service_healthy
     networks:
       - syspasso_network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/auth/status/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   celery:
     build:
@@ -95,20 +89,14 @@ services:
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
-      - ./back/media:/app/media
-      - ./back/logs:/app/logs
+      - backend_media:/app/media
+      - backend_logs:/app/logs
     depends_on:
       - db
       - redis
       - backend
     networks:
       - syspasso_network
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   celery-beat:
     build:
@@ -130,19 +118,13 @@ services:
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
-      - ./back/logs:/app/logs
+      - backend_logs:/app/logs
     depends_on:
       - db
       - redis
       - backend
     networks:
       - syspasso_network
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A core inspect ping || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   frontend:
     build:
@@ -160,18 +142,18 @@ services:
       - backend
     networks:
       - syspasso_network
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
 volumes:
   postgres_data:
     name: syspasso_postgres_data
   redis_data:
     name: syspasso_redis_data
+  backend_media:
+    name: syspasso_backend_media
+  backend_static:
+    name: syspasso_backend_static
+  backend_logs:
+    name: syspasso_backend_logs
 
 networks:
   syspasso_network:
