@@ -27,7 +27,7 @@ function App() {
       <HowItWorks />
       <FaqSection />
       <Contact config={config} />
-      <Footer config={config} />
+      <Footer config={config} onOpenModal={onOpenModal} />
 
       <Modals open={modal} onClose={onCloseModal} />
       <VehicleResult data={vehicle} onClose={() => setVehicle(null)} />

@@ -96,8 +96,7 @@ function Navbar({ config, onOpenModal }) {
               Consultar protocolo
             </button>
             <a
-              href="#login"
-              onClick={(e) => e.preventDefault()}
+              href="/login"
               className="btn-primary inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full"
             >
               <IconLogin size={14} />
@@ -131,7 +130,7 @@ function Navbar({ config, onOpenModal }) {
                 <button onClick={() => { onOpenModal("consulta"); setOpen(false); }} className="btn-ghost flex-1 text-sm font-medium py-2.5 rounded-full">
                   Consultar
                 </button>
-                <a href="#login" onClick={(e) => e.preventDefault()} className="btn-primary flex-1 text-center text-sm font-semibold py-2.5 rounded-full inline-flex items-center justify-center gap-2">
+                <a href="/login" className="btn-primary flex-1 text-center text-sm font-semibold py-2.5 rounded-full inline-flex items-center justify-center gap-2">
                   <IconLogin size={14} /> Entrar
                 </a>
               </div>

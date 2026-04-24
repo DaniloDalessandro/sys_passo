@@ -1,18 +1,39 @@
 // Footer — big wordmark, columns, socials
 
-function Footer({ config }) {
+function Footer({ config, onOpenModal }) {
+  const go = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 72, behavior: "smooth" });
+  };
+
   const cols = [
     {
       title: "Plataforma",
-      items: ["Consulta pública", "Cadastro de motorista", "Cadastro de veículo", "Denúncias"],
+      items: [
+        { label: "Consulta pública",        action: () => onOpenModal("consulta") },
+        { label: "Cadastro de motorista",   action: () => onOpenModal("motorista") },
+        { label: "Cadastro de veículo",     action: () => onOpenModal("veiculo") },
+        { label: "Denúncias",               action: () => onOpenModal("denuncia") },
+      ],
     },
     {
       title: "Institucional",
-      items: ["Sobre a ViaLumiar", "Transparência", "LGPD", "Parceiros"],
+      items: [
+        { label: "Sobre a ViaLumiar",  action: () => go("sobre") },
+        { label: "Transparência",      href: "#" },
+        { label: "LGPD",               href: "#" },
+        { label: "Parceiros",          href: "#" },
+      ],
     },
     {
       title: "Suporte",
-      items: ["Central de ajuda", "Status do sistema", "Documentação da API", "Contato"],
+      items: [
+        { label: "Central de ajuda",       href: "/ajuda" },
+        { label: "Status do sistema",      href: "#" },
+        { label: "Documentação da API",    href: "#" },
+        { label: "Contato",                action: () => go("contato") },
+      ],
     },
   ];
 
@@ -70,10 +91,22 @@ function Footer({ config }) {
                 </div>
                 <ul className="space-y-2.5">
                   {c.items.map((it) => (
-                    <li key={it}>
-                      <a href="#" onClick={(e) => e.preventDefault()} className="text-[var(--text-dim)] hover:text-white transition-colors text-sm">
-                        {it}
-                      </a>
+                    <li key={it.label}>
+                      {it.action ? (
+                        <button
+                          onClick={it.action}
+                          className="text-[var(--text-dim)] hover:text-white transition-colors text-sm text-left"
+                        >
+                          {it.label}
+                        </button>
+                      ) : (
+                        <a
+                          href={it.href}
+                          className="text-[var(--text-dim)] hover:text-white transition-colors text-sm"
+                        >
+                          {it.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                 </ul>
