@@ -97,14 +97,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex h-14 items-center px-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-              <Car className="size-4" />
+        <div className="flex h-14 items-center px-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="sidebar-logo-gradient text-white flex aspect-square size-9 items-center justify-center rounded-xl shadow-lg shadow-primary/25 flex-shrink-0 transition-transform duration-300 hover:scale-105">
+              <Car className="size-5" />
             </div>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">ViaLumiar</span>
-              <span className="truncate text-xs">Gestão de Contratos</span>
+            <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+              <span className="truncate font-bold text-foreground tracking-tight">ViaLumiar</span>
+              <span className="truncate text-xs text-muted-foreground font-medium">Gestão de Contratos</span>
             </div>
           </div>
         </div>

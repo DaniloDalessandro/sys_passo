@@ -198,7 +198,7 @@ function AnimatedCounter({ end, duration = 2000, label }: { end: number; duratio
   return (
     <div ref={counterRef}>
       {count.toLocaleString('pt-BR')}
-      {label && <div className="text-xl text-blue-100">{label}</div>}
+      {label && <div className="text-lg text-indigo-100">{label}</div>}
     </div>
   );
 }
@@ -437,6 +437,23 @@ export default function SiteHomePage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showComplaintSuggestions]);
+
+  // Scroll-reveal: adiciona .visible aos elementos .sh-reveal quando entram na viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+    const targets = document.querySelectorAll('.sh-reveal');
+    targets.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -798,10 +815,12 @@ export default function SiteHomePage() {
 
   if (!config) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-sm text-gray-500">Carregando...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 sidebar-logo-gradient rounded-2xl flex items-center justify-center shadow-xl animate-pulse-glow">
+            <Car className="w-8 h-8 text-white animate-float" />
+          </div>
+          <p className="text-sm text-muted-foreground font-medium animate-pulse">Carregando...</p>
         </div>
       </div>
     );
@@ -812,13 +831,16 @@ export default function SiteHomePage() {
 
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/90 backdrop-blur-md border-gray-200 shadow-sm'
-          : 'bg-white border-gray-100'
+          ? 'bg-white/95 backdrop-blur-xl border-gray-200/80 shadow-sm'
+          : 'bg-white/80 backdrop-blur-sm border-transparent'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
 
-            <div className="flex items-center">
+            <div className="flex items-center gap-2">
+              <div className="sidebar-logo-gradient rounded-lg p-1.5 flex items-center justify-center shadow-sm">
+                <Car className="w-4 h-4 text-white" />
+              </div>
               {config.logo_url ? (
                 <Image
                   src={config.logo_url}
@@ -829,7 +851,7 @@ export default function SiteHomePage() {
                   priority
                 />
               ) : (
-                <span className="text-lg font-semibold text-gray-900">
+                <span className="text-lg font-bold gradient-text">
                   {config.company_name}
                 </span>
               )}
@@ -845,7 +867,7 @@ export default function SiteHomePage() {
                 <button
                   key={item.id}
                   onClick={() => scrollToSection(item.id)}
-                  className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="text-sm text-gray-600 hover:text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 transition-all duration-200 font-medium"
                 >
                   {item.label}
                 </button>
@@ -863,13 +885,13 @@ export default function SiteHomePage() {
                     });
                   }
                 }}
-                className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                className="text-sm text-gray-600 hover:text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 transition-all duration-200 font-medium"
               >
                 Contato
               </button>
               <Link
                 href="/login"
-                className="ml-2 inline-flex items-center gap-2 border border-gray-200 hover:border-gray-300 bg-white text-gray-700 px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                className="ml-2 inline-flex items-center gap-2 sidebar-logo-gradient text-white px-5 py-2 rounded-full text-sm font-semibold shadow-md shadow-indigo-500/25 hover:opacity-90 transition-opacity"
               >
                 <LogIn className="w-4 h-4" />
                 Entrar
@@ -890,29 +912,29 @@ export default function SiteHomePage() {
           </div>
 
           {isMobileMenuOpen && (
-            <div className="lg:hidden py-3 border-t border-gray-100">
+            <div className="lg:hidden py-3 border-t border-gray-100 animate-fade-in">
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => scrollToSection('inicio')}
-                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 font-medium"
                 >
                   Início
                 </button>
                 <button
                   onClick={() => scrollToSection('about')}
-                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 font-medium"
                 >
                   Sobre
                 </button>
                 <button
                   onClick={() => scrollToSection('cadastro')}
-                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 font-medium"
                 >
                   Cadastros
                 </button>
                 <button
                   onClick={() => scrollToSection('denuncias')}
-                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 font-medium"
                 >
                   Denúncias
                 </button>
@@ -930,14 +952,14 @@ export default function SiteHomePage() {
                     }
                     setIsMobileMenuOpen(false);
                   }}
-                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="text-left text-sm px-3 py-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200 font-medium"
                 >
                   Contato
                 </button>
                 <div className="pt-2 border-t border-gray-100 mt-1">
                   <Link
                     href="/login"
-                    className="inline-flex items-center gap-2 text-sm text-gray-700 px-3 py-2"
+                    className="inline-flex items-center gap-2 sidebar-logo-gradient text-white text-sm px-4 py-2 rounded-full font-semibold shadow-sm"
                   >
                     <LogIn className="w-4 h-4" />
                     Entrar
@@ -949,30 +971,112 @@ export default function SiteHomePage() {
         </div>
       </nav>
 
-      <section id="inicio" className="relative pt-24 pb-20 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="sitehome-orb w-[500px] h-[500px] bg-blue-200/40 top-[-80px] left-[-100px]" style={{ animationDelay: '0s' }} />
-        <div className="sitehome-orb w-[400px] h-[400px] bg-indigo-200/30 bottom-[-60px] right-[-80px]" style={{ animationDelay: '4s' }} />
-        <div className="sitehome-orb w-[280px] h-[280px] bg-purple-100/40 top-[40%] left-[55%]" style={{ animationDelay: '8s' }} />
+      <section id="inicio" className="relative pt-24 pb-32 overflow-hidden bg-[#070c1b]">
+
+        {/* Decorative grid background */}
+        <div className="absolute inset-0 sitehome-grid-bg" aria-hidden="true" />
+
+        {/* Radial vignette overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 70%)' }}
+          aria-hidden="true"
+        />
+
+        {/* Neon orbs */}
+        <div
+          className="hero-orb w-[600px] h-[600px] top-[-150px] left-[-150px]"
+          style={{
+            background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+            animationDelay: '0s',
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="hero-orb w-[500px] h-[500px] bottom-[-100px] right-[-120px]"
+          style={{
+            background: 'radial-gradient(circle, rgba(139,92,246,0.30) 0%, transparent 70%)',
+            filter: 'blur(70px)',
+            animationDelay: '5s',
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="hero-orb w-[350px] h-[350px] top-[35%] left-[55%]"
+          style={{
+            background: 'radial-gradient(circle, rgba(34,211,238,0.20) 0%, transparent 70%)',
+            filter: 'blur(50px)',
+            animationDelay: '9s',
+          }}
+          aria-hidden="true"
+        />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl mx-auto text-center sitehome-fade-in">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-100/70 px-3 py-1 rounded-full mb-5 sitehome-fade-in">
-              Gestão de Frotas
-            </span>
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight leading-tight">
-              {config.hero_title}
+
+            {/* Badge com borda glow */}
+            <div className="inline-flex items-center gap-2 mb-8 sitehome-fade-in">
+              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-300 bg-indigo-500/10 px-5 py-2 rounded-full border border-indigo-500/30 badge-glow">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" aria-hidden="true" />
+                Gestão de Frotas
+              </span>
+            </div>
+
+            {/* Título com gradiente animado e word-reveal */}
+            <h1
+              className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.05] mb-0"
+              style={{ perspective: '800px' }}
+            >
+              {config.hero_title.split(' ').map((word, i) => (
+                <span
+                  key={i}
+                  className={`hero-word hero-word-${Math.min(i + 1, 4)} mr-[0.2em] last:mr-0`}
+                >
+                  {i === 0 ? (
+                    <span
+                      className="animate-gradient-x"
+                      style={{
+                        backgroundImage: 'linear-gradient(90deg, #60a5fa, #a78bfa, #22d3ee, #60a5fa)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
+                      {word}
+                    </span>
+                  ) : i === 1 ? (
+                    <span className="text-white">{word}</span>
+                  ) : (
+                    <span
+                      className="animate-gradient-x"
+                      style={{
+                        backgroundImage: 'linear-gradient(90deg, #a78bfa, #22d3ee, #818cf8, #a78bfa)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        animationDelay: '1.5s',
+                      }}
+                    >
+                      {word}
+                    </span>
+                  )}
+                </span>
+              ))}
             </h1>
-            <p className="mt-5 text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+
+            <p className="mt-7 text-lg md:text-xl text-slate-400 max-w-xl mx-auto leading-relaxed sitehome-slide-up-delay-1">
               {config.hero_subtitle}
             </p>
 
-            <div className="mt-8 w-full max-w-2xl mx-auto sitehome-slide-up-delay-1">
-              <div className="relative search-container">
+            {/* Barra de busca adaptada para fundo escuro */}
+            <div className="mt-10 w-full max-w-2xl mx-auto sitehome-slide-up-delay-1">
+              <div className="relative search-container rounded-full shadow-[0_8px_40px_rgba(99,102,241,0.2)]">
                 <div className="relative flex items-center">
                   <Input
                     type="text"
                     placeholder="Digite a placa do veículo"
-                    className="w-full pl-6 pr-12 py-5 text-base text-gray-700 bg-white border border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all uppercase shadow-sm"
+                    className="w-full pl-6 pr-12 py-5 text-base rounded-full transition-all uppercase hero-search-input focus-visible:ring-0 focus-visible:ring-offset-0"
                     value={searchPlate}
                     onChange={(e) => {
                       setSearchPlate(e.target.value.toUpperCase());
@@ -998,28 +1102,28 @@ export default function SiteHomePage() {
                   />
                   {isLoadingSuggestions && (
                     <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
                     </div>
                   )}
                 </div>
 
                 {showSuggestions && plateSuggestions.length > 0 && (
-                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-72 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-[#0e1529] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 max-h-72 overflow-y-auto">
                     {plateSuggestions.map((suggestion, index) => (
                       <div
                         key={index}
                         onClick={() => handleSelectPlate(suggestion.plate)}
-                        className="px-5 py-4 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors group"
+                        className="px-5 py-4 hover:bg-indigo-500/10 cursor-pointer border-b border-white/5 last:border-b-0 transition-colors group"
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{suggestion.plate}</div>
-                            <div className="text-sm text-gray-500 mt-0.5">
+                            <div className="font-semibold text-white group-hover:text-indigo-300 transition-colors">{suggestion.plate}</div>
+                            <div className="text-sm text-slate-400 mt-0.5">
                               {suggestion.brand} {suggestion.model}
                               {suggestion.color && <span className="ml-1">· {suggestion.color}</span>}
                             </div>
                           </div>
-                          <Car className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                          <Car className="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition-colors" />
                         </div>
                       </div>
                     ))}
@@ -1028,28 +1132,46 @@ export default function SiteHomePage() {
               </div>
             </div>
 
+            {/* Cards de estatísticas — dark glass */}
             {!isLoadingCounts && (vehicleCount > 0 || conductorCount > 0) && (
-              <div className="mt-8 flex items-center justify-center gap-4 sitehome-slide-up-delay-2">
+              <div className="mt-10 flex items-center justify-center gap-4 sitehome-slide-up-delay-2">
                 {vehicleCount > 0 && (
-                  <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl border border-white shadow-lg shadow-blue-100/50 px-7 py-5 sitehome-card-lift">
-                    <div className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 mb-2">
-                      <Car className="w-4 h-4 text-blue-600" />
+                  <div className="text-center hero-stat-card rounded-2xl px-7 py-5 transition-all duration-300 sitehome-card-lift cursor-default">
+                    <div className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-400/20 mb-2">
+                      <Car className="w-4 h-4 text-blue-400" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div
+                      className="text-3xl font-bold animate-gradient-x"
+                      style={{
+                        backgroundImage: 'linear-gradient(90deg, #60a5fa, #818cf8, #22d3ee)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                      }}
+                    >
                       <AnimatedCounter end={vehicleCount} label="" />
                     </div>
-                    <div className="text-xs text-gray-500 mt-1 font-medium tracking-wide">Veículos Cadastrados</div>
+                    <div className="text-xs text-slate-400 mt-1 font-medium tracking-wide">Veículos Cadastrados</div>
                   </div>
                 )}
                 {conductorCount > 0 && (
-                  <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl border border-white shadow-lg shadow-indigo-100/50 px-7 py-5 sitehome-card-lift">
-                    <div className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50 mb-2">
-                      <Users className="w-4 h-4 text-indigo-600" />
+                  <div className="text-center hero-stat-card rounded-2xl px-7 py-5 transition-all duration-300 sitehome-card-lift cursor-default">
+                    <div className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-400/20 mb-2">
+                      <Users className="w-4 h-4 text-violet-400" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div
+                      className="text-3xl font-bold animate-gradient-x"
+                      style={{
+                        backgroundImage: 'linear-gradient(90deg, #a78bfa, #c084fc, #818cf8)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        animationDelay: '2s',
+                      }}
+                    >
                       <AnimatedCounter end={conductorCount} label="" />
                     </div>
-                    <div className="text-xs text-gray-500 mt-1 font-medium tracking-wide">Motoristas Ativos</div>
+                    <div className="text-xs text-slate-400 mt-1 font-medium tracking-wide">Motoristas Ativos</div>
                   </div>
                 )}
               </div>
@@ -1180,210 +1302,517 @@ export default function SiteHomePage() {
             )}
           </div>
         </div>
+
+        {/* Estrada */}
+        <div className="hero-car-road" aria-hidden="true">
+          <div className="hero-car-road-line" />
+        </div>
+
+        {/* Carro passando atrás do título */}
+        <div className="hero-car" aria-hidden="true">
+          <svg width="280" height="80" viewBox="0 0 280 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="140" cy="76" rx="100" ry="6" fill="rgba(0,0,0,0.35)" />
+            <rect x="4" y="38" width="14" height="8" rx="2" fill="#ef4444" opacity="0.9" />
+            <ellipse cx="8" cy="42" rx="10" ry="8" fill="#ef4444" opacity="0.25" />
+            <path d="M20 55 L20 35 Q22 28 40 22 L80 16 Q100 12 120 12 L180 12 Q210 12 230 20 L258 30 Q268 34 270 42 L270 55 Z" fill="url(#carBody)" />
+            <path d="M75 22 Q80 10 100 6 L190 6 Q210 8 220 22 Z" fill="url(#carRoof)" />
+            <path d="M88 21 Q92 10 106 8 L150 8 L148 21 Z" fill="rgba(34,211,238,0.35)" stroke="rgba(34,211,238,0.5)" strokeWidth="1" />
+            <path d="M152 8 L190 8 Q206 10 215 21 L155 21 Z" fill="rgba(34,211,238,0.25)" stroke="rgba(34,211,238,0.5)" strokeWidth="1" />
+            <line x1="22" y1="44" x2="268" y2="44" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5" />
+            <circle cx="72" cy="58" r="18" fill="#1e293b" />
+            <circle cx="72" cy="58" r="12" fill="#334155" />
+            <circle cx="72" cy="58" r="5" fill="#64748b" />
+            <line x1="72" y1="47" x2="72" y2="51" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="78.9" y1="49.5" x2="76.1" y2="52.3" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="81" y1="58" x2="77" y2="58" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="78.9" y1="66.5" x2="76.1" y2="63.7" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="72" y1="69" x2="72" y2="65" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="65.1" y1="66.5" x2="67.9" y2="63.7" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="63" y1="58" x2="67" y2="58" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="65.1" y1="49.5" x2="67.9" y2="52.3" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="210" cy="58" r="18" fill="#1e293b" />
+            <circle cx="210" cy="58" r="12" fill="#334155" />
+            <circle cx="210" cy="58" r="5" fill="#64748b" />
+            <line x1="210" y1="47" x2="210" y2="51" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="216.9" y1="49.5" x2="214.1" y2="52.3" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="219" y1="58" x2="215" y2="58" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="216.9" y1="66.5" x2="214.1" y2="63.7" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="210" y1="69" x2="210" y2="65" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="203.1" y1="66.5" x2="205.9" y2="63.7" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="201" y1="58" x2="205" y2="58" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <line x1="203.1" y1="49.5" x2="205.9" y2="52.3" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            <rect x="262" y="36" width="16" height="10" rx="3" fill="#e0f2fe" opacity="0.95" />
+            <ellipse cx="272" cy="41" rx="18" ry="10" fill="rgba(224,242,254,0.20)" />
+            <ellipse cx="285" cy="41" rx="28" ry="8" fill="rgba(148,210,255,0.12)" />
+            <defs>
+              <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#334155" />
+                <stop offset="100%" stopColor="#1e293b" />
+              </linearGradient>
+              <linearGradient id="carRoof" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#475569" />
+                <stop offset="100%" stopColor="#334155" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
       </section>
 
-      <section id="about" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-4">
+      {/* Wave divider: hero escuro → about claro */}
+      <div className="sh-wave" style={{ background: 'white', marginTop: '-1px' }}>
+        <svg viewBox="0 0 1440 72" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: '72px' }}>
+          <path d="M0,0 C360,72 720,0 1080,48 C1260,72 1380,36 1440,24 L1440,0 Z" fill="#070c1b" />
+        </svg>
+      </div>
+
+      {/* ── ABOUT ── */}
+      <section id="about" className="py-24 bg-white relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="sh-orb w-96 h-96 bg-indigo-200/30 top-0 -right-24 opacity-40" style={{ position: 'absolute' }} aria-hidden="true" />
+        <div className="sh-orb w-72 h-72 bg-purple-200/20 bottom-0 -left-16 opacity-30" style={{ position: 'absolute' }} aria-hidden="true" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Header */}
+          <div className="text-center mb-16 sh-reveal">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-5 py-2 rounded-full border border-indigo-200/80 mb-6 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
               Quem somos
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-              Sobre Nós
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
+              Sobre{' '}
+              <span className="relative inline-block">
+                <span className="relative z-10 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Nós</span>
+                <svg className="absolute -bottom-1 left-0 w-full" height="6" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0,4 Q50,0 100,4" stroke="url(#underline-grad)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                  <defs>
+                    <linearGradient id="underline-grad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </span>
             </h2>
-            <p className="mt-6 text-base text-gray-600 leading-relaxed whitespace-pre-line">
-              {config.about_text}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section id="cadastro" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-4">
-              Cadastros
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-              Solicite um Cadastro
-            </h2>
-            <p className="mt-3 text-lg text-gray-500 max-w-xl mx-auto">
-              Solicite cadastro de motoristas e veículos de forma rápida e simples.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <button
-              onClick={() => setIsDriverDialogOpen(true)}
-              className="group text-left bg-white rounded-2xl border border-gray-100 shadow-sm sitehome-card-lift p-7"
-            >
-              <div className="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-5 p-3 shadow-md shadow-blue-200">
-                <User className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Cadastrar Motorista
-              </h3>
-              <p className="text-base text-gray-500 leading-relaxed mb-5">
-                Solicite o cadastro de um novo condutor para sua frota de forma rápida.
-              </p>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 group-hover:gap-3 transition-all duration-200">
-                Iniciar cadastro
-                <span className="text-base">→</span>
-              </span>
-            </button>
-
-            <button
-              onClick={() => setIsVehicleDialogOpen(true)}
-              className="group text-left bg-white rounded-2xl border border-gray-100 shadow-sm sitehome-card-lift p-7"
-            >
-              <div className="inline-flex items-center justify-center w-13 h-13 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-5 p-3 shadow-md shadow-purple-200">
-                <Car className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Cadastrar Veículo
-              </h3>
-              <p className="text-base text-gray-500 leading-relaxed mb-5">
-                Adicione um novo veículo à frota de forma simples e organizada.
-              </p>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-violet-600 group-hover:gap-3 transition-all duration-200">
-                Iniciar cadastro
-                <span className="text-base">→</span>
-              </span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section id="denuncias" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10">
-              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-red-600 bg-red-50 px-3 py-1 rounded-full mb-4">
-                Denúncias
-              </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-                Canal de Denúncias
-              </h2>
-              <p className="mt-3 text-lg text-gray-500">
-                Ajude a manter a segurança no trânsito.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Como funciona?</h3>
-              <ol className="space-y-3">
-                {[
-                  'Identifique a placa do veículo envolvido na situação irregular.',
-                  'Selecione o tipo de denúncia (excesso de velocidade, direção perigosa, etc.).',
-                  'Descreva detalhadamente o ocorrido (data, local e circunstâncias).',
-                  'Você pode fazer a denúncia de forma anônima ou identificada.',
-                ].map((step, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 bg-red-50 rounded-full flex items-center justify-center mt-0.5">
-                      <span className="text-xs font-bold text-red-600">{i + 1}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{step}</p>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <p className="text-xs text-blue-800">
-                  <strong>Importante:</strong> Todas as denúncias são analisadas pela equipe responsável.
-                  Denúncias falsas podem ser enquadradas como crime de denunciação caluniosa.
+          {/* Two-column layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left — text */}
+            <div className="sh-reveal sh-reveal-delay-1">
+              <div className="sh-gradient-border p-8 md:p-10 shadow-xl shadow-indigo-500/5">
+                <p className="text-lg text-gray-600 leading-relaxed whitespace-pre-line">
+                  {config.about_text}
                 </p>
               </div>
+
+              {/* Feature bullets */}
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { icon: '⚡', label: 'Gestão Completa', color: 'bg-indigo-50 border-indigo-100 text-indigo-700' },
+                  { icon: '🔬', label: 'Tecnologia Avançada', color: 'bg-purple-50 border-purple-100 text-purple-700' },
+                  { icon: '🛡️', label: 'Suporte 24/7', color: 'bg-blue-50 border-blue-100 text-blue-700' },
+                ].map((f) => (
+                  <div key={f.label} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${f.color} shadow-sm`}>
+                    <span className="text-xl leading-none">{f.icon}</span>
+                    <span className="text-sm font-semibold">{f.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => setIsComplaintDialogOpen(true)}
-                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-7 py-3 rounded-full font-semibold transition-all shadow-md shadow-red-200 hover:shadow-lg hover:shadow-red-200 hover:-translate-y-0.5 active:translate-y-0"
-              >
-                <AlertTriangle className="w-4 h-4" />
-                Fazer Denúncia
-              </button>
-              <button
-                onClick={() => setIsCheckComplaintDialogOpen(true)}
-                className="inline-flex items-center justify-center gap-2 border border-gray-200 hover:border-blue-300 bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-700 px-7 py-3 rounded-full font-semibold transition-all"
-              >
-                <FileText className="w-4 h-4" />
-                Consultar Denúncia
-              </button>
+            {/* Right — decorative visual */}
+            <div className="sh-reveal sh-reveal-delay-2 flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-sm">
+                {/* Outer glow ring */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-400/20 to-purple-400/20 blur-2xl scale-110" aria-hidden="true" />
+                {/* Main card */}
+                <div className="relative bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-8 shadow-2xl shadow-indigo-500/30">
+                  {/* Dots grid decoration */}
+                  <div className="absolute inset-0 opacity-10 rounded-3xl overflow-hidden" aria-hidden="true"
+                    style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+                  />
+                  <div className="relative space-y-5">
+                    {[
+                      { label: 'Motoristas cadastrados', value: '1.240+', bar: 'w-4/5' },
+                      { label: 'Veículos monitorados', value: '860+', bar: 'w-3/5' },
+                      { label: 'Denúncias processadas', value: '320+', bar: 'w-2/5' },
+                    ].map((stat) => (
+                      <div key={stat.label} className="space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-indigo-100 text-xs font-medium">{stat.label}</span>
+                          <span className="text-white text-sm font-bold">{stat.value}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
+                          <div className={`h-full rounded-full bg-gradient-to-r from-white/70 to-indigo-200 ${stat.bar}`} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-8 pt-6 border-t border-white/20 grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { val: '99%', label: 'Uptime' },
+                      { val: '< 1s', label: 'Resposta' },
+                      { val: '24/7', label: 'Suporte' },
+                    ].map((s) => (
+                      <div key={s.label}>
+                        <div className="text-white font-black text-lg">{s.val}</div>
+                        <div className="text-indigo-200 text-xs">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="contato" className="py-20 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-4">
-              Contato
+      {/* ── CADASTROS ── */}
+      <section id="cadastro" className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #f0f2ff 0%, #fafafa 50%, #f5f0ff 100%)' }}>
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 opacity-40" aria-hidden="true"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(99,102,241,0.08) 1px, transparent 1px)', backgroundSize: '32px 32px' }}
+        />
+        <div className="sh-orb w-80 h-80 bg-indigo-300/20 top-10 -left-20 opacity-50" style={{ position: 'absolute' }} aria-hidden="true" />
+        <div className="sh-orb w-64 h-64 bg-purple-300/20 bottom-10 -right-16 opacity-40" style={{ position: 'absolute' }} aria-hidden="true" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Header */}
+          <div className="text-center mb-16 sh-reveal">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-600 bg-white px-5 py-2 rounded-full border border-indigo-200/80 mb-6 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+              Cadastros
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-              Entre em Contato
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
+              Solicite um{' '}
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Cadastro</span>
             </h2>
-            <p className="mt-3 text-lg text-gray-500">
-              Estamos prontos para atender você.
+            <p className="text-lg text-gray-500 max-w-xl mx-auto">
+              Registre motoristas e veículos com agilidade — tudo em poucos passos.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            <a
-              href={`tel:${config.phone.replace(/\D/g, '')}`}
-              className="group flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-100 sitehome-card-lift"
+          {/* Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Card Motorista */}
+            <button
+              onClick={() => setIsDriverDialogOpen(true)}
+              className="group text-left bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-xl shadow-black/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 p-8 overflow-hidden relative"
             >
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm shadow-blue-200">
-                <Phone className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-0.5 font-medium">Telefone</div>
-                <div className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{formatPhoneDisplay(config.phone)}</div>
-              </div>
-            </a>
+              {/* Step number */}
+              <span className="absolute top-6 right-7 text-5xl font-black text-indigo-50 select-none leading-none" aria-hidden="true">01</span>
 
-            <a
-              href={`mailto:${config.email}`}
-              className="group flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-100 sitehome-card-lift"
+              {/* Icon */}
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30">
+                <User className="w-7 h-7 text-white" />
+                <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" aria-hidden="true" />
+              </div>
+
+              <h3 className="text-xl font-black text-gray-900 mb-3">
+                Cadastrar Motorista
+              </h3>
+              <p className="text-base text-gray-500 leading-relaxed mb-7">
+                Solicite o cadastro de um novo condutor para a frota. Processo rápido, seguro e totalmente digital.
+              </p>
+
+              {/* CTA */}
+              <div className="inline-flex items-center gap-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-600 px-5 py-2.5 rounded-2xl shadow-md shadow-indigo-500/25 group-hover:gap-4 group-hover:shadow-lg group-hover:shadow-indigo-500/30 transition-all duration-300">
+                Iniciar cadastro
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Card Veículo */}
+            <button
+              onClick={() => setIsVehicleDialogOpen(true)}
+              className="group text-left bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-xl shadow-black/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 p-8 overflow-hidden relative sh-reveal sh-reveal-delay-1"
             >
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-sm shadow-indigo-200">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs text-gray-400 mb-0.5 font-medium">E-mail</div>
-                <div className="text-base font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{config.email}</div>
-              </div>
-            </a>
+              {/* Step number */}
+              <span className="absolute top-6 right-7 text-5xl font-black text-emerald-50 select-none leading-none" aria-hidden="true">02</span>
 
-            <div className="flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-100 sitehome-card-lift">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center shadow-sm shadow-slate-200">
-                <MapPin className="w-5 h-5 text-white" />
+              {/* Icon */}
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
+                <Car className="w-7 h-7 text-white" />
+                <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" aria-hidden="true" />
               </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-0.5 font-medium">Endereço</div>
-                <div className="text-base font-semibold text-gray-900">{config.address}</div>
+
+              <h3 className="text-xl font-black text-gray-900 mb-3">
+                Cadastrar Veículo
+              </h3>
+              <p className="text-base text-gray-500 leading-relaxed mb-7">
+                Adicione um novo veículo à frota com todos os dados necessários de forma simples e organizada.
+              </p>
+
+              {/* CTA */}
+              <div className="inline-flex items-center gap-2.5 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 rounded-2xl shadow-md shadow-emerald-500/25 group-hover:gap-4 group-hover:shadow-lg group-hover:shadow-emerald-500/30 transition-all duration-300">
+                Iniciar cadastro
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
               </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DENÚNCIAS ── */}
+      <section id="denuncias" className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
+        {/* Background decoration orbs */}
+        <div className="sh-orb w-96 h-96 opacity-20 top-0 -right-32" style={{ position: 'absolute', background: 'radial-gradient(circle, rgba(249,115,22,0.4) 0%, transparent 70%)' }} aria-hidden="true" />
+        <div className="sh-orb w-80 h-80 opacity-15 bottom-0 -left-24" style={{ position: 'absolute', background: 'radial-gradient(circle, rgba(99,102,241,0.5) 0%, transparent 70%)' }} aria-hidden="true" />
+
+        {/* Subtle pattern */}
+        <div className="absolute inset-0 opacity-5" aria-hidden="true"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Header */}
+          <div className="text-center mb-16 sh-reveal">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-400 bg-orange-500/10 px-5 py-2 rounded-full border border-orange-500/25 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 inline-block animate-pulse" />
+              Denúncias
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4">
+              Canal de{' '}
+              <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Denúncias</span>
+            </h2>
+            <p className="text-lg text-slate-400 max-w-xl mx-auto">
+              Sua contribuição torna o trânsito mais seguro para todos. Denuncie com sigilo e responsabilidade.
+            </p>
+          </div>
+
+          {/* Steps grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+            {[
+              {
+                num: '01',
+                title: 'Identifique a placa',
+                desc: 'Anote a placa do veículo envolvido na situação irregular.',
+                color: 'from-orange-500 to-amber-500',
+                glow: 'rgba(249,115,22,0.25)',
+              },
+              {
+                num: '02',
+                title: 'Escolha o tipo',
+                desc: 'Selecione a categoria: excesso de velocidade, direção perigosa, etc.',
+                color: 'from-red-500 to-orange-500',
+                glow: 'rgba(239,68,68,0.25)',
+              },
+              {
+                num: '03',
+                title: 'Descreva o ocorrido',
+                desc: 'Informe data, local e detalhes das circunstâncias do ocorrido.',
+                color: 'from-violet-500 to-purple-500',
+                glow: 'rgba(139,92,246,0.25)',
+              },
+              {
+                num: '04',
+                title: 'Envie com sigilo',
+                desc: 'Você pode denunciar de forma anônima ou identificada.',
+                color: 'from-indigo-500 to-blue-500',
+                glow: 'rgba(99,102,241,0.25)',
+              },
+            ].map((step, i) => (
+              <div
+                key={step.num}
+                className={`sh-reveal sh-reveal-delay-${i + 1} relative p-6 rounded-3xl sh-dark-glass hover:-translate-y-1 hover:shadow-2xl transition-all duration-300`}
+                style={{ boxShadow: `0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px ${step.glow}` }}
+              >
+                {/* Number */}
+                <div className={`text-4xl font-black mb-4 sh-step-num bg-gradient-to-br ${step.color} bg-clip-text`}
+                  style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {step.num}
+                </div>
+                <h3 className="text-white font-bold text-base mb-2">{step.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Warning note */}
+          <div className="sh-reveal max-w-2xl mx-auto mb-12">
+            <div className="flex items-start gap-4 p-5 rounded-2xl" style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}>
+              <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md">
+                <AlertTriangle className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                <strong className="text-white">Importante:</strong> Todas as denúncias são analisadas pela equipe responsável.
+                Denúncias falsas podem ser enquadradas como crime de denunciação caluniosa.
+              </p>
             </div>
+          </div>
 
+          {/* CTA Buttons */}
+          <div className="sh-reveal flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={() => setIsComplaintDialogOpen(true)}
+              className="group inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300 shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <AlertTriangle className="w-5 h-5" />
+              Fazer Denúncia
+              <svg className="w-4 h-4 opacity-70 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setIsCheckComplaintDialogOpen(true)}
+              className="group inline-flex items-center gap-3 text-slate-200 hover:text-white px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300 hover:-translate-y-0.5"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}
+            >
+              <FileText className="w-5 h-5 opacity-70" />
+              Consultar Denúncia
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONTATO ── */}
+      <section id="contato" className="py-24 bg-white relative overflow-hidden">
+        <div className="sh-orb w-96 h-96 bg-indigo-100/60 -top-16 -right-32 opacity-70" style={{ position: 'absolute' }} aria-hidden="true" />
+        <div className="sh-orb w-64 h-64 bg-emerald-100/50 bottom-0 -left-16 opacity-60" style={{ position: 'absolute' }} aria-hidden="true" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Header */}
+          <div className="text-center mb-16 sh-reveal">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-5 py-2 rounded-full border border-emerald-200/80 mb-6 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              Contato
+            </span>
+            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">
+              Fale{' '}
+              <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">Conosco</span>
+            </h2>
+            <p className="text-lg text-gray-500 max-w-xl mx-auto">
+              Estamos prontos para atender você pelo canal que preferir.
+            </p>
+          </div>
+
+          {/* Contact grid — 2x2 asymmetric */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+
+            {/* WhatsApp — destaque principal */}
             <a
               href={formatWhatsAppLink(config.whatsapp, 'Olá! Gostaria de saber mais sobre os serviços.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-4 p-5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl sitehome-card-lift shadow-sm shadow-green-200"
+              className="group lg:col-span-1 relative flex flex-col justify-between p-8 rounded-3xl overflow-hidden hover:-translate-y-2 hover:shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 sh-reveal"
+              style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)' }}
             >
-              <div className="flex-shrink-0 w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
+              {/* Pulsing ring behind icon */}
+              <div className="relative w-16 h-16 mb-6">
+                <span className="absolute inset-0 rounded-2xl bg-white/30 sh-whatsapp-ping" aria-hidden="true" />
+                <div className="relative w-16 h-16 rounded-2xl bg-white/25 flex items-center justify-center shadow-lg">
+                  <MessageCircle className="w-7 h-7 text-white" />
+                </div>
               </div>
+
               <div className="flex-1">
-                <div className="text-xs text-green-100 mb-0.5 font-medium">WhatsApp</div>
-                <div className="text-base font-semibold text-white">Iniciar conversa agora</div>
+                <div className="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-2">WhatsApp</div>
+                <div className="text-white text-xl font-black mb-1">Conversa instantânea</div>
+                <div className="text-emerald-100 text-sm mb-6">Atendimento rápido pelo WhatsApp. Clique para iniciar agora.</div>
               </div>
-              <span className="text-white/80 text-lg group-hover:translate-x-1 transition-transform">→</span>
+
+              <div className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white font-bold text-sm px-5 py-2.5 rounded-2xl transition-colors backdrop-blur-sm w-fit">
+                Iniciar conversa
+                <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+
+              {/* Decorative circles */}
+              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10" aria-hidden="true" />
+              <div className="absolute -bottom-12 -right-4 w-40 h-40 rounded-full bg-white/5" aria-hidden="true" />
             </a>
+
+            {/* Right column — 3 cards stacked */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Telefone */}
+              <a
+                href={`tel:${config.phone.replace(/\D/g, '')}`}
+                className="group flex flex-col gap-5 p-7 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-black/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 sh-reveal sh-reveal-delay-1"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                  <Phone className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1.5">Telefone</div>
+                  <div className="text-lg font-black text-gray-900 group-hover:text-blue-600 transition-colors">{formatPhoneDisplay(config.phone)}</div>
+                  <div className="text-sm text-gray-400 mt-1">Ligue para nós</div>
+                </div>
+              </a>
+
+              {/* Email */}
+              <a
+                href={`mailto:${config.email}`}
+                className="group flex flex-col gap-5 p-7 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-black/5 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 sh-reveal sh-reveal-delay-2"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                  <Mail className="w-6 h-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1.5">E-mail</div>
+                  <div className="text-base font-black text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{config.email}</div>
+                  <div className="text-sm text-gray-400 mt-1">Envie uma mensagem</div>
+                </div>
+              </a>
+
+              {/* Endereço — full width on the right */}
+              <div className="sm:col-span-2 flex items-center gap-6 p-7 bg-gradient-to-br from-slate-50 to-gray-50 rounded-3xl border border-gray-100 shadow-xl shadow-black/5 sh-reveal sh-reveal-delay-3">
+                <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-600 to-gray-700 flex items-center justify-center shadow-lg shadow-slate-500/20">
+                  <MapPin className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1.5">Endereço</div>
+                  <div className="text-base font-black text-gray-900">{config.address}</div>
+                  <div className="text-sm text-gray-400 mt-1">Nossa localização</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ background: '#070c1b' }} className="relative overflow-hidden">
+        {/* Subtle grid */}
+        <div className="absolute inset-0 opacity-5" aria-hidden="true"
+          style={{ backgroundImage: 'linear-gradient(rgba(99,102,241,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.4) 1px, transparent 1px)', backgroundSize: '50px 50px' }}
+        />
+        {/* Top border glow */}
+        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.5) 30%, rgba(139,92,246,0.5) 70%, transparent)' }} aria-hidden="true" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 relative">
+          <div className="flex flex-col items-center gap-6">
+            {/* Logo / company name */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-black sh-footer-logo tracking-tight">{config.company_name}</span>
+            </div>
+
+            {/* Divider */}
+            <div className="w-full max-w-xs h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} aria-hidden="true" />
+
+            {/* Links + copyright */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-sm text-slate-500">
+              <span>© {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</span>
+              <span className="hidden sm:inline text-slate-700" aria-hidden="true">·</span>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 font-semibold transition-colors duration-200"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Área Restrita
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       <Dialog open={isDriverDialogOpen} onOpenChange={setIsDriverDialogOpen}>
         <DialogContent className="sm:max-w-[900px] lg:max-w-[1000px] max-h-[90vh] overflow-y-auto">
@@ -2282,18 +2711,18 @@ export default function SiteHomePage() {
         </DialogContent>
       </Dialog>
 
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-gradient-to-br from-gray-900 to-indigo-950 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">{config.company_name}</h3>
+              <h3 className="text-base font-bold text-white">{config.company_name}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">
                 {config.about_text}
               </p>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Links Rápidos</h3>
+              <h3 className="text-base font-bold text-white">Links Rápidos</h3>
               <ul className="space-y-2">
                 {[
                   { label: 'Início', id: 'inicio' },
@@ -2304,7 +2733,7 @@ export default function SiteHomePage() {
                   <li key={item.id}>
                     <button
                       onClick={() => scrollToSection(item.id)}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                      className="text-sm text-gray-400 hover:text-indigo-300 transition-colors"
                     >
                       {item.label}
                     </button>
@@ -2314,20 +2743,20 @@ export default function SiteHomePage() {
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-base font-semibold">Siga-nos</h3>
-              <div className="flex gap-4">
+              <h3 className="text-base font-bold text-white">Siga-nos</h3>
+              <div className="flex gap-3">
                 {config.facebook_url && (
-                  <a href={config.facebook_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                  <a href={config.facebook_url} target="_blank" rel="noopener noreferrer" className="sidebar-logo-gradient text-white rounded-xl p-2 hover:opacity-80 transition-opacity">
                     <Facebook className="w-5 h-5" />
                   </a>
                 )}
                 {config.instagram_url && (
-                  <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                  <a href={config.instagram_url} target="_blank" rel="noopener noreferrer" className="sidebar-logo-gradient text-white rounded-xl p-2 hover:opacity-80 transition-opacity">
                     <Instagram className="w-5 h-5" />
                   </a>
                 )}
                 {config.linkedin_url && (
-                  <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                  <a href={config.linkedin_url} target="_blank" rel="noopener noreferrer" className="sidebar-logo-gradient text-white rounded-xl p-2 hover:opacity-80 transition-opacity">
                     <Linkedin className="w-5 h-5" />
                   </a>
                 )}
@@ -2335,8 +2764,8 @@ export default function SiteHomePage() {
             </div>
           </div>
 
-          <div className="mt-10 border-t border-gray-800 pt-6 text-center text-xs text-gray-500">
-            <p>&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
+          <div className="mt-10 border-t border-gray-800 pt-6 text-center">
+            <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} {config.company_name}. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

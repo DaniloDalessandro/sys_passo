@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Car } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -100,34 +101,21 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 
   return (
     <div className={cn("space-y-8", className)} {...props}>
-      <div className="text-center space-y-4">
-        <div className="mx-auto w-20 h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
-          <svg
-            className="w-10 h-10 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.7 10H17M5 17H3c-.6 0-1-.4-1-1v-3c0-.9.7-1.7 1.5-1.9L5.3 10H7" />
-            <path d="M5 17a2 2 0 1 0 4 0m10 0a2 2 0 1 0 4 0" />
-            <path d="M3 12h18" />
-          </svg>
+      <div className="text-center space-y-4 animate-fade-in-up">
+        <div className="mx-auto w-20 h-20 sidebar-logo-gradient rounded-2xl flex items-center justify-center shadow-xl shadow-primary/30 animate-float">
+          <Car className="w-10 h-10 text-white" />
         </div>
-        <div>
-          <h1 className="text-4xl font-bold text-foreground">
+        <div className="animate-fade-in-up animate-delay-150">
+          <h1 className="text-4xl font-bold tracking-tight gradient-text">
             ViaLumiar
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
+          <p className="text-muted-foreground mt-2 text-lg font-medium">
             Sistema de Gestão
           </p>
         </div>
       </div>
 
-      <Card className="shadow-2xl rounded-2xl border-border">
+      <Card className="shadow-2xl rounded-2xl border-border animate-fade-in-up animate-delay-225">
         <CardContent className="p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             {error && (
@@ -142,7 +130,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             )}
 
             <div className="space-y-4">
-              <div>
+              <div className="animate-fade-in-up animate-delay-300">
                 <Label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
                   Email
                 </Label>
@@ -157,7 +145,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 />
               </div>
 
-              <div>
+              <div className="animate-fade-in-up animate-delay-400">
                 <div className="flex items-center justify-between mb-2">
                   <Label htmlFor="password" className="block text-sm font-medium text-foreground">
                     Senha
@@ -182,18 +170,20 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="xl"
-            >
-              Acessar
-            </Button>
+            <div className="animate-fade-in-up animate-delay-500">
+              <Button
+                type="submit"
+                className="w-full sidebar-logo-gradient text-white border-0 hover:opacity-90 transition-opacity shadow-lg shadow-primary/25"
+                size="xl"
+              >
+                Acessar
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
 
-      <div className="text-center text-muted-foreground text-sm">
+      <div className="text-center text-muted-foreground text-sm animate-fade-in-up animate-delay-600">
         <p>© 2024 ViaLumiar. Todos os direitos reservados.</p>
       </div>
 

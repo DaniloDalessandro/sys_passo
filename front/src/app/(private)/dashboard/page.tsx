@@ -17,7 +17,6 @@ import {
   RecentActivity,
   DashboardAlert,
 } from "@/services/dashboard"
-import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function DashboardPage() {
@@ -58,8 +57,22 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="animate-fade-in-up">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="h-8 w-1 rounded-full sidebar-logo-gradient" />
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          </div>
+          <p className="text-muted-foreground mt-1 ml-4">Visão geral do sistema ViaLumiar</p>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            </div>
+            <p className="text-sm text-muted-foreground font-medium animate-pulse">Carregando dados...</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -75,8 +88,11 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="animate-fade-in-up">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Visão geral do sistema ViaLumiar</p>
+        <div className="flex items-center gap-3 mb-1">
+          <div className="h-8 w-1 rounded-full sidebar-logo-gradient" />
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        </div>
+        <p className="text-muted-foreground mt-1 ml-4">Visão geral do sistema ViaLumiar</p>
       </div>
 
       <StatsOverview stats={stats} />

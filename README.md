@@ -2,7 +2,7 @@
 
 Sistema de gerenciamento de condutores, veículos, solicitações e denúncias.
 
-**Stack:** Django 5.2 + DRF + JWT + Daphne · Next.js 15 + React 19 + TypeScript + Tailwind
+**Stack:** Django 5.2 + DRF + JWT + Daphne · Next.js 15 + React 19 + TypeScript + Tailwind + PWA
 
 ---
 
@@ -79,17 +79,33 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 
 ## Endpoints principais
 
-| Recurso       | Endpoint                        |
-|---------------|---------------------------------|
-| Login         | `POST /api/auth/login/`         |
-| Token refresh | `POST /api/auth/token/refresh/` |
-| Condutores    | `/api/conductors/`              |
-| Veículos      | `/api/vehicles/`                |
-| Solicitações  | `/api/requests/drivers/`        |
-| Denúncias     | `/api/complaints/`              |
-| Config site   | `/api/site/configuration/`      |
+| Recurso            | Endpoint                              |
+|--------------------|---------------------------------------|
+| Login              | `POST /api/auth/login/`               |
+| Token refresh      | `POST /api/auth/token/refresh/`       |
+| Logout             | `POST /api/auth/logout/`              |
+| Perfil             | `GET/PATCH /api/auth/profile/`        |
+| Usuários (admin)   | `/api/auth/users/`                    |
+| Condutores         | `/api/conductors/`                    |
+| Veículos           | `/api/vehicles/`                      |
+| Solicitações       | `/api/requests/drivers/`              |
+| Denúncias          | `/api/complaints/`                    |
+| Notificações       | `/api/notifications/`                 |
+| Dashboard          | `/api/dashboard/`                     |
+| Config site        | `/api/site/configuration/`            |
 
 ---
+
+## Funcionalidades
+
+- **Autenticação** — login, registro, refresh de token, troca e reset de senha, verificação de e-mail
+- **RBAC** — roles `admin`, `aprovador` e `visualizador` com permissões granulares
+- **Gestão de usuários** — página exclusiva para administradores criarem, editarem e removerem usuários
+- **Condutores, Veículos, Solicitações, Denúncias** — CRUD completo com filtros e paginação
+- **Dashboard** — gráficos com suporte a fullscreen e exportação PDF
+- **Notificações** — sistema interno de notificações em tempo real
+- **Tema claro/escuro** — alternância via `next-themes`
+- **PWA** — instalável como aplicativo, configurado com `@ducanh2912/next-pwa`
 
 ---
 
